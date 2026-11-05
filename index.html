@@ -1,0 +1,752 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0f1319">
+<meta name="description" content="Guided review for your Apex Legends clips.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Clip Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: one-column phone stepper, one viewing pass per screen, big tap targets. Same dark tactical look as the Field Manual and Ranked Debrief. */
+:root{
+  --bg:#0f1319; --panel:#171d26; --panel-2:#1d2530; --line:#28323f;
+  --ink:#e9e5da; --muted:#8992a1; --faint:#6a7482;
+  --amber:#e8a33d; --amber-ink:#12161d; --teal:#46b39a; --red:#d9634f; --blue:#5b8fc4; --violet:#b07cc9; --sand:#c9a37a; --rose:#c9708f; --olive:#9aa65a; --grey:#8992a1;
+  --teal-bg:rgba(70,179,154,.16); --red-bg:rgba(217,99,79,.16); --amber-bg:rgba(232,163,61,.16);
+  --teal-ink:#a9e4d4; --red-ink:#f0b6aa; --amber-ink2:#f0d09a;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+[hidden]{display:none!important}
+img{max-width:100%}
+html{touch-action:manipulation}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:640px;margin:0 auto;padding-block:18px 72px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--display);letter-spacing:.4px;text-wrap:balance;margin:0}
+button{font:inherit;cursor:pointer;color:inherit;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.chevron{width:32px;height:32px;flex:none;background:linear-gradient(150deg,var(--amber),#c07d1f);clip-path:polygon(0 0,100% 0,100% 62%,50% 100%,0 62%)}
+.brand h1{font-size:26px;font-weight:700;line-height:1}
+.brand p{margin:2px 0 0;color:var(--muted);font-size:12.5px}
+.timer{font-size:12.5px;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:5px 11px;font-variant-numeric:tabular-nums}
+.timer.warn{color:var(--amber-ink2);border-color:var(--amber);background:var(--amber-bg)}
+.sync{font-size:12px;color:var(--faint);margin:8px 0 10px;min-height:18px}
+.sync.ok{color:var(--teal)} .sync.warn{color:var(--amber)}
+.err{background:var(--red-bg);border:1px solid var(--red);border-radius:12px;padding:12px 14px;margin-bottom:12px;font-size:13.5px}
+.err p{margin:0 0 8px}
+.err code{font-size:12px;overflow-wrap:anywhere;color:var(--red-ink)}
+
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding-block:4px 12px}
+.tabs button{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 4px;font-size:13px;color:var(--muted);min-height:44px}
+.tabs button[aria-selected="true"]{background:var(--panel-2);border-color:var(--amber);color:var(--ink);font-weight:600}
+.tabs .badge{display:inline-block;min-width:18px;padding:0 5px;margin-left:4px;border-radius:9px;background:var(--amber);color:var(--amber-ink);font-size:11px;font-weight:700;line-height:18px}
+
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;min-width:0;margin-bottom:14px}
+.panel h2{font-size:21px;font-weight:600;margin-bottom:4px}
+.panel h3{font-size:17px;font-weight:600;margin-bottom:8px}
+.sub{color:var(--muted);font-size:13.5px;margin:0 0 14px}
+.faint{color:var(--faint);font-size:12.5px}
+
+.primary{width:100%;font-family:var(--display);font-weight:700;font-size:19px;letter-spacing:.6px;color:var(--amber-ink);background:linear-gradient(150deg,var(--amber),#d1892a);border:0;padding:14px;border-radius:12px;min-height:50px}
+.primary:disabled{filter:grayscale(.6) brightness(.7);cursor:not-allowed}
+.ghost{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:14px;min-height:44px}
+.ghost.danger{border-color:var(--red);color:var(--red-ink)}
+.linkish{background:none;border:0;color:var(--muted);text-decoration:underline;font-size:12.5px;padding:8px 0;min-height:36px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row>*{flex:1 1 auto}
+
+/* steps */
+.stepbar{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:2px 0 6px}
+.stepbar span{height:5px;border-radius:3px;background:var(--line)}
+.stepbar span.done{background:var(--teal)} .stepbar span.on{background:var(--amber)}
+.steplabel{font-size:12px;color:var(--faint);margin-bottom:10px;letter-spacing:.3px;text-transform:uppercase}
+.how{border-left:3px solid var(--amber);padding:2px 0 2px 12px;margin:0 0 14px;font-size:14.5px}
+.ask{background:var(--panel-2);border:1px solid var(--line);border-radius:11px;padding:11px 13px;margin:0 0 14px}
+.ask .t{font-size:11.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.ask ul{margin:0;padding-left:18px;font-size:14px}
+.ask li{margin:3px 0}
+.field{margin-bottom:16px}
+.field>.q{font-size:14px;font-weight:500;margin-bottom:8px}
+.q .opt{color:var(--faint);font-weight:400;font-size:12.5px}
+.q .note{display:block;color:var(--faint);font-weight:400;font-size:12.5px;margin-top:2px}
+textarea.inp,input.inp{font:inherit;font-size:16px;width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;color:var(--ink);padding:11px 12px;resize:vertical}
+textarea.inp{min-height:72px}
+.inp::placeholder{color:var(--faint)}
+.seg{display:flex;flex-wrap:wrap;gap:7px}
+.seg button{font-size:14px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-height:44px}
+.seg button[aria-pressed="true"]{background:var(--amber-bg);border-color:var(--amber);color:var(--amber-ink2)}
+.seg.small button{padding:8px 10px;font-size:13px;min-height:42px}
+
+.group{margin-bottom:8px}
+.group>h3{font-size:16px;color:var(--amber);margin:6px 0 2px;text-transform:uppercase;letter-spacing:.8px}
+.check{padding:11px 0;border-bottom:1px solid var(--line)}
+.check:last-child{border-bottom:0}
+.check .t{font-size:14.5px}
+.check .hint{font-size:12.5px;color:var(--faint);margin-top:2px}
+.tri{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.tri button{background:var(--panel-2);border:1px solid var(--line);border-radius:9px;padding:8px 4px;font-size:13.5px;min-height:44px}
+.tri button[data-v="y"][aria-pressed="true"]{background:var(--teal-bg);border-color:var(--teal);color:var(--teal-ink)}
+.tri button[data-v="n"][aria-pressed="true"]{background:var(--red-bg);border-color:var(--red);color:var(--red-ink)}
+.tri button[data-v="?"][aria-pressed="true"]{background:var(--line);border-color:var(--faint)}
+
+.habits{display:grid;grid-template-columns:1fr;gap:6px}
+.habits button{display:flex;gap:10px;align-items:baseline;text-align:left;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:9px 12px;min-height:44px}
+.habits button .n{font-family:var(--display);font-weight:700;color:var(--amber);font-size:17px;width:16px;flex:none}
+.habits button .c{margin-left:auto;font-size:12px;color:var(--faint);flex:none;text-align:right;max-width:45%}
+.habits button[aria-pressed="true"]{border-color:var(--amber);background:var(--amber-bg)}
+.toggle{display:flex;gap:10px;align-items:center;width:100%;text-align:left;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:11px 12px;font-size:14.5px;min-height:46px}
+.toggle .box{width:22px;height:22px;border-radius:6px;border:2px solid var(--faint);flex:none;display:grid;place-items:center;font-size:14px;font-weight:700}
+.toggle[aria-pressed="true"]{border-color:var(--teal)}
+.toggle[aria-pressed="true"] .box{background:var(--teal);border-color:var(--teal);color:var(--amber-ink)}
+.nav{display:grid;grid-template-columns:1fr 2fr;gap:10px;margin-top:4px}
+
+.steps-list{margin:0;padding:0;list-style:none;counter-reset:s}
+.steps-list li{counter-increment:s;display:flex;gap:12px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+.steps-list li:last-child{border-bottom:0}
+.steps-list li::before{content:counter(s);font-family:var(--display);font-weight:700;color:var(--amber);font-size:18px;width:14px;flex:none;line-height:1.25}
+.steps-list b{font-weight:600}
+
+/* patterns */
+.band{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:14px}
+.stat{background:var(--panel);padding:12px 14px;min-width:0}
+.stat .k{color:var(--faint);font-size:11.5px}
+.stat .v{font-family:var(--display);font-weight:700;font-size:32px;line-height:1;margin-top:4px;font-variant-numeric:tabular-nums}
+.focus{border-left:3px solid var(--amber);padding:2px 0 2px 12px}
+.focus .label{font-size:11.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.5px}
+.focus .name{font-family:var(--display);font-size:22px;font-weight:600;line-height:1.2}
+.focus p{margin:6px 0 0;font-size:13.5px;color:var(--muted)}
+.bar{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.bar .lbl{width:132px;flex:none;font-size:13px;color:var(--muted)}
+.bar .track{flex:1;height:14px;background:var(--panel-2);border-radius:7px;overflow:hidden;border:1px solid var(--line)}
+.bar .fill{display:block;height:100%;border-radius:7px}
+.bar .ct{width:22px;text-align:right;font-variant-numeric:tabular-nums;font-size:13px}
+.miss{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
+.miss:last-child{border-bottom:0}
+.miss .r{flex:none;font-variant-numeric:tabular-nums;color:var(--red-ink);font-size:13px}
+.miss .h{display:block;font-size:12px;color:var(--faint)}
+
+/* questions + log */
+.qcard{border-bottom:1px solid var(--line);padding:12px 0}
+.qcard:last-child{border-bottom:0}
+.qcard .qt{font-size:15px;font-weight:500;margin-bottom:4px}
+.meta{font-size:12px;color:var(--faint);margin-bottom:8px}
+.qcard .row{margin-top:8px}
+.ans{font-size:14px;color:var(--muted);margin:4px 0 0}
+.logrow{border-bottom:1px solid var(--line)}
+.logrow:last-child{border-bottom:0}
+.logrow>button{width:100%;text-align:left;background:none;border:0;padding:11px 0;display:flex;gap:10px;align-items:center;min-height:48px}
+.chip{flex:none;font-size:11.5px;border-radius:999px;padding:2px 9px;border:1px solid var(--line);color:var(--muted)}
+.chip.win{border-color:var(--teal);color:var(--teal-ink)}
+.chip.bad{border-color:var(--red);color:var(--red-ink)}
+.logrow .s{flex:1;min-width:0;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.logrow .d{flex:none;font-size:12px;color:var(--faint);font-variant-numeric:tabular-nums}
+.detail{padding:0 0 14px;font-size:14px}
+.detail dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:5px 12px}
+.detail dt{color:var(--faint);font-size:12.5px}
+.detail dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.empty{color:var(--muted);font-size:14px;padding:4px 0}
+.copybox{width:100%;margin-top:10px;font-size:12px;font-family:ui-monospace,Menlo,monospace;min-height:120px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:var(--panel-2);border:1px solid var(--teal);color:var(--ink);padding:10px 16px;border-radius:10px;font-size:14px;opacity:0;pointer-events:none;transition:.2s;z-index:20;max-width:calc(100% - 32px)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="chevron" aria-hidden="true"></div>
+      <div><h1>Clip Review</h1><p>Study your Outplayed clips one pass at a time.</p></div>
+    </div>
+    <div id="timer" class="timer" hidden></div>
+  </header>
+  <div id="sync" class="sync"></div>
+  <div id="err" class="err" hidden></div>
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="review" id="tab-review">Review</button>
+    <button role="tab" data-tab="patterns" id="tab-patterns">Patterns</button>
+    <button role="tab" data-tab="questions" id="tab-questions">Questions</button>
+    <button role="tab" data-tab="log" id="tab-log">Log</button>
+  </nav>
+  <main id="view"></main>
+</div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+// ---------- what to work on: your 8 habits plus two clip-only focuses ----------
+var FOCI = {
+  "1":{name:"The pinch", note:"Cards 3.3"},
+  "2":{name:"One small play, then back up", note:"Cards 3.5, 3.2"},
+  "3":{name:"Crosshair at head level", note:"Cards 4.12, 4.14, 4.4, 4.5"},
+  "4":{name:"Call the side", note:"Cards 0.3, 0.1"},
+  "5":{name:"Rotate early, scan early", note:"Cards 1.1, 1.7, 1.8, 0.1b"},
+  "6":{name:"Info peek before you swing", note:"Cards 4.8, 4.2, 4.16"},
+  "7":{name:"Check behind while healing", note:"Cards 2.3, 5.1"},
+  "8":{name:"Fight in sync", note:"Cards 5.4, 5.2"},
+  "U":{name:"Use your kit and grenades", note:"Tactical or a nade before every push. Throw nades before you go down."},
+  "D":{name:"Land with a plan", note:"Pick your gun spot and your exit before you jump."}
+};
+var FOCUS_ORDER = ["1","2","3","4","5","6","7","8","U","D"];
+
+var TYPES = [["death","Death"],["lostfight","Lost fight"],["knock","Knock, no kill"],["win","Win / clean fight"]];
+var MAPS = ["Broken Moon","World's Edge","Olympus","Storm Point","Kings Canyon","E-District","Other"];
+var LEGENDS = ["Alter","Conduit","Catalyst","Mad Maggie","Valkyrie","Axle","Ash","Other"];
+var KIT = {
+  "Alter":"Void Passage open as an exit before you commit. Void Nexus to pull the team out.",
+  "Conduit":"Radiant Transfer to shield a teammate mid-fight. Energy Barricade to stall a push.",
+  "Catalyst":"Piercing Spikes to slow a push or hold a door. Dark Veil to block sight while you reset.",
+  "Mad Maggie":"Riot Drill to flush someone off cover. Wrecking Ball to break a hold.",
+  "Valkyrie":"Missile Swarm to stun before you swing. Skyward Dive to rotate or escape.",
+  "Ash":"Arc Snare to lock a target. Phase Breach to engage or escape."
+};
+var SITUATIONS = [["hotdrop","Hot drop"],["looting","Looting"],["rotating","Rotating"],["holding","Holding a spot"],["endgame","Endgame (ring 4+)"],["short","Down a teammate"]];
+var STARTERS = [["us","We did"],["them","They did"],["third","A third team"],["none","No fight"]];
+var PLANS = [["fight","Take a fight"],["rotate","Rotate"],["loot","Loot"],["reset","Heal and reset"],["thirdparty","Third-party someone"],["hold","Hold a spot"],["noplan","No real plan"]];
+var WHEN = [["lt5","Under 5s before"],["5to30","5–30s before"],["30to60","30–60s before"],["ring","A ring earlier"]];
+var KINDS = [["decision","Decision"],["execution","Execution"],["both","Both"],["neither","Neither"]];
+
+var GROUPS = {
+  drop:{title:"The drop", checks:[
+    {k:"dropplan", t:"I landed with a plan: where my gun is and where we exit", f:"D"},
+    {k:"dropnear", t:"I landed close enough to help my teammates", f:"D"},
+    {k:"dropgun", t:"I had a gun before I took a fight", f:"D"},
+    {k:"dropleave", t:"We left when the drop went bad, instead of staying to die", f:"D"}
+  ]},
+  position:{title:"Position and rotation", checks:[
+    {k:"early", t:"We moved before the ring forced us", f:"5"},
+    {k:"cover", t:"Our path had cover", f:"5"},
+    {k:"side", t:"We knew if we were on the strong or weak side", f:"4"},
+    {k:"height", t:"I kept height, and didn't drop off it just because a teammate did", f:"4", hint:"Follow the plan, not the person. Dropping off height gives away your advantage."},
+    {k:"count", t:"I knew how many enemies we were fighting", f:"6"},
+    {k:"ready", t:"I was healed, shielded and reloaded before it started", f:"2"},
+    {k:"behind", t:"Someone checked behind us for a third party", f:"7"},
+    {k:"split", t:"I took a different angle than my teammate (no stacking)", f:"1"}
+  ]},
+  comms:{title:"Comms", checks:[
+    {k:"saw", t:"I called what I saw: where, how many, how hurt", f:"8"},
+    {k:"doing", t:"I said what I was doing before I did it", f:"8", hint:"\"Swinging left.\" \"Healing.\" \"Resetting to the rock.\""},
+    {k:"ping", t:"I pinged enemies instead of only saying them", f:"8"},
+    {k:"knew", t:"My teammates knew where I was", f:"8"},
+    {k:"calls", t:"Calls were made, and we acted on them", f:"8"},
+    {k:"plancall", t:"Someone called the plan before we moved", f:"8"}
+  ]},
+  fight:{title:"Gunfight", checks:[
+    {k:"head", t:"My crosshair stayed at head height", f:"3"},
+    {k:"preaim", t:"I pre-aimed where they came out", f:"3"},
+    {k:"peek", t:"I info-peeked before I swung", f:"6"},
+    {k:"coverpeek", t:"I shot from cover and didn't stand in the open", f:"6"},
+    {k:"small", t:"I made one small play, then backed up", f:"2"},
+    {k:"bigdmg", t:"I only pushed hard off big damage or a knock", f:"2"},
+    {k:"reload", t:"I reloaded and healed behind cover", f:"7"},
+    {k:"sync", t:"We pushed together off a teammate's knock", f:"8"}
+  ]},
+  kit:{title:"Kit and grenades", checks:[
+    {k:"tac", t:"I used my tactical in this fight", f:"U", legendHint:true},
+    {k:"ult", t:"I used my ultimate, or had a reason to save it", f:"U", legendHint:true},
+    {k:"nades", t:"I threw my grenades before I went down", f:"U", hint:"Tap N/A if you had none."},
+    {k:"utilfirst", t:"I used utility before pushing, not after", f:"U"}
+  ]}
+};
+var GROUP_ORDER = ["drop","position","comms","fight","kit"];
+var ALLCHECKS = []; GROUP_ORDER.forEach(function(g){ GROUPS[g].checks.forEach(function(c){ c.group=GROUPS[g].title; ALLCHECKS.push(c); }); });
+
+var CAUSES = [
+  {k:"ring", label:"Caught by ring", f:"5", color:"var(--blue)"},
+  {k:"thirdparty", label:"Third party", f:"7", color:"var(--amber)"},
+  {k:"push", label:"Bad push", f:"2", color:"var(--red)"},
+  {k:"gunfight", label:"Lost gunfight", f:"3", color:"var(--violet)"},
+  {k:"comms", label:"Team out of sync", f:"8", color:"var(--teal)"},
+  {k:"spacing", label:"Stacked / gave up height", f:"1", color:"var(--sand)"},
+  {k:"util", label:"Didn't use my kit", f:"U", color:"var(--rose)"},
+  {k:"drop", label:"Lost the hot drop", f:"D", color:"var(--olive)"},
+  {k:"other", label:"Something else", f:null, color:"var(--grey)"},
+  {k:"win", label:"Clean play to repeat", f:null, color:"var(--teal)"}
+];
+var STEPS = ["Clip","Gut pass","Rewind","Before the fight","Comms","The fight","Verdict"];
+var LAST = STEPS.length-1;
+var LOCAL_KEY="apex_clip_review_v1", DRAFT_KEY="apex_clip_draft", SESSION_KEY="apex_clip_session", BACKUP_KEY="apex_clip_last_backup";
+
+function lget(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
+function lset(k,v){ try{ if(v==null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+function blankDraft(){ return {type:null,map:"",legend:"",label:"",situation:[],starter:null,plan:null,gut:"",when:null,lastGood:"",checks:{},cause:null,kind:null,habit:null,fix:"",rehearsed:false,question:""}; }
+function normDraft(d){ var b=blankDraft(); d=d||{}; for(var k in b) if(d[k]===undefined) d[k]=b[k]; if(!Array.isArray(d.situation)) d.situation=[]; if(!d.checks||typeof d.checks!=="object") d.checks={}; return d; }
+
+var S = { clips:[], sig:"", mode:"local", db:null, tab:"review", step:-1, draft:normDraft(lget(DRAFT_KEY)), open:{}, delArm:null, ans:{}, sessionStart:lget(SESSION_KEY) };
+if(typeof S.draft._step==="number" && S.draft._step>=0) S.step=Math.min(S.draft._step,LAST);
+(function(){ var o=lget(LOCAL_KEY); if(o&&o.clips) S.clips=o.clips; })();
+
+// ---------- errors: show them instead of failing silently ----------
+function showErr(msg){
+  var el=document.getElementById("err"); if(!el) return; clear(el);
+  el.appendChild(h("p",null,"Something on this page broke. Tap Reset screen to keep going; your answers are saved. If it keeps happening, screenshot this box for Claude."));
+  el.appendChild(h("p",null,h("code",{text:String(msg||"Unknown error").slice(0,300)})));
+  el.appendChild(h("button",{type:"button",class:"ghost",onclick:function(){ el.hidden=true; safeRender(); }},"Reset screen"));
+  el.hidden=false;
+}
+window.addEventListener("error",function(e){ showErr(e && (e.message || (e.error&&e.error.message))); });
+window.addEventListener("unhandledrejection",function(e){ var r=e&&e.reason; if(r&&r.code==="unavailable") return; showErr(r&&(r.message||r.code)||r); });
+
+// ---------- storage ----------
+function saveLocal(){ lset(LOCAL_KEY, {clips:S.clips}); }
+function setSync(msg,cls){ var el=document.getElementById("sync"); el.textContent=msg; el.className="sync"+(cls?" "+cls:""); }
+var toastT; function toast(m){ var el=document.getElementById("toast"); el.textContent=m; el.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(function(){ el.classList.remove("show"); },2000); }
+function retryOnce(fn){ return fn().catch(function(e){ if(e&&e.code==="unavailable") return new Promise(function(r){ setTimeout(r,400+Math.random()*600); }).then(fn); throw e; }); }
+function putClip(c){
+  if(S.mode==="db") return retryOnce(function(){ return S.db.collection("clips").doc(c.id).set(c); });
+  S.clips=S.clips.filter(function(x){ return x.id!==c.id; }).concat([c]); saveLocal(); return Promise.resolve();
+}
+function removeClip(id){
+  if(S.mode==="db") return retryOnce(function(){ return S.db.collection("clips").doc(id).delete(); });
+  S.clips=S.clips.filter(function(x){ return x.id!==id; }); saveLocal(); return Promise.resolve();
+}
+
+// The review in progress and its step: saved to this browser right away and to your account shortly after.
+function saveDraft(){ S.draft._step=S.step; S.draft._updated=Date.now(); lset(DRAFT_KEY, S.draft); pushDraft(); }
+var dT=null, dBusy=false, dAgain=false;
+function pushDraft(){ if(S.mode!=="db") return; clearTimeout(dT); dT=setTimeout(writeDraft,800); }
+function writeDraft(){
+  clearTimeout(dT); dT=null; if(S.mode!=="db") return;
+  if(dBusy){ dAgain=true; return; } dBusy=true;
+  var p;
+  try{
+    var ref=S.db.doc("drafts/current");
+    p=(S.draft.type || S.step>=0) ? ref.set({draft:JSON.parse(JSON.stringify(S.draft)), step:S.step, updated:S.draft._updated||Date.now()}) : ref.delete();
+  }catch(e){ p=Promise.resolve(); }
+  Promise.resolve(p).catch(function(){}).then(function(){ dBusy=false; if(dAgain){ dAgain=false; writeDraft(); } });
+}
+function flushDraft(){ if(dT) writeDraft(); }
+document.addEventListener("visibilitychange",function(){ if(document.visibilityState==="hidden") flushDraft(); });
+window.addEventListener("pagehide",flushDraft);
+
+// ---------- helpers ----------
+function h(tag, attrs){ var el=document.createElement(tag); if(attrs) for(var k in attrs){ var v=attrs[k]; if(v==null||v===false) continue; if(k==="text") el.textContent=v; else if(k==="class") el.className=v; else if(k.slice(0,2)==="on") el.addEventListener(k.slice(2),v); else el.setAttribute(k, v===true?"":v); }
+  for(var i=2;i<arguments.length;i++){ var ch=arguments[i]; if(ch==null) continue; if(Array.isArray(ch)) ch.forEach(function(x){ if(x!=null) el.appendChild(typeof x==="string"?document.createTextNode(x):x); }); else el.appendChild(typeof ch==="string"?document.createTextNode(ch):ch); }
+  return el; }
+function clear(el){ while(el.firstChild) el.removeChild(el.firstChild); }
+function pad(n){ return (n<10?"0":"")+n; }
+function today(){ var d=new Date(); return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+var MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function fmtDate(iso){ if(!iso) return ""; var p=iso.split("-"); return MON[+p[1]-1]+" "+(+p[2]); }
+function label(list,k){ for(var i=0;i<list.length;i++) if(list[i][0]===k) return list[i][1]; return ""; }
+function labels(list,arr){ return (arr||[]).map(function(k){ return label(list,k); }).filter(Boolean).join(", "); }
+function causeOf(k){ for(var i=0;i<CAUSES.length;i++) if(CAUSES[i].k===k) return CAUSES[i]; return null; }
+function newestFirst(){ return S.clips.slice().sort(function(a,b){ return (b.created||0)-(a.created||0); }); }
+function typing(){ var a=document.activeElement, v=document.getElementById("view"); return !!(a && v && (a.tagName==="TEXTAREA"||a.tagName==="INPUT") && v.contains(a)); }
+function focusName(k){ k=k==null?null:String(k); return k&&FOCI[k]?((/^\d$/.test(k)?"#"+k+" ":"")+FOCI[k].name):""; }
+
+// Choice buttons update in place: a tap changes only the buttons you touched, never the whole screen.
+function setPressed(group, val){ var bs=group.querySelectorAll("button[data-k]"); for(var i=0;i<bs.length;i++){ var k=bs[i].getAttribute("data-k"); bs[i].setAttribute("aria-pressed", String(Array.isArray(val)? val.indexOf(k)>=0 : k===val)); } }
+function seg(options, field, small, after){
+  var g=h("div",{class:"seg"+(small?" small":"")});
+  options.forEach(function(o){
+    var k=Array.isArray(o)?o[0]:o, t=Array.isArray(o)?o[1]:o;
+    g.appendChild(h("button",{type:"button","data-k":k,"aria-pressed":String(S.draft[field]===k),onclick:function(){
+      S.draft[field] = S.draft[field]===k ? (field==="map"||field==="legend"?"":null) : k;
+      setPressed(g, S.draft[field]); saveDraft(); updateNav(); if(after) after();
+    }}, t));
+  });
+  return g;
+}
+function multiSeg(options, field){
+  var g=h("div",{class:"seg small"});
+  options.forEach(function(o){
+    g.appendChild(h("button",{type:"button","data-k":o[0],"aria-pressed":String(S.draft[field].indexOf(o[0])>=0),onclick:function(){
+      var a=S.draft[field].slice(), i=a.indexOf(o[0]); if(i>=0) a.splice(i,1); else a.push(o[0]);
+      S.draft[field]=a; setPressed(g,a); saveDraft();
+    }}, o[1]));
+  });
+  return g;
+}
+function textField(q, key, ph, optional, rows){
+  var ta=h("textarea",{class:"inp",id:"f-"+key,rows:String(rows||3),placeholder:ph});
+  ta.value=S.draft[key]||"";
+  ta.addEventListener("input",function(){ S.draft[key]=ta.value; saveDraft(); });
+  return h("div",{class:"field"}, h("label",{class:"q",for:"f-"+key}, q, optional?h("span",{class:"opt"}," (optional)"):null), ta);
+}
+function field(q, control, note){ return h("div",{class:"field"}, h("div",{class:"q"}, q, note?h("span",{class:"note",text:note}):null), control); }
+function askBox(title, items){ return h("div",{class:"ask"}, h("div",{class:"t",text:title}), h("ul",null, items.map(function(t){ return h("li",{text:t}); }))); }
+function checkGroup(key){
+  var G=GROUPS[key];
+  return h("div",{class:"group"}, h("h3",{text:G.title}), G.checks.map(function(ch){
+    var hint=ch.hint||null; if(ch.legendHint && KIT[S.draft.legend]) hint=S.draft.legend+": "+KIT[S.draft.legend];
+    var tri=h("div",{class:"tri"});
+    [["y","Yes"],["n","No"],["?","N/A"]].forEach(function(o){
+      tri.appendChild(h("button",{type:"button","data-k":o[0],"data-v":o[0],"aria-pressed":String(S.draft.checks[ch.k]===o[0]),onclick:function(){
+        if(S.draft.checks[ch.k]===o[0]) delete S.draft.checks[ch.k]; else S.draft.checks[ch.k]=o[0];
+        setPressed(tri, S.draft.checks[ch.k]||null); saveDraft();
+      }}, o[1]));
+    });
+    return h("div",{class:"check"}, h("div",{class:"t",text:ch.t}), hint?h("div",{class:"hint",text:hint}):null, tri);
+  }));
+}
+function suggestFocus(d){
+  if(d.habit) return String(d.habit);
+  var c=causeOf(d.cause); if(c&&c.f) return c.f;
+  var score={}; ALLCHECKS.forEach(function(ch){ if(d.checks[ch.k]==="n") score[ch.f]=(score[ch.f]||0)+1; });
+  var best=null; for(var k in score) if(best==null||score[k]>score[best]) best=k;
+  return best;
+}
+
+// ---------- timer ----------
+function startSession(){ var now=Date.now(); if(!S.sessionStart || now-S.sessionStart>3*3600*1000){ S.sessionStart=now; lset(SESSION_KEY,now); } tickTimer(); }
+function tickTimer(){
+  var el=document.getElementById("timer");
+  if(!S.sessionStart || Date.now()-S.sessionStart>3*3600*1000){ el.hidden=true; return; }
+  var m=Math.floor((Date.now()-S.sessionStart)/60000);
+  el.hidden=false;
+  if(m>=20){ el.textContent=m+" min · finish this clip, then stop"; el.className="timer warn"; }
+  else { el.textContent="Review time "+m+" of 20 min"; el.className="timer"; }
+}
+setInterval(tickTimer,30000);
+
+// ---------- review steps ----------
+function stepContent(n){
+  var d=S.draft, win=d.type==="win", box=h("div");
+  if(n===0){
+    box.appendChild(h("p",{class:"how",text:"Pick one clip. Deaths and lost fights teach the most. Watch one win for every three losses."}));
+    box.appendChild(field("What kind of clip?", seg(TYPES,"type")));
+    box.appendChild(field("What was going on?", multiSeg(SITUATIONS,"situation"), "Tap all that fit."));
+    box.appendChild(field("Who started the fight?", seg(STARTERS,"starter",true)));
+    box.appendChild(h("div",{class:"field"}, h("div",{class:"q"},"Map",h("span",{class:"opt"}," (optional)")), seg(MAPS,"map",true)));
+    box.appendChild(h("div",{class:"field"}, h("div",{class:"q"},"Your legend",h("span",{class:"opt"}," (optional, adds kit tips later)")), seg(LEGENDS,"legend",true)));
+    var inp=h("input",{class:"inp",id:"f-label",placeholder:"e.g. Olympus, Oct 30, 2nd death"}); inp.value=d.label||"";
+    inp.addEventListener("input",function(){ d.label=inp.value; saveDraft(); });
+    box.appendChild(h("div",{class:"field"}, h("label",{class:"q",for:"f-label"},"Clip name, so you can find it again",h("span",{class:"opt"}," (optional)")), inp));
+  }
+  if(n===1){
+    box.appendChild(h("p",{class:"how",text:win
+      ? "Before you press play, guess what you did well. Then watch the play at normal speed, around the 2:00 mark."
+      : "Before you press play, guess what went wrong. Then watch at normal speed from the start of the clip. Pause the moment it feels wrong."}));
+    box.appendChild(field("What was your plan at the start of the clip?", seg(PLANS,"plan",true), "\"No real plan\" is an honest answer, and a common one."));
+    box.appendChild(askBox("Ask yourself",[ "What was I trying to do here, and did my team know?", win?"What did I do that I usually don't?":"Where did I feel it slip away?", "Was this a high-percentage play, or a coin flip?", "If I was watching a teammate do this, what would I tell them?" ]));
+    box.appendChild(textField(win?"What went right, in one line?":"What went wrong, in one line?","gut", win?"e.g. Waited for the knock, then pushed with Valk":"e.g. Swung a second time without healing"));
+  }
+  if(n===2){
+    box.appendChild(h("p",{class:"how",text:win
+      ? "Jump back 30 seconds at a time from the play. Find the moment you took the advantage."
+      : "Jump back 30 seconds at a time from the event. Stop at the last moment you still had a safe choice. That's when your options disappeared."}));
+    box.appendChild(askBox("At each pause, ask",[ "Could I still back up, re-angle, or take height?", "Could we still rotate?", "Was I healed and loaded?", "Did I know where they were, and how many?", "Did I have utility I hadn't used yet?" ]));
+    box.appendChild(field(win?"When did you take the advantage?":"When did your options disappear?", seg(WHEN,"when")));
+    box.appendChild(textField(win?"What set it up?":"What was the safe choice you passed on?","lastGood", win?"e.g. Held the doorway until they split":"e.g. Back up to the rock and pop a cell", true));
+  }
+  if(n===3){
+    var hot=d.situation.indexOf("hotdrop")>=0;
+    box.appendChild(h("p",{class:"how",text:"Watch the minute before the fight, but only the minimap, your teammates and the ring. Tap N/A for anything this clip doesn't show."}));
+    if(hot) box.appendChild(checkGroup("drop"));
+    box.appendChild(checkGroup("position"));
+  }
+  if(n===4){
+    box.appendChild(h("p",{class:"how",text:"Turn the sound up. This pass grades what you said, not what you did. If Outplayed didn't record your mic, answer from memory or tap N/A."}));
+    box.appendChild(checkGroup("comms"));
+  }
+  if(n===5){
+    box.appendChild(h("p",{class:"how",text:"Watch the fight once more, crosshair and abilities only. If the clip has no fight, tap N/A or skip ahead."}));
+    box.appendChild(checkGroup("fight"));
+    box.appendChild(checkGroup("kit"));
+  }
+  if(n===6){
+    box.appendChild(h("p",{class:"how",text:"Name it, pick the fix, then picture yourself doing the fix once at normal speed. Spotting the mistake isn't enough. Rehearsing the better play is what carries into your games."}));
+    box.appendChild(field(win?"What was this clip about?":"What mainly ended this clip?",
+      seg(CAUSES.map(function(c){ return [c.k,c.label]; }), "cause", false, function(){ S.draft.habit=null; rerender(); })));
+    box.appendChild(field(win?"What made it work?":"Was it the decision or the execution?", seg(KINDS,"kind",true),
+      "Decision: wrong fight, timing or spot. Execution: right idea, but the shots, peeks or movement let you down."));
+    if(d.cause!=="win"){
+      var sug=suggestFocus(d), hb=h("div",{class:"habits"});
+      FOCUS_ORDER.forEach(function(k){
+        hb.appendChild(h("button",{type:"button","data-k":k,"aria-pressed":String(sug===k),onclick:function(){
+          var cur=suggestFocus(S.draft); S.draft.habit = (cur===k && S.draft.habit===k) ? null : k;
+          setPressed(hb, suggestFocus(S.draft)); saveDraft();
+        }}, h("span",{class:"n",text:/^\d$/.test(k)?k:"+"}), h("span",{text:FOCI[k].name}), h("span",{class:"c",text:/^\d$/.test(k)?FOCI[k].note.replace("Cards ",""):""})));
+      });
+      box.appendChild(h("div",{class:"field"}, h("div",{class:"q"},"What fixes it?", h("span",{class:"opt"}, sug&&!d.habit?" (suggested from your answers)":"")), hb));
+    }
+    box.appendChild(textField(win?"What will you repeat next game?":"What would a Diamond player have done here?","fix", win?"e.g. Wait for the knock call before swinging":"e.g. Arc Snare first, one shot, back up, cell, re-peek from the rock"));
+    var tg=h("button",{type:"button",class:"toggle","aria-pressed":String(!!d.rehearsed),onclick:function(){
+      S.draft.rehearsed=!S.draft.rehearsed; tg.setAttribute("aria-pressed",String(S.draft.rehearsed)); tg.firstChild.textContent=S.draft.rehearsed?"✓":""; saveDraft();
+    }}, h("span",{class:"box",text:d.rehearsed?"✓":""}), h("span",{text:"I pictured doing the fix once, at normal speed"}));
+    box.appendChild(h("div",{class:"field"}, tg));
+    box.appendChild(textField("Anything you're unsure about?","question","e.g. Should I have used Alter's portal to reset here?",true,2));
+  }
+  return box;
+}
+function canNext(n){ if(n===0) return !!S.draft.type; if(n===LAST) return !!S.draft.cause; return true; }
+function updateNav(){
+  var b=document.getElementById("nextbtn"), hint=document.getElementById("navhint"); if(!b) return;
+  var ok=canNext(S.step); b.disabled=!ok; if(hint) hint.hidden=ok;
+}
+function goStep(n){ S.step=n; saveDraft(); safeRender(); window.scrollTo(0,0); }
+function rerender(){ var y=window.scrollY; safeRender(); window.scrollTo(0,y); }
+function saveReview(){
+  var d=S.draft, now=Date.now();
+  var c={ id:"c"+now, created:now, date:today(), type:d.type, map:d.map||"", legend:d.legend||"", label:(d.label||"").trim(),
+    situation:d.situation||[], starter:d.starter||null, plan:d.plan||null,
+    gut:(d.gut||"").trim(), when:d.when||null, lastGood:(d.lastGood||"").trim(), checks:d.checks||{}, cause:d.cause, kind:d.kind||null,
+    habit:d.cause==="win"?null:suggestFocus(d), fix:(d.fix||"").trim(), rehearsed:!!d.rehearsed, question:(d.question||"").trim(), answer:"", qDone:false };
+  var btn=document.getElementById("nextbtn"); if(btn){ btn.disabled=true; btn.textContent="Saving…"; }
+  putClip(c).then(function(){
+    S.draft=blankDraft(); S.step=-1; lset(DRAFT_KEY,null); writeDraft(); safeRender(); window.scrollTo(0,0);
+    toast("Saved. "+S.clips.length+" clip"+(S.clips.length===1?"":"s")+" reviewed.");
+  }).catch(function(e){ if(btn){ btn.disabled=false; btn.textContent="Save review"; } toast("Couldn't save ("+(e&&e.code||"error")+"). Try again."); });
+}
+function renderReview(v){
+  if(S.step<0){
+    var hasDraft=!!S.draft.type;
+    v.appendChild(h("section",{class:"panel"},
+      h("h2",{text:"Review a clip"}),
+      h("p",{class:"sub",text:"Your Outplayed clips run about 2 minutes either side of the event. Open one in Outplayed, then follow the steps here."}),
+      h("div",{class:"row"},
+        hasDraft?h("button",{type:"button",class:"ghost",onclick:function(){ startSession(); goStep(typeof S.draft._step==="number"&&S.draft._step>=0?Math.min(S.draft._step,LAST):0); }},"Resume unsaved review"):null,
+        h("button",{type:"button",class:"primary",onclick:function(){ S.draft=blankDraft(); startSession(); goStep(0); }},"Start a clip review"))));
+    v.appendChild(h("section",{class:"panel"},
+      h("h3",{text:"How each review runs"}),
+      h("ol",{class:"steps-list"},
+        h("li",null,h("span",null,h("b",null,"Clip. "),"What kind, what was going on, who started it.")),
+        h("li",null,h("span",null,h("b",null,"Gut pass. "),"Your plan going in. Guess first, then watch and pause where it slipped.")),
+        h("li",null,h("span",null,h("b",null,"Rewind. "),"Back 30 seconds at a time to when your options disappeared.")),
+        h("li",null,h("span",null,h("b",null,"Before the fight. "),"Drop, height, ring, cover, third parties, stacking.")),
+        h("li",null,h("span",null,h("b",null,"Comms. "),"Did you call what you saw and say what you were doing?")),
+        h("li",null,h("span",null,h("b",null,"The fight. "),"Crosshair, peeks, pushes, your tactical, ult and grenades.")),
+        h("li",null,h("span",null,h("b",null,"Verdict. "),"Cause, decision or execution, the fix, one rehearsal."))),
+      (function(){ var lb=lget(BACKUP_KEY); return (S.clips.length>=3 && (!lb || Date.now()-lb>14*864e5)) ? h("p",{class:"faint",style:"margin:12px 0 0;color:var(--amber)",text:"It's been a while since your last backup. Save one from the Log tab."}) : null; })(),
+      h("p",{class:"faint",style:"margin:12px 0 0",text:"Pace: 8–10 minutes a clip. The yes/no checks are quick. Tap N/A for anything the clip doesn't show. Do 2–3 clips the day after you play, then stop at 20 minutes."})));
+    return;
+  }
+  var n=S.step;
+  v.appendChild(h("div",{class:"stepbar","aria-hidden":"true"}, STEPS.map(function(_,i){ return h("span",{class:i<n?"done":i===n?"on":""}); })));
+  v.appendChild(h("div",{class:"steplabel",text:"Step "+(n+1)+" of "+STEPS.length+" · "+STEPS[n]}));
+  var panel=h("section",{class:"panel"}, h("h2",{text:STEPS[n]}), stepContent(n));
+  var last=n===LAST;
+  panel.appendChild(h("div",{class:"nav"},
+    h("button",{type:"button",class:"ghost",onclick:function(){ goStep(n===0?-1:n-1); }}, n===0?"Cancel":"Back"),
+    h("button",{type:"button",class:"primary",id:"nextbtn",disabled:!canNext(n),onclick:function(){ if(!canNext(S.step)) return; if(last) saveReview(); else goStep(n+1); }},
+      last?"Save review":(n===LAST-1?"Next: verdict":"Next"))));
+  panel.appendChild(h("p",{class:"faint",id:"navhint",hidden:canNext(n),style:"margin:8px 0 0",text:n===0?"Pick the clip type to continue.":"Pick what mainly ended the clip to save."}));
+  v.appendChild(panel);
+}
+
+// ---------- patterns ----------
+function bars(panel, rows, colorFn){
+  var max=0; rows.forEach(function(r){ if(r.n>max) max=r.n; });
+  rows.forEach(function(r){ panel.appendChild(h("div",{class:"bar"}, h("span",{class:"lbl",text:r.label}), h("span",{class:"track"}, h("span",{class:"fill",style:"width:"+(max?Math.round(r.n/max*100):0)+"%;background:"+(r.color||"var(--amber)")})), h("span",{class:"ct",text:String(r.n)}))); });
+}
+function renderPatterns(v){
+  var clips=S.clips, total=clips.length;
+  var week=clips.filter(function(c){ return Date.now()-(c.created||0)<7*864e5; }).length;
+  var openQ=clips.filter(function(c){ return c.question && !c.qDone; }).length;
+  v.appendChild(h("div",{class:"band"},
+    h("div",{class:"stat"},h("div",{class:"k",text:"Clips reviewed"}),h("div",{class:"v",text:String(total)})),
+    h("div",{class:"stat"},h("div",{class:"k",text:"Last 7 days"}),h("div",{class:"v",text:String(week)})),
+    h("div",{class:"stat"},h("div",{class:"k",text:"Open questions"}),h("div",{class:"v",text:String(openQ)}))));
+  if(!total){
+    v.appendChild(h("section",{class:"panel"}, h("h2",{text:"Your patterns show up here"}),
+      h("p",{class:"sub",style:"margin:0",text:"After each review this page counts what ended your clips, whether it was the decision or the execution, which checks you miss most, and how early your options disappear. After 3 clips it names what to work on next. Start with a death clip from your last ranked session."})));
+    return;
+  }
+  var leaks=clips.filter(function(c){ return c.cause && c.cause!=="win"; });
+  var score={};
+  leaks.forEach(function(c){ var ca=causeOf(c.cause); if(ca&&ca.f) score[ca.f]=(score[ca.f]||0)+2; });
+  clips.forEach(function(c){ ALLCHECKS.forEach(function(ch){ if(c.checks&&c.checks[ch.k]==="n") score[ch.f]=(score[ch.f]||0)+1; }); });
+  var best=null; for(var k in score) if(best==null||score[k]>score[best]) best=k;
+  var fp=h("section",{class:"panel"});
+  if(total<3 || !best){
+    var left=Math.max(3-total,1);
+    fp.appendChild(h("div",{class:"focus"}, h("div",{class:"label",text:"Your next focus"}), h("div",{class:"name",text:"Review "+left+" more clip"+(left===1?"":"s")}),
+      h("p",{text:"Three clips is the fewest that shows a real pattern rather than one bad fight."})));
+  } else {
+    fp.appendChild(h("div",{class:"focus"}, h("div",{class:"label",text:"Your next focus"}), h("div",{class:"name",text:focusName(best)}),
+      h("p",{text:FOCI[best].note+". Your clips point here most often."+(/^\d$/.test(best)?" Set it as your focus in the Ranked Debrief.":" Make it your one focus for your next ranked session.")})));
+  }
+  v.appendChild(fp);
+
+  var kp=h("section",{class:"panel"}, h("h3",{text:"Decision or execution"}), h("p",{class:"sub",text:"Decisions are fixed by review and cards. Execution is fixed in the firing range."}));
+  var kc={}; leaks.forEach(function(c){ if(c.kind) kc[c.kind]=(kc[c.kind]||0)+1; });
+  if(!Object.keys(kc).length) kp.appendChild(h("p",{class:"empty",text:"Not marked yet. The verdict step asks this."}));
+  else bars(kp, KINDS.map(function(k){ return {label:k[1], n:kc[k[0]]||0, color:k[0]==="decision"?"var(--blue)":k[0]==="execution"?"var(--violet)":"var(--grey)"}; }));
+  v.appendChild(kp);
+
+  var cp=h("section",{class:"panel"}, h("h3",{text:"What ends your clips"}));
+  if(!leaks.length) cp.appendChild(h("p",{class:"empty",text:"Only wins so far. Add a death clip to see what's costing you."}));
+  else { var counts={}; leaks.forEach(function(c){ counts[c.cause]=(counts[c.cause]||0)+1; });
+    bars(cp, CAUSES.filter(function(c){ return counts[c.k]; }).sort(function(a,b){ return counts[b.k]-counts[a.k]; }).map(function(c){ return {label:c.label,n:counts[c.k],color:c.color}; })); }
+  v.appendChild(cp);
+
+  var mp=h("section",{class:"panel"}, h("h3",{text:"Checks you miss most"}));
+  var rows=ALLCHECKS.map(function(ch){ var y=0,nn=0; clips.forEach(function(c){ var a=c.checks&&c.checks[ch.k]; if(a==="y") y++; if(a==="n") nn++; }); return {ch:ch,y:y,n:nn}; })
+    .filter(function(r){ return r.n>0; }).sort(function(a,b){ return (b.n/(b.n+b.y))-(a.n/(a.n+a.y)) || b.n-a.n; }).slice(0,8);
+  if(!rows.length) mp.appendChild(h("p",{class:"empty",text:"No misses marked yet. Answer the yes or no checks in steps 4 to 6."}));
+  rows.forEach(function(r){ mp.appendChild(h("div",{class:"miss"}, h("span",null, r.ch.t, h("span",{class:"h",text:r.ch.group+" · "+focusName(r.ch.f)})), h("span",{class:"r",text:"missed "+r.n+" of "+(r.n+r.y)}))); });
+  v.appendChild(mp);
+
+  var pp=h("section",{class:"panel"}, h("h3",{text:"Your plan going in"}), h("p",{class:"sub",text:"A lot of \"No real plan\" means fights are choosing you."}));
+  var pc={}, anyP=false; clips.forEach(function(c){ if(c.plan){ pc[c.plan]=(pc[c.plan]||0)+1; anyP=true; } });
+  if(!anyP) pp.appendChild(h("p",{class:"empty",text:"Not marked yet. The gut pass asks this."}));
+  else bars(pp, PLANS.filter(function(p){ return pc[p[0]]; }).map(function(p){ return {label:p[1], n:pc[p[0]], color:p[0]==="noplan"?"var(--red)":"var(--amber)"}; }));
+  v.appendChild(pp);
+
+  var wp=h("section",{class:"panel"}, h("h3",{text:"When your options disappear"}), h("p",{class:"sub",text:"Earlier means the mistake is a decision or rotation, not aim."}));
+  var wc={}, anyW=false; leaks.forEach(function(c){ if(c.when){ wc[c.when]=(wc[c.when]||0)+1; anyW=true; } });
+  if(!anyW) wp.appendChild(h("p",{class:"empty",text:"Not marked yet. The rewind step asks this."}));
+  else bars(wp, WHEN.map(function(w){ return {label:w[1], n:wc[w[0]]||0}; }));
+  v.appendChild(wp);
+}
+
+// ---------- questions ----------
+function metaLine(c){ return [fmtDate(c.date), label(TYPES,c.type), c.map, c.label].filter(Boolean).join(" · "); }
+function renderQuestions(v){
+  var open=newestFirst().filter(function(c){ return c.question && !c.qDone; });
+  var done=newestFirst().filter(function(c){ return c.question && c.qDone; });
+  var p=h("section",{class:"panel"}, h("h2",{text:"Open questions"}),
+    h("p",{class:"sub",text:"Things you weren't sure about while reviewing. Test them in the firing range, ask a teammate, or bring them to Claude. Write the answer here once you have it."}));
+  if(!open.length) p.appendChild(h("p",{class:"empty",text:"No open questions. The last step of a review has a spot for one."}));
+  open.forEach(function(c){
+    var ta=h("textarea",{class:"inp",id:"ans-"+c.id,rows:"2",placeholder:"What you found out"}); ta.value=(S.ans[c.id]!=null?S.ans[c.id]:(c.answer||""));
+    ta.addEventListener("input",function(){ S.ans[c.id]=ta.value; });
+    function save(markDone){
+      var nc={}; for(var k in c) nc[k]=c[k]; nc.answer=ta.value.trim(); if(markDone) nc.qDone=true;
+      putClip(nc).then(function(){ delete S.ans[c.id]; safeRender(); toast(markDone?"Marked answered.":"Answer saved."); }).catch(function(){ toast("Couldn't save. Try again."); });
+    }
+    p.appendChild(h("div",{class:"qcard"}, h("div",{class:"qt",text:c.question}), h("div",{class:"meta",text:metaLine(c)}), ta,
+      h("div",{class:"row"}, h("button",{type:"button",class:"ghost",onclick:function(){ save(false); }},"Save answer"), h("button",{type:"button",class:"ghost",onclick:function(){ save(true); }},"Mark answered"))));
+  });
+  v.appendChild(p);
+  if(done.length){
+    var dp=h("section",{class:"panel"}, h("h3",{text:"Answered ("+done.length+")"}));
+    done.forEach(function(c){ dp.appendChild(h("div",{class:"qcard"}, h("div",{class:"qt",text:c.question}), h("div",{class:"meta",text:metaLine(c)}), h("p",{class:"ans",text:c.answer||"No answer written."}))); });
+    v.appendChild(dp);
+  }
+}
+
+// ---------- log ----------
+function missedList(c){ return ALLCHECKS.filter(function(ch){ return c.checks&&c.checks[ch.k]==="n"; }).map(function(ch){ return ch.t; }); }
+function toTSV(){
+  var cols=["Date","Clip type","Map","Legend","Clip name","Situation","Who started","Plan","What happened","Options gone / advantage","Safe choice / setup","Main cause","Decision or execution","Fix focus","Fix","Rehearsed","Missed checks","Question","Answer"];
+  function clean(s){ return String(s==null?"":s).replace(/[\t\r\n]+/g," "); }
+  var lines=[cols.join("\t")];
+  newestFirst().forEach(function(c){ var ca=causeOf(c.cause);
+    lines.push([c.date,label(TYPES,c.type),c.map,c.legend,c.label,labels(SITUATIONS,c.situation),label(STARTERS,c.starter),label(PLANS,c.plan),c.gut,label(WHEN,c.when),c.lastGood,ca?ca.label:"",label(KINDS,c.kind),focusName(c.habit),c.fix,c.rehearsed?"Yes":"No",missedList(c).join("; "),c.question,c.answer].map(clean).join("\t")); });
+  return lines.join("\n");
+}
+function renderLog(v){
+  var p=h("section",{class:"panel"}, h("h2",{text:"Review log"}));
+  var list=newestFirst();
+  if(!list.length){ p.appendChild(h("p",{class:"empty",text:"Your saved reviews will be listed here, newest first. Tap one to see everything you wrote."})); v.appendChild(p); return; }
+  var copyWrap=h("div");
+  p.appendChild(h("p",{class:"sub",text:list.length+" review"+(list.length===1?"":"s")+". Copy as a table to paste into a spreadsheet."}));
+  p.appendChild(h("button",{type:"button",class:"ghost",onclick:function(){
+    var t=toTSV();
+    function fallback(){ clear(copyWrap); var ta=h("textarea",{class:"inp copybox",readonly:true,"aria-label":"Table to copy"}); ta.value=t; copyWrap.appendChild(h("p",{class:"faint",style:"margin:10px 0 0",text:"Copying is blocked here. Select all of this and copy it."})); copyWrap.appendChild(ta); ta.focus(); ta.select(); }
+    try{ navigator.clipboard.writeText(t).then(function(){ toast("Copied. Paste into Google Sheets or Excel."); }, fallback); }catch(e){ fallback(); }
+  }},"Copy as table"));
+  p.appendChild(copyWrap);
+  var box=h("div",{style:"margin-top:8px"});
+  list.forEach(function(c){
+    var ca=causeOf(c.cause), isOpen=!!S.open[c.id];
+    var row=h("div",{class:"logrow"}, h("button",{type:"button","aria-expanded":String(isOpen),onclick:function(){ S.open[c.id]=!isOpen; rerender(); }},
+      h("span",{class:"chip "+(c.type==="win"?"win":"bad"),text:label(TYPES,c.type)||"Clip"}), h("span",{class:"s",text:c.gut||c.fix||(ca?ca.label:"Review")}), h("span",{class:"d",text:fmtDate(c.date)})));
+    if(isOpen){
+      var dl=h("dl");
+      function add(k,val){ if(val){ dl.appendChild(h("dt",{text:k})); dl.appendChild(h("dd",{text:val})); } }
+      add("Clip", [c.map,c.legend,c.label].filter(Boolean).join(" · "));
+      add("Situation", labels(SITUATIONS,c.situation));
+      add("Who started", label(STARTERS,c.starter));
+      add("Plan", label(PLANS,c.plan));
+      add(c.type==="win"?"What went right":"What went wrong", c.gut);
+      add(c.type==="win"?"Took the advantage":"Options gone", label(WHEN,c.when));
+      add(c.type==="win"?"Setup":"Safe choice", c.lastGood);
+      add("Main cause", ca?ca.label:"");
+      add("Decision or execution", label(KINDS,c.kind));
+      add("Fix focus", focusName(c.habit));
+      add("Fix", c.fix);
+      add("Rehearsed", c.rehearsed?"Yes":"");
+      add("Missed", missedList(c).join("; "));
+      add("Question", c.question); add("Answer", c.answer);
+      var armed=S.delArm===c.id;
+      row.appendChild(h("div",{class:"detail"}, dl, h("div",{class:"row",style:"margin-top:12px"},
+        h("button",{type:"button",class:"ghost"+(armed?" danger":""),onclick:function(){
+          if(!armed){ S.delArm=c.id; rerender(); setTimeout(function(){ if(S.delArm===c.id){ S.delArm=null; rerender(); } },4000); return; }
+          S.delArm=null; removeClip(c.id).then(function(){ safeRender(); toast("Review deleted."); }).catch(function(){ toast("Couldn't delete. Try again."); });
+        }}, armed?"Tap again to delete":"Delete review"))));
+    }
+    box.appendChild(row);
+  });
+  p.appendChild(box);
+  v.appendChild(p);
+}
+
+
+// ---------- backup ----------
+function fmtAgo(ts){ var d=Math.floor((Date.now()-ts)/864e5); return d<=0?"today":d===1?"yesterday":d+" days ago"; }
+function saveBackup(){
+  var data=JSON.stringify({app:"clip-review",version:1,exported:new Date().toISOString(),clips:S.clips,draft:S.draft},null,1);
+  var url=URL.createObjectURL(new Blob([data],{type:"application/json"}));
+  var a=h("a",{href:url,download:"clip-review-backup-"+today()+".json"}); document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); },1500);
+  lset(BACKUP_KEY,Date.now()); safeRender(); toast("Backup saved to your Downloads.");
+}
+function restoreFrom(file){
+  var r=new FileReader();
+  r.onload=function(){
+    try{
+      var o=JSON.parse(r.result), list=Array.isArray(o)?o:(o&&o.clips)||[], added=0;
+      if(!Array.isArray(list)) throw new Error("bad");
+      list.forEach(function(c){ if(c&&c.id&&!S.clips.some(function(x){ return x.id===c.id; })){ S.clips.push(c); added++; } });
+      var gotDraft=false;
+      if(o&&o.draft&&o.draft.type&&!S.draft.type){ S.draft=normDraft(o.draft); S.step=(typeof o.draft._step==="number"&&o.draft._step>=0)?Math.min(o.draft._step,LAST):-1; lset(DRAFT_KEY,S.draft); gotDraft=true; }
+      saveLocal(); safeRender();
+      toast(added||gotDraft ? "Restored "+added+" review"+(added===1?"":"s")+(gotDraft?" and your unfinished one":"")+"." : "Nothing new in that file.");
+    }catch(e){ toast("That file isn't a Clip Review backup."); }
+  };
+  r.readAsText(file);
+}
+function renderBackup(v){
+  var last=lget(BACKUP_KEY);
+  var inp=h("input",{type:"file",accept:".json,application/json",id:"restorefile",hidden:true});
+  inp.addEventListener("change",function(){ var f=inp.files&&inp.files[0]; if(f) restoreFrom(f); inp.value=""; });
+  v.appendChild(h("section",{class:"panel"}, h("h2",{text:"Backup"}),
+    h("p",{class:"sub",text:(last?"Last backup "+fmtAgo(last)+". ":"No backup yet. ")+"Your reviews live only on this phone. Save a backup file every week or two, and keep it somewhere safe like Google Drive."}),
+    h("div",{class:"row"}, h("button",{type:"button",class:"ghost",onclick:saveBackup},"Save backup file"), h("button",{type:"button",class:"ghost",onclick:function(){ inp.click(); }},"Restore from file")), inp));
+}
+
+// ---------- render ----------
+function renderTabs(){
+  var tabs=document.querySelectorAll(".tabs button");
+  var openQ=S.clips.filter(function(c){ return c.question && !c.qDone; }).length;
+  for(var i=0;i<tabs.length;i++){ var b=tabs[i], t=b.getAttribute("data-tab"); b.setAttribute("aria-selected",String(S.tab===t));
+    if(t==="questions"){ clear(b); b.appendChild(document.createTextNode("Questions")); if(openQ) b.appendChild(h("span",{class:"badge",text:String(openQ)})); } }
+}
+// render(true) = new data arrived in the background. It never rebuilds a review in progress or a screen where you're typing.
+function render(fromData){
+  renderTabs();
+  if(fromData===true && ((S.tab==="review" && S.step>=0) || typing())){ tickTimer(); return; }
+  var v=document.getElementById("view"); clear(v);
+  if(S.tab==="review") renderReview(v);
+  else if(S.tab==="patterns") renderPatterns(v);
+  else if(S.tab==="questions") renderQuestions(v);
+  else { renderLog(v); renderBackup(v); }
+  tickTimer();
+}
+function safeRender(fromData){ try{ render(fromData); }catch(e){ showErr(e&&e.message||e); } }
+document.querySelector(".tabs").addEventListener("click",function(e){ var b=e.target.closest("button[data-tab]"); if(!b) return; S.tab=b.getAttribute("data-tab"); safeRender(); window.scrollTo(0,0); });
+
+// ---------- boot ----------
+safeRender();
+setSync("Saved on this phone. Works offline.","ok");
+try{ if(navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function(){}); }catch(e){}
+if("serviceWorker" in navigator){ window.addEventListener("load",function(){ navigator.serviceWorker.register("sw.js").catch(function(){}); }); }
+})();
+</script>
+</body>
+</html>
