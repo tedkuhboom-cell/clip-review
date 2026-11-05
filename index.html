@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0f1319">
-<meta name="description" content="Guided review for your Apex Legends clips.">
+<meta name="description" content="Study, play with one focus, log it, review your clips. A learning loop for competitive games.">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -13,117 +13,84 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-/* Layout: one-column phone stepper, one viewing pass per screen, big tap targets. Same dark tactical look as the Field Manual and Ranked Debrief. */
+/* Layout: phone-first app. Header, one scrolling view, fixed bottom nav for the four tools. Dark tactical look. */
 :root{
   --bg:#0f1319; --panel:#171d26; --panel-2:#1d2530; --line:#28323f;
   --ink:#e9e5da; --muted:#8992a1; --faint:#6a7482;
   --amber:#e8a33d; --amber-ink:#12161d; --teal:#46b39a; --red:#d9634f; --blue:#5b8fc4; --violet:#b07cc9; --sand:#c9a37a; --rose:#c9708f; --olive:#9aa65a; --grey:#8992a1;
-  --teal-bg:rgba(70,179,154,.16); --red-bg:rgba(217,99,79,.16); --amber-bg:rgba(232,163,61,.16);
+  --teal-bg:rgba(70,179,154,.16); --red-bg:rgba(217,99,79,.16); --amber-bg:rgba(232,163,61,.16); --violet-bg:rgba(176,124,201,.16);
   --teal-ink:#a9e4d4; --red-ink:#f0b6aa; --amber-ink2:#f0d09a;
   --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
   --body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --navh:64px;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
 html,body{margin:0}
 [hidden]{display:none!important}
-img{max-width:100%}
 html{touch-action:manipulation}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
-.wrap{max-width:640px;margin:0 auto;padding-block:18px 72px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:640px;margin:0 auto;padding-top:max(14px,env(safe-area-inset-top,0px));padding-bottom:calc(var(--navh) + 32px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 h1,h2,h3{font-family:var(--display);letter-spacing:.4px;text-wrap:balance;margin:0}
 button{font:inherit;cursor:pointer;color:inherit;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 
-header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.brand{display:flex;align-items:center;gap:12px;min-width:0}
-.chevron{width:32px;height:32px;flex:none;background:linear-gradient(150deg,var(--amber),#c07d1f);clip-path:polygon(0 0,100% 0,100% 62%,50% 100%,0 62%)}
-.brand h1{font-size:26px;font-weight:700;line-height:1}
-.brand p{margin:2px 0 0;color:var(--muted);font-size:12.5px}
-.timer{font-size:12.5px;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:5px 11px;font-variant-numeric:tabular-nums}
-.timer.warn{color:var(--amber-ink2);border-color:var(--amber);background:var(--amber-bg)}
-.sync{font-size:12px;color:var(--faint);margin:8px 0 10px;min-height:18px}
-.sync.ok{color:var(--teal)} .sync.warn{color:var(--amber)}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.brand{display:flex;align-items:center;gap:11px;min-width:0}
+.chevron{width:30px;height:30px;flex:none;background:linear-gradient(150deg,var(--amber),#c07d1f);clip-path:polygon(0 0,100% 0,100% 62%,50% 100%,0 62%)}
+.brand h1{font-size:25px;font-weight:700;line-height:1}
+.brand p{margin:2px 0 0;color:var(--muted);font-size:12px}
+.iconbtn{background:var(--panel);border:1px solid var(--line);border-radius:10px;width:44px;height:44px;display:grid;place-items:center;flex:none}
+.iconbtn svg{width:20px;height:20px;stroke:var(--muted);fill:none;stroke-width:2}
 .err{background:var(--red-bg);border:1px solid var(--red);border-radius:12px;padding:12px 14px;margin-bottom:12px;font-size:13.5px}
 .err p{margin:0 0 8px}
 .err code{font-size:12px;overflow-wrap:anywhere;color:var(--red-ink)}
 
-.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding-block:4px 12px}
-.tabs button{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 4px;font-size:13px;color:var(--muted);min-height:44px}
-.tabs button[aria-selected="true"]{background:var(--panel-2);border-color:var(--amber);color:var(--ink);font-weight:600}
-.tabs .badge{display:inline-block;min-width:18px;padding:0 5px;margin-left:4px;border-radius:9px;background:var(--amber);color:var(--amber-ink);font-size:11px;font-weight:700;line-height:18px}
+nav.bottom{position:fixed;left:0;right:0;bottom:0;z-index:15;background:var(--panel);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+nav.bottom .in{max-width:640px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
+nav.bottom button{background:none;border:0;height:var(--navh);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--faint);font-size:11.5px;position:relative}
+nav.bottom svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2}
+nav.bottom button[aria-selected="true"]{color:var(--amber)}
+nav.bottom .dot{position:absolute;top:9px;left:calc(50% + 7px);min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--amber);color:var(--amber-ink);font-size:10.5px;font-weight:700;line-height:17px}
+
+.subtabs{display:grid;gap:4px;margin-bottom:12px}
+.subtabs button{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 4px;font-size:13px;color:var(--muted);min-height:42px}
+.subtabs button[aria-selected="true"]{background:var(--panel-2);border-color:var(--amber);color:var(--ink);font-weight:600}
+.subtabs .badge{display:inline-block;min-width:18px;padding:0 5px;margin-left:4px;border-radius:9px;background:var(--amber);color:var(--amber-ink);font-size:11px;font-weight:700;line-height:18px}
 
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;min-width:0;margin-bottom:14px}
 .panel h2{font-size:21px;font-weight:600;margin-bottom:4px}
 .panel h3{font-size:17px;font-weight:600;margin-bottom:8px}
 .sub{color:var(--muted);font-size:13.5px;margin:0 0 14px}
 .faint{color:var(--faint);font-size:12.5px}
-
 .primary{width:100%;font-family:var(--display);font-weight:700;font-size:19px;letter-spacing:.6px;color:var(--amber-ink);background:linear-gradient(150deg,var(--amber),#d1892a);border:0;padding:14px;border-radius:12px;min-height:50px}
 .primary:disabled{filter:grayscale(.6) brightness(.7);cursor:not-allowed}
 .ghost{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:14px;min-height:44px}
 .ghost.danger{border-color:var(--red);color:var(--red-ink)}
-.linkish{background:none;border:0;color:var(--muted);text-decoration:underline;font-size:12.5px;padding:8px 0;min-height:36px}
 .row{display:flex;gap:10px;flex-wrap:wrap}
 .row>*{flex:1 1 auto}
-
-/* steps */
-.stepbar{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:2px 0 6px}
-.stepbar span{height:5px;border-radius:3px;background:var(--line)}
-.stepbar span.done{background:var(--teal)} .stepbar span.on{background:var(--amber)}
-.steplabel{font-size:12px;color:var(--faint);margin-bottom:10px;letter-spacing:.3px;text-transform:uppercase}
-.how{border-left:3px solid var(--amber);padding:2px 0 2px 12px;margin:0 0 14px;font-size:14.5px}
-.ask{background:var(--panel-2);border:1px solid var(--line);border-radius:11px;padding:11px 13px;margin:0 0 14px}
-.ask .t{font-size:11.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
-.ask ul{margin:0;padding-left:18px;font-size:14px}
-.ask li{margin:3px 0}
-.field{margin-bottom:16px}
-.field>.q{font-size:14px;font-weight:500;margin-bottom:8px}
-.q .opt{color:var(--faint);font-weight:400;font-size:12.5px}
-.q .note{display:block;color:var(--faint);font-weight:400;font-size:12.5px;margin-top:2px}
+select.inp{font:inherit;font-size:16px;width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;color:var(--ink);padding:11px 12px}
 textarea.inp,input.inp{font:inherit;font-size:16px;width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;color:var(--ink);padding:11px 12px;resize:vertical}
 textarea.inp{min-height:72px}
 .inp::placeholder{color:var(--faint)}
+.field{margin-bottom:16px}
+.field>.q{display:block;font-size:14px;font-weight:500;margin-bottom:8px}
+.q .opt{color:var(--faint);font-weight:400;font-size:12.5px}
+.q .note{display:block;color:var(--faint);font-weight:400;font-size:12.5px;margin-top:2px}
 .seg{display:flex;flex-wrap:wrap;gap:7px}
 .seg button{font-size:14px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-height:44px}
 .seg button[aria-pressed="true"]{background:var(--amber-bg);border-color:var(--amber);color:var(--amber-ink2)}
 .seg.small button{padding:8px 10px;font-size:13px;min-height:42px}
-
-.group{margin-bottom:8px}
-.group>h3{font-size:16px;color:var(--amber);margin:6px 0 2px;text-transform:uppercase;letter-spacing:.8px}
-.check{padding:11px 0;border-bottom:1px solid var(--line)}
-.check:last-child{border-bottom:0}
-.check .t{font-size:14.5px}
-.check .hint{font-size:12.5px;color:var(--faint);margin-top:2px}
-.tri{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
-.tri button{background:var(--panel-2);border:1px solid var(--line);border-radius:9px;padding:8px 4px;font-size:13.5px;min-height:44px}
-.tri button[data-v="y"][aria-pressed="true"]{background:var(--teal-bg);border-color:var(--teal);color:var(--teal-ink)}
-.tri button[data-v="n"][aria-pressed="true"]{background:var(--red-bg);border-color:var(--red);color:var(--red-ink)}
-.tri button[data-v="?"][aria-pressed="true"]{background:var(--line);border-color:var(--faint)}
-
-.habits{display:grid;grid-template-columns:1fr;gap:6px}
-.habits button{display:flex;gap:10px;align-items:baseline;text-align:left;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:9px 12px;min-height:44px}
-.habits button .n{font-family:var(--display);font-weight:700;color:var(--amber);font-size:17px;width:16px;flex:none}
-.habits button .c{margin-left:auto;font-size:12px;color:var(--faint);flex:none;text-align:right;max-width:45%}
-.habits button[aria-pressed="true"]{border-color:var(--amber);background:var(--amber-bg)}
-.toggle{display:flex;gap:10px;align-items:center;width:100%;text-align:left;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:11px 12px;font-size:14.5px;min-height:46px}
-.toggle .box{width:22px;height:22px;border-radius:6px;border:2px solid var(--faint);flex:none;display:grid;place-items:center;font-size:14px;font-weight:700}
-.toggle[aria-pressed="true"]{border-color:var(--teal)}
-.toggle[aria-pressed="true"] .box{background:var(--teal);border-color:var(--teal);color:var(--amber-ink)}
-.nav{display:grid;grid-template-columns:1fr 2fr;gap:10px;margin-top:4px}
-
-.steps-list{margin:0;padding:0;list-style:none;counter-reset:s}
-.steps-list li{counter-increment:s;display:flex;gap:12px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
-.steps-list li:last-child{border-bottom:0}
-.steps-list li::before{content:counter(s);font-family:var(--display);font-weight:700;color:var(--amber);font-size:18px;width:14px;flex:none;line-height:1.25}
-.steps-list b{font-weight:600}
-
-/* patterns */
+.seg.exec button[data-k="nailed"][aria-pressed="true"]{background:var(--teal-bg);border-color:var(--teal);color:var(--teal-ink)}
+.seg.exec button[data-k="forgot"][aria-pressed="true"]{background:var(--red-bg);border-color:var(--red);color:var(--red-ink)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .band{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:14px}
 .stat{background:var(--panel);padding:12px 14px;min-width:0}
 .stat .k{color:var(--faint);font-size:11.5px}
-.stat .v{font-family:var(--display);font-weight:700;font-size:32px;line-height:1;margin-top:4px;font-variant-numeric:tabular-nums}
+.stat .v{font-family:var(--display);font-weight:700;font-size:30px;line-height:1;margin-top:4px;font-variant-numeric:tabular-nums}
+.stat .v small{font-size:14px;color:var(--faint);font-weight:500;margin-left:3px}
+.v.pos{color:var(--teal)} .v.neg{color:var(--red)}
 .focus{border-left:3px solid var(--amber);padding:2px 0 2px 12px}
 .focus .label{font-size:11.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.5px}
 .focus .name{font-family:var(--display);font-size:22px;font-weight:600;line-height:1.2}
@@ -133,12 +100,106 @@ textarea.inp{min-height:72px}
 .bar .track{flex:1;height:14px;background:var(--panel-2);border-radius:7px;overflow:hidden;border:1px solid var(--line)}
 .bar .fill{display:block;height:100%;border-radius:7px}
 .bar .ct{width:22px;text-align:right;font-variant-numeric:tabular-nums;font-size:13px}
+.empty{color:var(--muted);font-size:14px;padding:4px 0}
+.linkbtn{background:none;border:0;color:var(--amber);padding:6px 0;font-size:13.5px;text-decoration:underline;min-height:36px;text-align:left}
+
+/* manual */
+.ladder .barline{display:flex;height:12px;border-radius:6px;overflow:hidden;background:var(--line);margin:4px 0 8px}
+.ladder .key{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted)}
+.ladder .key i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px}
+.hint{color:var(--muted);font-size:13px;margin:8px 0 0}
+.prog{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--faint);margin-bottom:10px}
+.prog .track{flex:1;height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.prog .track span{display:block;height:100%;background:var(--amber)}
+.tagrow{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.tag{font-size:11.5px;border:1px solid var(--line);border-radius:999px;padding:2px 9px;color:var(--muted)}
+.tag.new{border-color:var(--violet);color:#d9bbe8} .tag.due{border-color:var(--amber);color:var(--amber-ink2)}
+.cardq{font-family:var(--display);font-size:24px;font-weight:600;line-height:1.25;margin:4px 0 8px}
+.say{color:var(--faint);font-size:13px;margin:0 0 16px}
+.cardtitle{font-size:21px;margin:6px 0 8px}
+.concept{font-size:15px;margin:0 0 12px}
+.drill{background:var(--panel-2);border-radius:10px;padding:10px 12px;font-size:14px;margin:0 0 16px}
+.grades{display:grid;gap:8px}
+.grade{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--panel-2);border:1px solid var(--line);border-radius:11px;padding:12px 14px;min-height:52px;text-align:left}
+.grade small{color:var(--faint);font-size:12px}
+.grade.miss{border-color:var(--red)} .grade.shaky{border-color:var(--amber)} .grade.got{border-color:var(--teal)}
+.lcard{border-bottom:1px solid var(--line);padding:12px 0}
+.lcard:last-child{border-bottom:0}
+.lcard .ct{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.lcard h3{font-size:17px;margin:0}
+.lcard .id{color:var(--amber);margin-right:7px}
+.status{flex:none;font-size:11.5px;border-radius:999px;padding:1px 8px;border:1px solid var(--line);color:var(--muted)}
+.s-own{border-color:var(--teal);color:var(--teal-ink)} .s-solid{border-color:var(--violet);color:#d9bbe8} .s-learn{border-color:var(--amber);color:var(--amber-ink2)}
+.lcard p{margin:6px 0 0;font-size:14px}
+.lcard .kv{font-size:13.5px;color:var(--muted);margin-top:6px}
+.lcard .kv b{color:var(--ink);font-weight:600}
+.modhead{font-family:var(--display);font-size:15px;color:var(--amber);text-transform:uppercase;letter-spacing:.8px;margin:14px 0 2px}
+details.more summary{cursor:pointer;color:var(--muted);font-size:14px;padding:8px 0;min-height:40px}
+details.more p{font-size:14px;margin:6px 0}
+.rrow{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}
+.rrow b{flex:none;width:92px}
+
+/* debrief */
+.dots{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap}
+.edot{width:15px;height:15px;border-radius:4px;flex:none}
+.edot.nailed{background:var(--teal)} .edot.some{background:var(--amber)} .edot.forgot{background:var(--red)}
+.verdict{font-size:13.5px;color:var(--muted);margin:10px 0 0}
+.verdict b{color:var(--ink)}
+.frow{padding:9px 0;border-bottom:1px solid var(--line)}
+.frow:last-child{border-bottom:0}
+.frow .ft{display:flex;justify-content:space-between;gap:10px;font-size:13.5px}
+.hitem{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.hitem:last-child{border-bottom:0}
+.hbadge{width:10px;height:10px;border-radius:50%;flex:none}
+.hmeta{flex:1;min-width:0;font-size:13.5px}
+.hmeta .l2{display:block;color:var(--faint);font-size:12px}
+.rp{flex:none;font-variant-numeric:tabular-nums;font-size:13.5px;color:var(--muted)}
+.rp.pos{color:var(--teal)} .rp.neg{color:var(--red)}
+.del{background:none;border:1px solid var(--line);border-radius:8px;color:var(--faint);font-size:12px;padding:6px 9px;min-height:36px}
+.del[data-armed]{border-color:var(--red);color:var(--red-ink)}
+svg.spark{width:100%;height:60px;display:block}
+
+/* clips */
+.stepbar{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:2px 0 6px}
+.stepbar span{height:5px;border-radius:3px;background:var(--line)}
+.stepbar span.done{background:var(--teal)} .stepbar span.on{background:var(--amber)}
+.steplabel{font-size:12px;color:var(--faint);margin-bottom:10px;letter-spacing:.3px;text-transform:uppercase}
+.how{border-left:3px solid var(--amber);padding:2px 0 2px 12px;margin:0 0 14px;font-size:14.5px}
+.ask{background:var(--panel-2);border:1px solid var(--line);border-radius:11px;padding:11px 13px;margin:0 0 14px}
+.ask .t{font-size:11.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.ask ul{margin:0;padding-left:18px;font-size:14px}
+.ask li{margin:3px 0}
+.timer{display:inline-block;font-size:12.5px;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px 11px;margin-bottom:10px;font-variant-numeric:tabular-nums}
+.timer.warn{color:var(--amber-ink2);border-color:var(--amber);background:var(--amber-bg)}
+.group{margin-bottom:8px}
+.group>h3{font-size:16px;color:var(--amber);margin:6px 0 2px;text-transform:uppercase;letter-spacing:.8px}
+.check{padding:11px 0;border-bottom:1px solid var(--line)}
+.check:last-child{border-bottom:0}
+.check .t{font-size:14.5px}
+.check .hint2{font-size:12.5px;color:var(--faint);margin-top:2px}
+.tri{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.tri button{background:var(--panel-2);border:1px solid var(--line);border-radius:9px;padding:8px 4px;font-size:13.5px;min-height:44px}
+.tri button[data-k="y"][aria-pressed="true"]{background:var(--teal-bg);border-color:var(--teal);color:var(--teal-ink)}
+.tri button[data-k="n"][aria-pressed="true"]{background:var(--red-bg);border-color:var(--red);color:var(--red-ink)}
+.tri button[data-k="?"][aria-pressed="true"]{background:var(--line);border-color:var(--faint)}
+.habits{display:grid;grid-template-columns:1fr;gap:6px}
+.habits button{display:flex;gap:10px;align-items:baseline;text-align:left;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:9px 12px;min-height:44px}
+.habits button .n{font-family:var(--display);font-weight:700;color:var(--amber);font-size:17px;width:16px;flex:none}
+.habits button .c{margin-left:auto;font-size:12px;color:var(--faint);flex:none;text-align:right;max-width:45%}
+.habits button[aria-pressed="true"]{border-color:var(--amber);background:var(--amber-bg)}
+.toggle{display:flex;gap:10px;align-items:center;width:100%;text-align:left;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:11px 12px;font-size:14.5px;min-height:46px}
+.toggle .box{width:22px;height:22px;border-radius:6px;border:2px solid var(--faint);flex:none;display:grid;place-items:center;font-size:14px;font-weight:700}
+.toggle[aria-pressed="true"]{border-color:var(--teal)}
+.toggle[aria-pressed="true"] .box{background:var(--teal);border-color:var(--teal);color:var(--amber-ink)}
+.nav2{display:grid;grid-template-columns:1fr 2fr;gap:10px;margin-top:4px}
+.steps-list{margin:0;padding:0;list-style:none;counter-reset:s}
+.steps-list li{counter-increment:s;display:flex;gap:12px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+.steps-list li:last-child{border-bottom:0}
+.steps-list li::before{content:counter(s);font-family:var(--display);font-weight:700;color:var(--amber);font-size:18px;width:14px;flex:none;line-height:1.25}
 .miss{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
 .miss:last-child{border-bottom:0}
 .miss .r{flex:none;font-variant-numeric:tabular-nums;color:var(--red-ink);font-size:13px}
 .miss .h{display:block;font-size:12px;color:var(--faint)}
-
-/* questions + log */
 .qcard{border-bottom:1px solid var(--line);padding:12px 0}
 .qcard:last-child{border-bottom:0}
 .qcard .qt{font-size:15px;font-weight:500;margin-bottom:4px}
@@ -157,9 +218,23 @@ textarea.inp{min-height:72px}
 .detail dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:5px 12px}
 .detail dt{color:var(--faint);font-size:12.5px}
 .detail dd{margin:0;min-width:0;overflow-wrap:anywhere}
-.empty{color:var(--muted);font-size:14px;padding:4px 0}
 .copybox{width:100%;margin-top:10px;font-size:12px;font-family:ui-monospace,Menlo,monospace;min-height:120px}
-.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:var(--panel-2);border:1px solid var(--teal);color:var(--ink);padding:10px 16px;border-radius:10px;font-size:14px;opacity:0;pointer-events:none;transition:.2s;z-index:20;max-width:calc(100% - 32px)}
+
+/* maps */
+.mapchips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.mapchips button{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:8px 12px;font-size:13.5px;min-height:42px;color:var(--muted)}
+.mapchips button[aria-pressed="true"]{border-color:var(--amber);color:var(--ink);background:var(--panel-2)}
+.mapchips .rk{color:var(--teal);margin-left:5px;font-size:11px}
+.mrow{padding:11px 0;border-top:1px solid var(--line)}
+.mrow .k{font-size:11.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.6px;margin-bottom:3px}
+.mrow .v{font-size:14.5px}
+.mrow.meta .k{color:var(--teal)} .mrow.meta .v{color:#bfe6db}
+.mrow.warn .k{color:var(--red)} .mrow.warn .v{color:#e2b3a8}
+.mrow.focus2 .k{color:var(--amber)} .mrow.focus2 .v{color:#e7cfa2}
+.sig{color:var(--muted);font-style:italic;font-size:14px;margin:4px 0 6px}
+.mains-hl{color:var(--amber-ink2)}
+
+.toast{position:fixed;left:50%;bottom:calc(var(--navh) + 16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(16px);background:var(--panel-2);border:1px solid var(--teal);color:var(--ink);padding:10px 16px;border-radius:10px;font-size:14px;opacity:0;pointer-events:none;transition:.2s;z-index:20;max-width:calc(100% - 32px)}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 </head>
@@ -168,480 +243,623 @@ textarea.inp{min-height:72px}
   <header class="top">
     <div class="brand">
       <div class="chevron" aria-hidden="true"></div>
-      <div><h1>Clip Review</h1><p>Study your Outplayed clips one pass at a time.</p></div>
+      <div><h1>Clip Review</h1><p id="tagline">Study. Play one focus. Log it. Review it.</p></div>
     </div>
-    <div id="timer" class="timer" hidden></div>
+    <button class="iconbtn" id="gear" type="button" aria-label="Settings and backup"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
   </header>
-  <div id="sync" class="sync"></div>
   <div id="err" class="err" hidden></div>
-  <nav class="tabs" role="tablist">
-    <button role="tab" data-tab="review" id="tab-review">Review</button>
-    <button role="tab" data-tab="patterns" id="tab-patterns">Patterns</button>
-    <button role="tab" data-tab="questions" id="tab-questions">Questions</button>
-    <button role="tab" data-tab="log" id="tab-log">Log</button>
-  </nav>
   <main id="view"></main>
 </div>
+<nav class="bottom" id="nav" aria-label="Tools">
+  <div class="in">
+    <button type="button" data-tab="manual" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5"/><path d="M8 7h7"/></svg><span>Manual</span></button>
+    <button type="button" data-tab="debrief" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M4 19V9"/><path d="M10 19V5"/><path d="M16 19v-7"/><path d="M22 19H2"/></svg><span>Debrief</span></button>
+    <button type="button" data-tab="clips" aria-selected="false"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9.5v5l4.5-2.5z"/></svg><span>Clips</span></button>
+    <button type="button" data-tab="maps" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14"/><path d="M15 6v14"/></svg><span>Maps</span></button>
+  </div>
+</nav>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
+<script src="pack-apex.js"></script>
 <script>
 (function(){
-// ---------- what to work on: your 8 habits plus two clip-only focuses ----------
-var FOCI = {
-  "1":{name:"The pinch", note:"Cards 3.3"},
-  "2":{name:"One small play, then back up", note:"Cards 3.5, 3.2"},
-  "3":{name:"Crosshair at head level", note:"Cards 4.12, 4.14, 4.4, 4.5"},
-  "4":{name:"Call the side", note:"Cards 0.3, 0.1"},
-  "5":{name:"Rotate early, scan early", note:"Cards 1.1, 1.7, 1.8, 0.1b"},
-  "6":{name:"Info peek before you swing", note:"Cards 4.8, 4.2, 4.16"},
-  "7":{name:"Check behind while healing", note:"Cards 2.3, 5.1"},
-  "8":{name:"Fight in sync", note:"Cards 5.4, 5.2"},
-  "U":{name:"Use your kit and grenades", note:"Tactical or a nade before every push. Throw nades before you go down."},
-  "D":{name:"Land with a plan", note:"Pick your gun spot and your exit before you jump."}
-};
-var FOCUS_ORDER = ["1","2","3","4","5","6","7","8","U","D"];
+"use strict";
+var P = window.PACK;
+var view = document.getElementById("view");
+if(!P){ view.textContent = "The content pack didn't load. Check that pack-apex.js was uploaded next to index.html."; return; }
+document.title = "Clip Review";
 
-var TYPES = [["death","Death"],["lostfight","Lost fight"],["knock","Knock, no kill"],["win","Win / clean fight"]];
-var MAPS = ["Broken Moon","World's Edge","Olympus","Storm Point","Kings Canyon","E-District","Other"];
-var LEGENDS = ["Alter","Conduit","Catalyst","Mad Maggie","Valkyrie","Axle","Ash","Other"];
-var KIT = {
-  "Alter":"Void Passage open as an exit before you commit. Void Nexus to pull the team out.",
-  "Conduit":"Radiant Transfer to shield a teammate mid-fight. Energy Barricade to stall a push.",
-  "Catalyst":"Piercing Spikes to slow a push or hold a door. Dark Veil to block sight while you reset.",
-  "Mad Maggie":"Riot Drill to flush someone off cover. Wrecking Ball to break a hold.",
-  "Valkyrie":"Missile Swarm to stun before you swing. Skyward Dive to rotate or escape.",
-  "Ash":"Arc Snare to lock a target. Phase Breach to engage or escape."
-};
-var SITUATIONS = [["hotdrop","Hot drop"],["looting","Looting"],["rotating","Rotating"],["holding","Holding a spot"],["endgame","Endgame (ring 4+)"],["short","Down a teammate"]];
-var STARTERS = [["us","We did"],["them","They did"],["third","A third team"],["none","No fight"]];
-var PLANS = [["fight","Take a fight"],["rotate","Rotate"],["loot","Loot"],["reset","Heal and reset"],["thirdparty","Third-party someone"],["hold","Hold a spot"],["noplan","No real plan"]];
-var WHEN = [["lt5","Under 5s before"],["5to30","5–30s before"],["30to60","30–60s before"],["ring","A ring earlier"]];
-var KINDS = [["decision","Decision"],["execution","Execution"],["both","Both"],["neither","Neither"]];
-
-var GROUPS = {
-  drop:{title:"The drop", checks:[
-    {k:"dropplan", t:"I landed with a plan: where my gun is and where we exit", f:"D"},
-    {k:"dropnear", t:"I landed close enough to help my teammates", f:"D"},
-    {k:"dropgun", t:"I had a gun before I took a fight", f:"D"},
-    {k:"dropleave", t:"We left when the drop went bad, instead of staying to die", f:"D"}
-  ]},
-  position:{title:"Position and rotation", checks:[
-    {k:"early", t:"We moved before the ring forced us", f:"5"},
-    {k:"cover", t:"Our path had cover", f:"5"},
-    {k:"side", t:"We knew if we were on the strong or weak side", f:"4"},
-    {k:"height", t:"I kept height, and didn't drop off it just because a teammate did", f:"4", hint:"Follow the plan, not the person. Dropping off height gives away your advantage."},
-    {k:"count", t:"I knew how many enemies we were fighting", f:"6"},
-    {k:"ready", t:"I was healed, shielded and reloaded before it started", f:"2"},
-    {k:"behind", t:"Someone checked behind us for a third party", f:"7"},
-    {k:"split", t:"I took a different angle than my teammate (no stacking)", f:"1"}
-  ]},
-  comms:{title:"Comms", checks:[
-    {k:"saw", t:"I called what I saw: where, how many, how hurt", f:"8"},
-    {k:"doing", t:"I said what I was doing before I did it", f:"8", hint:"\"Swinging left.\" \"Healing.\" \"Resetting to the rock.\""},
-    {k:"ping", t:"I pinged enemies instead of only saying them", f:"8"},
-    {k:"knew", t:"My teammates knew where I was", f:"8"},
-    {k:"calls", t:"Calls were made, and we acted on them", f:"8"},
-    {k:"plancall", t:"Someone called the plan before we moved", f:"8"}
-  ]},
-  fight:{title:"Gunfight", checks:[
-    {k:"head", t:"My crosshair stayed at head height", f:"3"},
-    {k:"preaim", t:"I pre-aimed where they came out", f:"3"},
-    {k:"peek", t:"I info-peeked before I swung", f:"6"},
-    {k:"coverpeek", t:"I shot from cover and didn't stand in the open", f:"6"},
-    {k:"small", t:"I made one small play, then backed up", f:"2"},
-    {k:"bigdmg", t:"I only pushed hard off big damage or a knock", f:"2"},
-    {k:"reload", t:"I reloaded and healed behind cover", f:"7"},
-    {k:"sync", t:"We pushed together off a teammate's knock", f:"8"}
-  ]},
-  kit:{title:"Kit and grenades", checks:[
-    {k:"tac", t:"I used my tactical in this fight", f:"U", legendHint:true},
-    {k:"ult", t:"I used my ultimate, or had a reason to save it", f:"U", legendHint:true},
-    {k:"nades", t:"I threw my grenades before I went down", f:"U", hint:"Tap N/A if you had none."},
-    {k:"utilfirst", t:"I used utility before pushing, not after", f:"U"}
-  ]}
-};
-var GROUP_ORDER = ["drop","position","comms","fight","kit"];
-var ALLCHECKS = []; GROUP_ORDER.forEach(function(g){ GROUPS[g].checks.forEach(function(c){ c.group=GROUPS[g].title; ALLCHECKS.push(c); }); });
-
-var CAUSES = [
-  {k:"ring", label:"Caught by ring", f:"5", color:"var(--blue)"},
-  {k:"thirdparty", label:"Third party", f:"7", color:"var(--amber)"},
-  {k:"push", label:"Bad push", f:"2", color:"var(--red)"},
-  {k:"gunfight", label:"Lost gunfight", f:"3", color:"var(--violet)"},
-  {k:"comms", label:"Team out of sync", f:"8", color:"var(--teal)"},
-  {k:"spacing", label:"Stacked / gave up height", f:"1", color:"var(--sand)"},
-  {k:"util", label:"Didn't use my kit", f:"U", color:"var(--rose)"},
-  {k:"drop", label:"Lost the hot drop", f:"D", color:"var(--olive)"},
-  {k:"other", label:"Something else", f:null, color:"var(--grey)"},
-  {k:"win", label:"Clean play to repeat", f:null, color:"var(--teal)"}
-];
-var STEPS = ["Clip","Gut pass","Rewind","Before the fight","Comms","The fight","Verdict"];
-var LAST = STEPS.length-1;
-var LOCAL_KEY="apex_clip_review_v1", DRAFT_KEY="apex_clip_draft", SESSION_KEY="apex_clip_session", BACKUP_KEY="apex_clip_last_backup";
-
+// ===================== storage =====================
+var PFX = P.storagePrefix;
+var K = { profile:PFX+"_profile_v1", manual:PFX+"_manual_v1", debrief:PFX+"_debrief_v1", clips:PFX+"_clip_review_v1", draft:PFX+"_clip_draft",
+          clipTimer:PFX+"_clip_session", backup:PFX+"_last_backup", ui:PFX+"_ui_v1" };
 function lget(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
 function lset(k,v){ try{ if(v==null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
-function blankDraft(){ return {type:null,map:"",legend:"",label:"",situation:[],starter:null,plan:null,gut:"",when:null,lastGood:"",checks:{},cause:null,kind:null,habit:null,fix:"",rehearsed:false,question:""}; }
-function normDraft(d){ var b=blankDraft(); d=d||{}; for(var k in b) if(d[k]===undefined) d[k]=b[k]; if(!Array.isArray(d.situation)) d.situation=[]; if(!d.checks||typeof d.checks!=="object") d.checks={}; return d; }
 
-var S = { clips:[], sig:"", mode:"local", db:null, tab:"review", step:-1, draft:normDraft(lget(DRAFT_KEY)), open:{}, delArm:null, ans:{}, sessionStart:lget(SESSION_KEY) };
-if(typeof S.draft._step==="number" && S.draft._step>=0) S.step=Math.min(S.draft._step,LAST);
-(function(){ var o=lget(LOCAL_KEY); if(o&&o.clips) S.clips=o.clips; })();
+// ===================== helpers =====================
+function h(tag, attrs){ var el=document.createElement(tag); if(attrs) for(var k in attrs){ var v=attrs[k]; if(v==null||v===false) continue; if(k==="text") el.textContent=v; else if(k==="html") el.innerHTML=v; else if(k==="class") el.className=v; else if(k.slice(0,2)==="on") el.addEventListener(k.slice(2),v); else el.setAttribute(k, v===true?"":v); }
+  for(var i=2;i<arguments.length;i++){ var ch=arguments[i]; if(ch==null) continue; if(Array.isArray(ch)) ch.forEach(function(x){ if(x!=null) el.appendChild(typeof x==="string"?document.createTextNode(x):x); }); else el.appendChild(typeof ch==="string"?document.createTextNode(ch):ch); }
+  return el; }
+function clear(el){ while(el.firstChild) el.removeChild(el.firstChild); }
+function pad(n){ return (n<10?"0":"")+n; }
+function ymd(d){ return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+function today(){ return ymd(new Date()); }
+function addDays(s,n){ var p=s.split("-"); var d=new Date(+p[0],+p[1]-1,+p[2]); d.setDate(d.getDate()+n); return ymd(d); }
+function pretty(s){ var p=s.split("-"); var d=new Date(+p[0],+p[1]-1,+p[2]); return d.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"}); }
+var MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function fmtDate(iso){ if(!iso) return ""; var p=iso.slice(0,10).split("-"); return MON[+p[1]-1]+" "+(+p[2]); }
+function label(list,k){ for(var i=0;i<list.length;i++) if(list[i][0]===k) return list[i][1]; return ""; }
+function labels(list,arr){ return (arr||[]).map(function(k){ return label(list,k); }).filter(Boolean).join(", "); }
+var toastT; function toast(m){ var el=document.getElementById("toast"); el.textContent=m; el.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(function(){ el.classList.remove("show"); },2200); }
+function typing(){ var a=document.activeElement; return !!(a && (a.tagName==="TEXTAREA"||a.tagName==="INPUT") && view.contains(a)); }
+function setPressed(group, val){ var bs=group.querySelectorAll("button[data-k]"); for(var i=0;i<bs.length;i++){ var k=bs[i].getAttribute("data-k"); bs[i].setAttribute("aria-pressed", String(Array.isArray(val)? val.indexOf(k)>=0 : k===val)); } }
 
-// ---------- errors: show them instead of failing silently ----------
+// ===================== errors =====================
 function showErr(msg){
-  var el=document.getElementById("err"); if(!el) return; clear(el);
-  el.appendChild(h("p",null,"Something on this page broke. Tap Reset screen to keep going; your answers are saved. If it keeps happening, screenshot this box for Claude."));
+  var el=document.getElementById("err"); clear(el);
+  el.appendChild(h("p",null,"Something on this page broke. Tap Reset screen to keep going; your data is saved. If it keeps happening, screenshot this box for Claude."));
   el.appendChild(h("p",null,h("code",{text:String(msg||"Unknown error").slice(0,300)})));
   el.appendChild(h("button",{type:"button",class:"ghost",onclick:function(){ el.hidden=true; safeRender(); }},"Reset screen"));
   el.hidden=false;
 }
 window.addEventListener("error",function(e){ showErr(e && (e.message || (e.error&&e.error.message))); });
-window.addEventListener("unhandledrejection",function(e){ var r=e&&e.reason; if(r&&r.code==="unavailable") return; showErr(r&&(r.message||r.code)||r); });
+window.addEventListener("unhandledrejection",function(e){ var r=e&&e.reason; showErr(r&&(r.message||r.code)||r); });
 
-// ---------- storage ----------
-function saveLocal(){ lset(LOCAL_KEY, {clips:S.clips}); }
-function setSync(msg,cls){ var el=document.getElementById("sync"); el.textContent=msg; el.className="sync"+(cls?" "+cls:""); }
-var toastT; function toast(m){ var el=document.getElementById("toast"); el.textContent=m; el.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(function(){ el.classList.remove("show"); },2000); }
-function retryOnce(fn){ return fn().catch(function(e){ if(e&&e.code==="unavailable") return new Promise(function(r){ setTimeout(r,400+Math.random()*600); }).then(fn); throw e; }); }
-function putClip(c){
-  if(S.mode==="db") return retryOnce(function(){ return S.db.collection("clips").doc(c.id).set(c); });
-  S.clips=S.clips.filter(function(x){ return x.id!==c.id; }).concat([c]); saveLocal(); return Promise.resolve();
+// ===================== content =====================
+var MODS = P.modules;
+var CARDS = P.cards, byId = {}; CARDS.forEach(function(c){ byId[c.id]=c; });
+var INTERVAL = {1:1,2:3,3:7,4:14,5:30};
+var FOCI = {}, FOCUS_ORDER = [];
+P.habits.forEach(function(hb){ FOCI[hb.id]={name:hb.name, what:hb.what, mod:hb.mod, note:"Cards "+hb.cards.join(", "), cards:hb.cards}; FOCUS_ORDER.push(hb.id); });
+Object.keys(P.extraFoci||{}).forEach(function(k){ var x=P.extraFoci[k]; FOCI[k]={name:x.name, what:x.what, mod:null, note:x.what, cards:[]}; FOCUS_ORDER.push(k); });
+function isHabit(k){ return /^\d+$/.test(String(k)); }
+function focusName(k){ k=k==null?null:String(k); return k&&FOCI[k]?((isHabit(k)?"#"+k+" ":"")+FOCI[k].name):""; }
+var CL = P.clips;
+var GROUP_ORDER = ["drop","position","comms","fight","kit"];
+var ALLCHECKS = []; GROUP_ORDER.forEach(function(g){ if(CL.groups[g]) CL.groups[g].checks.forEach(function(c){ c.group=CL.groups[g].title; ALLCHECKS.push(c); }); });
+function causeOf(k){ for(var i=0;i<CL.causes.length;i++) if(CL.causes[i].k===k) return CL.causes[i]; return null; }
+var STEPS = ["Clip","Gut pass","Rewind","Before the fight","Comms","The fight","Verdict"], LAST = STEPS.length-1;
+
+// ===================== state =====================
+function blankDraft(){ return {type:null,map:"",legend:"",label:"",situation:[],starter:null,plan:null,gut:"",when:null,lastGood:"",checks:{},cause:null,kind:null,habit:null,fix:"",rehearsed:false,question:""}; }
+function normDraft(d){ var b=blankDraft(); d=d||{}; for(var k in b) if(d[k]===undefined) d[k]=b[k]; if(!Array.isArray(d.situation)) d.situation=[]; if(!d.checks||typeof d.checks!=="object") d.checks={}; return d; }
+var S = {
+  profile: Object.assign({setup:false, rank:"", mains:[], newPerDay:3, focus:P.habits[0].id}, lget(K.profile)||{}),
+  reviews: ((lget(K.manual)||{}).reviews)||{},
+  sessions: ((lget(K.debrief)||{}).sessions)||[],
+  clips: ((lget(K.clips)||{}).clips)||[],
+  draft: normDraft(lget(K.draft)), step:-1,
+  ui: Object.assign({tab:"manual", manualSub:"today", clipSub:"review", map:0, libMod:"all"}, lget(K.ui)||{}),
+  settings:false, mSession:null, open:{}, delArm:null, ans:{}, clipTimer:lget(K.clipTimer), dform:{exec:null,causes:[],focus:null}
+};
+if(typeof S.draft._step==="number" && S.draft._step>=0) S.step=Math.min(S.draft._step,LAST);
+function saveProfile(){ lset(K.profile,S.profile); }
+function saveManual(){ lset(K.manual,{reviews:S.reviews}); }
+function saveDebrief(){ lset(K.debrief,{sessions:S.sessions}); }
+function saveClips(){ lset(K.clips,{clips:S.clips}); }
+function saveDraft(){ S.draft._step=S.step; S.draft._updated=Date.now(); lset(K.draft,S.draft); }
+function saveUI(){ lset(K.ui,S.ui); }
+
+// ===================== shared UI bits =====================
+function subTabs(items, cur, onPick){
+  var g=h("div",{class:"subtabs",role:"tablist",style:"grid-template-columns:repeat("+items.length+",1fr)"});
+  items.forEach(function(it){ g.appendChild(h("button",{type:"button",role:"tab","aria-selected":String(cur===it[0]),onclick:function(){ onPick(it[0]); }}, it[1], it[2]?h("span",{class:"badge",text:String(it[2])}):null)); });
+  return g;
 }
-function removeClip(id){
-  if(S.mode==="db") return retryOnce(function(){ return S.db.collection("clips").doc(id).delete(); });
-  S.clips=S.clips.filter(function(x){ return x.id!==id; }); saveLocal(); return Promise.resolve();
+function bars(panel, rows){
+  var max=0; rows.forEach(function(r){ if(r.n>max) max=r.n; });
+  rows.forEach(function(r){ panel.appendChild(h("div",{class:"bar"}, h("span",{class:"lbl",text:r.label}), h("span",{class:"track"}, h("span",{class:"fill",style:"width:"+(max?Math.round(r.n/max*100):0)+"%;background:"+(r.color||"var(--amber)")})), h("span",{class:"ct",text:String(r.n)}))); });
+}
+function goTab(tab){ S.settings=false; S.ui.tab=tab; saveUI(); safeRender(); window.scrollTo(0,0); }
+
+// ===================== SETUP (first run) =====================
+function renderSetup(v){
+  var p=S.profile, sel={rank:p.rank||"", mains:(p.mains||[]).slice(), npd:p.newPerDay||3};
+  v.appendChild(h("section",{class:"panel"},
+    h("h2",{text:"Welcome to Clip Review"}),
+    h("p",{class:"sub",text:"A learning loop for "+P.game+", built on the Learning How to Learn method: short recall sessions spaced over days, one focus per game session, and honest review of your own clips."}),
+    h("ol",{class:"steps-list"},
+      h("li",null,h("span",null,h("b",null,"Manual. "),"A few cards a day. Answer out loud before you reveal.")),
+      h("li",null,h("span",null,h("b",null,"Debrief. "),"Play ranked with one focus, then log whether you ran it.")),
+      h("li",null,h("span",null,h("b",null,"Clips. "),"Review a few clips the day after, one pass at a time.")),
+      h("li",null,h("span",null,h("b",null,"Maps. "),"Read each map's structure before you drop.")))));
+  var rankSel=h("select",{class:"inp",id:"setup-rank"}, h("option",{value:"",text:"Pick your rank"}), P.ranks.map(function(r){ var o=h("option",{value:r,text:r}); if(r===sel.rank) o.selected=true; return o; }));
+  rankSel.addEventListener("change",function(){ sel.rank=rankSel.value; check(); });
+  var mainsG=h("div",{class:"seg small"});
+  P.legends.forEach(function(L){ mainsG.appendChild(h("button",{type:"button","data-k":L,"aria-pressed":String(sel.mains.indexOf(L)>=0),onclick:function(){ var i=sel.mains.indexOf(L); if(i>=0) sel.mains.splice(i,1); else sel.mains.push(L); setPressed(mainsG, sel.mains); check(); }}, L)); });
+  var npdG=h("div",{class:"seg"});
+  [1,2,3].forEach(function(n){ npdG.appendChild(h("button",{type:"button","data-k":String(n),"aria-pressed":String(sel.npd===n),onclick:function(){ sel.npd=n; setPressed(npdG,String(n)); }}, String(n))); });
+  var go=h("button",{type:"button",class:"primary",disabled:true,onclick:function(){
+    S.profile.rank=sel.rank; S.profile.mains=sel.mains; S.profile.newPerDay=sel.npd; S.profile.setup=true; saveProfile(); S.ui.tab="manual"; saveUI(); safeRender(); window.scrollTo(0,0); toast("You're set. Start with today's cards.");
+  }},"Start");
+  function check(){ go.disabled=!(sel.rank && sel.mains.length); }
+  check();
+  v.appendChild(h("section",{class:"panel"},
+    h("h3",{text:"About you"}),
+    h("div",{class:"field"}, h("label",{class:"q",for:"setup-rank"},"Your rank"), rankSel),
+    h("div",{class:"field"}, h("div",{class:"q"},"Legends you play",h("span",{class:"note",text:"Pick your mains. They get kit tips in clip reviews and show first on maps."})), mainsG),
+    h("div",{class:"field"}, h("div",{class:"q"},"New cards per day",h("span",{class:"note",text:"3 is plenty. Fewer if you only have a few minutes."})), npdG),
+    go,
+    h("p",{class:"faint",style:"margin:14px 0 0",text:"Moving from another phone, or have a backup file?"}),
+    h("button",{type:"button",class:"ghost",style:"width:100%",onclick:pickRestore},"Restore from a backup file")));
 }
 
-// The review in progress and its step: saved to this browser right away and to your account shortly after.
-function saveDraft(){ S.draft._step=S.step; S.draft._updated=Date.now(); lset(DRAFT_KEY, S.draft); pushDraft(); }
-var dT=null, dBusy=false, dAgain=false;
-function pushDraft(){ if(S.mode!=="db") return; clearTimeout(dT); dT=setTimeout(writeDraft,800); }
-function writeDraft(){
-  clearTimeout(dT); dT=null; if(S.mode!=="db") return;
-  if(dBusy){ dAgain=true; return; } dBusy=true;
-  var p;
-  try{
-    var ref=S.db.doc("drafts/current");
-    p=(S.draft.type || S.step>=0) ? ref.set({draft:JSON.parse(JSON.stringify(S.draft)), step:S.step, updated:S.draft._updated||Date.now()}) : ref.delete();
-  }catch(e){ p=Promise.resolve(); }
-  Promise.resolve(p).catch(function(){}).then(function(){ dBusy=false; if(dAgain){ dAgain=false; writeDraft(); } });
+// ===================== MANUAL =====================
+function schedule(rev, grade, t){
+  var box = rev ? rev.box : 0;
+  if(grade==="learn") box=1; else if(grade==="got") box=Math.min(box+1,5); else if(grade==="shaky") box=Math.max(box,1); else box=1;
+  var gap = grade==="got" ? INTERVAL[box] : 1;
+  return { box:box, due:addDays(t,gap), last:t, learned:(rev&&rev.learned)||t, n:((rev&&rev.n)||0)+1 };
 }
-function flushDraft(){ if(dT) writeDraft(); }
-document.addEventListener("visibilitychange",function(){ if(document.visibilityState==="hidden") flushDraft(); });
-window.addEventListener("pagehide",flushDraft);
+function stage(rev){ if(!rev) return "new"; if(rev.box>=5) return "own"; if(rev.box>=3) return "solid"; return "learn"; }
+function dueList(t){ return CARDS.filter(function(c){ var r=S.reviews[c.id]; return r && r.due<=t; }).sort(function(a,b){ return S.reviews[a.id].due.localeCompare(S.reviews[b.id].due) || a.mod-b.mod; }); }
+function newQueue(){ var seen={}, q=[]; (P.newOrder||[]).forEach(function(id){ if(byId[id] && !S.reviews[id] && !seen[id]){ seen[id]=1; q.push(byId[id]); } }); CARDS.forEach(function(c){ if(!S.reviews[c.id] && !seen[c.id]) q.push(c); }); return q; }
+function learnedToday(t){ var n=0; for(var k in S.reviews){ if(S.reviews[k].learned===t && S.reviews[k].n===1) n++; } return n; }
+function newAvailable(t){ return Math.max(0, Math.min((S.profile.newPerDay||3) - learnedToday(t), newQueue().length)); }
+function nextDue(t){ var best=null; for(var k in S.reviews){ var d=S.reviews[k].due; if(d>t && (!best||d<best)) best=d; } return best; }
+function interleave(list){ var b={}; list.forEach(function(c){ (b[c.mod]=b[c.mod]||[]).push(c); }); var keys=Object.keys(b), out=[], more=true; while(more){ more=false; keys.forEach(function(k){ if(b[k].length){ out.push(b[k].shift()); more=true; } }); } return out; }
+function inDays(n){ return n===1?"tomorrow":"in "+n+" days"; }
 
-// ---------- helpers ----------
-function h(tag, attrs){ var el=document.createElement(tag); if(attrs) for(var k in attrs){ var v=attrs[k]; if(v==null||v===false) continue; if(k==="text") el.textContent=v; else if(k==="class") el.className=v; else if(k.slice(0,2)==="on") el.addEventListener(k.slice(2),v); else el.setAttribute(k, v===true?"":v); }
-  for(var i=2;i<arguments.length;i++){ var ch=arguments[i]; if(ch==null) continue; if(Array.isArray(ch)) ch.forEach(function(x){ if(x!=null) el.appendChild(typeof x==="string"?document.createTextNode(x):x); }); else el.appendChild(typeof ch==="string"?document.createTextNode(ch):ch); }
-  return el; }
-function clear(el){ while(el.firstChild) el.removeChild(el.firstChild); }
-function pad(n){ return (n<10?"0":"")+n; }
-function today(){ var d=new Date(); return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
-var MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-function fmtDate(iso){ if(!iso) return ""; var p=iso.split("-"); return MON[+p[1]-1]+" "+(+p[2]); }
-function label(list,k){ for(var i=0;i<list.length;i++) if(list[i][0]===k) return list[i][1]; return ""; }
-function labels(list,arr){ return (arr||[]).map(function(k){ return label(list,k); }).filter(Boolean).join(", "); }
-function causeOf(k){ for(var i=0;i<CAUSES.length;i++) if(CAUSES[i].k===k) return CAUSES[i]; return null; }
-function newestFirst(){ return S.clips.slice().sort(function(a,b){ return (b.created||0)-(a.created||0); }); }
-function typing(){ var a=document.activeElement, v=document.getElementById("view"); return !!(a && v && (a.tagName==="TEXTAREA"||a.tagName==="INPUT") && v.contains(a)); }
-function focusName(k){ k=k==null?null:String(k); return k&&FOCI[k]?((/^\d$/.test(k)?"#"+k+" ":"")+FOCI[k].name):""; }
+function renderManual(v){
+  var t=today(), due=dueList(t).length;
+  v.appendChild(subTabs([["today","Today",due||null],["library","Library"]], S.ui.manualSub, function(k){ S.ui.manualSub=k; saveUI(); S.mSession=null; safeRender(); window.scrollTo(0,0); }));
+  if(S.ui.manualSub==="library") return renderLibrary(v);
+  if(S.mSession) return renderMSession(v);
+  var nNew=newAvailable(t), counts={new:0,learn:0,solid:0,own:0};
+  CARDS.forEach(function(c){ counts[stage(S.reviews[c.id])]++; });
+  var total=due+nNew, mins=Math.max(1,Math.round(total*0.75)), nq=newQueue(), nd=nextDue(t);
+  var seg=function(n,col){ return n? h("span",{style:"width:"+(n/CARDS.length*100)+"%;background:"+col}) : null; };
+  v.appendChild(h("div",{class:"band"},
+    h("div",{class:"stat"},h("div",{class:"k",text:"Due to review"}),h("div",{class:"v",text:String(due)})),
+    h("div",{class:"stat"},h("div",{class:"k",text:"New today"}),h("div",{class:"v"},String(nNew),h("small",{text:"of "+(S.profile.newPerDay||3)}))),
+    h("div",{class:"stat"},h("div",{class:"k",text:"Owned"}),h("div",{class:"v"},String(counts.own),h("small",{text:"/ "+CARDS.length})))));
+  v.appendChild(h("section",{class:"panel"},
+    h("div",{class:"ladder"},
+      h("div",{class:"barline",role:"img","aria-label":counts.own+" owned, "+counts.solid+" solid, "+counts.learn+" learning, "+counts.new+" not started"}, seg(counts.own,"var(--teal)"),seg(counts.solid,"var(--violet)"),seg(counts.learn,"var(--amber)")),
+      h("div",{class:"key"},
+        h("span",null,h("i",{style:"background:var(--teal)"}),"Owned "+counts.own),
+        h("span",null,h("i",{style:"background:var(--violet)"}),"Solid "+counts.solid),
+        h("span",null,h("i",{style:"background:var(--amber)"}),"Learning "+counts.learn),
+        h("span",null,h("i",{style:"background:var(--line)"}),"Not started "+counts.new))),
+    h("div",{style:"margin-top:14px"}, h("button",{type:"button",class:"primary",disabled:total===0,onclick:startMSession}, total? "Start · "+total+" card"+(total>1?"s":"") : "All caught up")),
+    h("p",{class:"hint",text: total ? "About "+mins+" min. Answer out loud before you reveal." : (nd? "Next review "+pretty(nd)+". Go play your focus." : "Go play your focus.")}),
+    nq.length ? h("p",{class:"hint"},"Next new card: ",h("b",{text:nq[0].id+" "+nq[0].title}),".") : h("p",{class:"hint",text:"Every card is started."})));
+  var f=S.profile.focus;
+  v.appendChild(h("section",{class:"panel"}, h("div",{class:"focus"}, h("div",{class:"label",text:"Your ranked focus"}), h("div",{class:"name",text:focusName(f)||"Pick one in the Debrief"}),
+      f&&FOCI[f]?h("p",{text:FOCI[f].what}):null),
+    h("button",{type:"button",class:"linkbtn",onclick:function(){ goTab("debrief"); }},"Log a session in the Debrief")));
+  v.appendChild(h("details",{class:"panel more"}, h("summary",{text:"How this works"}),
+    h("p",null,h("b",{text:"Answer out loud, then reveal."})," Pulling the answer out of memory is what builds it. Rereading only feels like learning."),
+    h("p",null,h("b",{text:"Grade honestly."})," Got it moves a card up the ladder: 1 day, 3 days, 1 week, 2 weeks, then owned at a month. Shaky brings it back tomorrow. Missed sends it back to the start."),
+    h("p",null,h("b",{text:"Mixed on purpose."})," Reviews are shuffled across modules so you practice choosing which idea applies."),
+    h("p",null,h("b",{text:"Then stop."})," A session is a few minutes. A card isn't really yours until you've run its drill in a game.")));
+}
+function startMSession(){
+  var t=today(), due=interleave(dueList(t)), news=newQueue().slice(0,newAvailable(t));
+  var items=due.map(function(c){ return {card:c,kind:"due"}; }).concat(news.map(function(c){ return {card:c,kind:"new"}; }));
+  if(!items.length) return;
+  S.mSession={items:items,i:0,phase:"front",done:{due:0,new:0}}; safeRender(); window.scrollTo(0,0);
+}
+function renderMSession(v){
+  var s=S.mSession;
+  if(s.i>=s.items.length) return renderMDone(v);
+  var it=s.items[s.i], c=it.card, rev=S.reviews[c.id];
+  var panel=h("section",{class:"panel"},
+    h("div",{class:"prog"},h("span",{text:(s.i+1)+" of "+s.items.length}),h("div",{class:"track"},h("span",{style:"width:"+Math.round(s.i/s.items.length*100)+"%"})),
+      h("button",{type:"button",class:"ghost",style:"min-height:36px;padding:6px 12px;font-size:12.5px",onclick:function(){ S.mSession=null; safeRender(); }},"End")),
+    h("div",{class:"tagrow"},h("span",{class:"tag "+(it.kind==="new"?"new":"due"),text:it.kind==="new"?"New card":"Review"}),h("span",{class:"tag",text:c.id+" · "+MODS[c.mod]})));
+  function go(ph){ s.phase=ph; safeRender(); window.scrollTo(0,0); }
+  if(it.kind==="new" && s.phase==="front"){
+    panel.appendChild(h("h2",{class:"cardtitle",text:c.title}));
+    panel.appendChild(h("p",{class:"concept",text:c.concept}));
+    panel.appendChild(h("p",{class:"drill"},h("b",{text:"Drill · "}),c.drill));
+    panel.appendChild(h("button",{type:"button",class:"primary",onclick:function(){ go("test"); }},"Read it. Test me"));
+  } else if(s.phase!=="back"){
+    panel.appendChild(h("p",{class:"cardq",text:c.recall}));
+    panel.appendChild(h("p",{class:"say",text:"Say your answer out loud first."}));
+    panel.appendChild(h("button",{type:"button",class:"primary",onclick:function(){ go("back"); }},"Reveal"));
+  } else {
+    panel.appendChild(h("p",{class:"say",style:"margin-bottom:6px",text:c.recall}));
+    panel.appendChild(h("h2",{class:"cardtitle",text:c.title}));
+    panel.appendChild(h("p",{class:"concept",text:c.concept}));
+    panel.appendChild(h("p",{class:"drill"},h("b",{text:"Drill · "}),c.drill));
+    var g=h("div",{class:"grades"});
+    if(it.kind==="new") g.appendChild(h("button",{type:"button",class:"grade got",onclick:function(){ gradeCard(c,"learn"); }},h("span",{text:"Learned"}),h("small",{text:"see it again tomorrow"})));
+    else {
+      var gb=Math.min((rev?rev.box:0)+1,5);
+      g.appendChild(h("button",{type:"button",class:"grade miss",onclick:function(){ gradeCard(c,"miss"); }},h("span",{text:"Missed"}),h("small",{text:"back to the start · tomorrow"})));
+      g.appendChild(h("button",{type:"button",class:"grade shaky",onclick:function(){ gradeCard(c,"shaky"); }},h("span",{text:"Shaky"}),h("small",{text:"again tomorrow"})));
+      g.appendChild(h("button",{type:"button",class:"grade got",onclick:function(){ gradeCard(c,"got"); }},h("span",{text:"Got it"}),h("small",{text:gb>=5?"owned · back in a month":inDays(INTERVAL[gb])})));
+    }
+    panel.appendChild(g);
+  }
+  v.appendChild(panel);
+}
+function gradeCard(c,g){
+  var s=S.mSession, it=s.items[s.i];
+  S.reviews[c.id]=schedule(S.reviews[c.id], g, today()); saveManual();
+  s.done[it.kind]++; s.i++; s.phase="front"; safeRender(); window.scrollTo(0,0);
+}
+function renderMDone(v){
+  var t=today(), d=S.mSession.done, nd=nextDue(t), again=dueList(t).length, parts=[];
+  if(d.due) parts.push(d.due+" reviewed"); if(d.new) parts.push(d.new+" learned");
+  v.appendChild(h("section",{class:"panel"}, h("h2",{text:"Done for today"}), h("p",{text:parts.join(", ")+"."}),
+    h("p",{class:"sub",text: again ? again+" card"+(again>1?"s are":" is")+" still due from Missed or Shaky. They come back tomorrow." : nd ? "Next review: "+pretty(nd)+"." : ""}),
+    h("p",{text:"Now stop and walk away. Take your focus into ranked: "+(focusName(S.profile.focus)||"pick one in the Debrief")+"."}),
+    h("button",{type:"button",class:"ghost",onclick:function(){ S.mSession=null; safeRender(); }},"Back to today")));
+}
+function renderLibrary(v){
+  var t=today();
+  var chips=h("div",{class:"mapchips"});
+  [["all","All"]].concat(Object.keys(MODS).map(function(k){ return [k,k+" · "+MODS[k].split(" · ")[0].split(" & ")[0]]; })).forEach(function(p){
+    chips.appendChild(h("button",{type:"button","aria-pressed":String(S.ui.libMod===p[0]),onclick:function(){ S.ui.libMod=p[0]; saveUI(); safeRender(); }},p[1]));
+  });
+  v.appendChild(chips);
+  var panel=h("section",{class:"panel"});
+  (S.ui.libMod==="all"?Object.keys(MODS):[S.ui.libMod]).forEach(function(m){
+    var cs=CARDS.filter(function(c){ return String(c.mod)===String(m); }); if(!cs.length) return;
+    panel.appendChild(h("div",{class:"modhead",text:"Module "+m+" · "+MODS[m]}));
+    cs.forEach(function(c){
+      var r=S.reviews[c.id], st=stage(r);
+      var lab = st==="new"?"Not started" : st==="own"?"Owned" : (r.due<=t?"Due now":"Next "+pretty(r.due));
+      panel.appendChild(h("div",{class:"lcard"},
+        h("div",{class:"ct"},h("h3",null,h("span",{class:"id",text:c.id}),c.title),h("span",{class:"status s-"+st,text:lab})),
+        h("p",{text:c.concept}),
+        h("div",{class:"kv"},h("b",{text:"Recall: "}),c.recall),
+        h("div",{class:"kv"},h("b",{text:"Drill: "}),c.drill),
+        c.roles && c.roles[0]!=="All" ? h("div",{class:"kv",text:"Best on: "+c.roles.join(", ")}) : null));
+    });
+  });
+  v.appendChild(panel);
+  var jobs=P.legendJobs||{}, mains=S.profile.mains||[], names=Object.keys(jobs).sort(function(a,b){ return (mains.indexOf(a)<0)-(mains.indexOf(b)<0); });
+  if(names.length) v.appendChild(h("details",{class:"panel more"}, h("summary",{text:"Legend jobs"}), names.map(function(n){ return h("div",{class:"rrow"},h("b",{text:n,class:mains.indexOf(n)>=0?"mains-hl":null}),h("span",{text:jobs[n]})); })));
+}
 
-// Choice buttons update in place: a tap changes only the buttons you touched, never the whole screen.
-function setPressed(group, val){ var bs=group.querySelectorAll("button[data-k]"); for(var i=0;i<bs.length;i++){ var k=bs[i].getAttribute("data-k"); bs[i].setAttribute("aria-pressed", String(Array.isArray(val)? val.indexOf(k)>=0 : k===val)); } }
-function seg(options, field, small, after){
+// ===================== DEBRIEF =====================
+function sortedSessions(){ return S.sessions.slice().sort(function(a,b){ return a.date<b.date?-1:a.date>b.date?1:0; }); }
+function focusGroups(){
+  var map={}, order=[];
+  sortedSessions().forEach(function(s){ var k=(s.focus||"").toLowerCase(); if(!k) return; if(!map[k]){ map[k]={focus:s.focus,focusId:s.focusId,mod:s.mod,seq:[]}; order.push(k); } map[k].seq.push(s.exec); map[k].last=s.date; });
+  return order.map(function(k){ return map[k]; }).sort(function(a,b){ return a.last<b.last?1:-1; });
+}
+function installing(seq){ return seq.length>=2 && seq.slice(-2).every(function(x){ return x==="nailed"; }); }
+function nextHabitId(id){ var i=P.habits.findIndex(function(x){ return x.id===String(id); }); return i>=0 && i<P.habits.length-1 ? P.habits[i+1].id : null; }
+function dotsEl(seq){ return h("div",{class:"dots"}, seq.map(function(e){ return h("span",{class:"edot "+e,title:e}); })); }
+function renderDebrief(v){
+  var list=sortedSessions(), C=P.debriefCauses;
+  var net=list.reduce(function(a,s){ return a+(s.rp||0); },0), placed=list.filter(function(s){ return s.place!=null; });
+  v.appendChild(h("div",{class:"band"},
+    h("div",{class:"stat"},h("div",{class:"k",text:"Sessions"}),h("div",{class:"v",text:String(list.length)})),
+    h("div",{class:"stat"},h("div",{class:"k",text:"Net RP"}),h("div",{class:"v"+(net>0?" pos":net<0?" neg":""),text:(net>0?"+":"")+net})),
+    h("div",{class:"stat"},h("div",{class:"k",text:S.profile.rank||"Rank"}),h("div",{class:"v",text:placed.length?"#"+(placed.reduce(function(a,s){ return a+s.place; },0)/placed.length).toFixed(1):"—"}),h("div",{class:"k",text:"avg place"}))));
+
+  // log form
+  var F=S.dform; if(!F.focus) F.focus=S.profile.focus||P.habits[0].id;
+  var fsel=h("select",{class:"inp",id:"d-focus"});
+  FOCUS_ORDER.forEach(function(k){ var o=h("option",{value:k,text:focusName(k)}); if(F.focus===k) o.selected=true; fsel.appendChild(o); });
+  var oc=h("option",{value:"custom",text:"Something else…"}); if(F.focus==="custom") oc.selected=true; fsel.appendChild(oc);
+  var custom=h("input",{class:"inp",id:"d-custom",placeholder:"Your focus, in a few words",style:"margin-top:8px",hidden:F.focus!=="custom"});
+  custom.value=F.custom||"";
+  custom.addEventListener("input",function(){ F.custom=custom.value; ready(); });
+  fsel.addEventListener("change",function(){ F.focus=fsel.value; custom.hidden=F.focus!=="custom"; ready(); });
+  var execG=h("div",{class:"seg exec"});
+  [["nailed","Nailed it"],["some","Some of it"],["forgot","Forgot"]].forEach(function(o){ execG.appendChild(h("button",{type:"button","data-k":o[0],"aria-pressed":String(F.exec===o[0]),onclick:function(){ F.exec=F.exec===o[0]?null:o[0]; setPressed(execG,F.exec); ready(); }},o[1])); });
+  var causeG=h("div",{class:"seg small"});
+  Object.keys(C).forEach(function(k){ causeG.appendChild(h("button",{type:"button","data-k":k,"aria-pressed":String(F.causes.indexOf(k)>=0),onclick:function(){ var i=F.causes.indexOf(k); if(i>=0) F.causes.splice(i,1); else F.causes.push(k); setPressed(causeG,F.causes); ready(); }},C[k].label)); });
+  var place=h("input",{class:"inp",id:"d-place",type:"number",inputmode:"numeric",min:"1",max:"20",placeholder:"e.g. 6"});
+  var rp=h("input",{class:"inp",id:"d-rp",type:"number",inputmode:"numeric",placeholder:"e.g. -35"});
+  var note=h("input",{class:"inp",id:"d-note",placeholder:"One line you want to remember"});
+  var save=h("button",{type:"button",class:"primary",onclick:function(){
+    if(save.disabled) return;
+    var fid=F.focus==="custom"?null:F.focus, fname=fid?FOCI[fid].name:(F.custom||"").trim();
+    var pl=parseInt(place.value,10), r=parseInt(rp.value,10);
+    S.sessions.push({id:"s"+Date.now(), date:new Date().toISOString(), focusId:fid, focus:fname, mod:fid&&FOCI[fid].mod!=null?FOCI[fid].mod:"", exec:F.exec, causes:F.causes.slice(), place:isNaN(pl)?null:pl, rp:isNaN(r)?0:r, note:note.value.trim()});
+    saveDebrief(); if(fid){ S.profile.focus=fid; saveProfile(); }
+    S.dform={exec:null,causes:[],focus:F.focus,custom:F.custom}; safeRender(); toast("Session logged.");
+  }},"Log session");
+  function ready(){ var ok=F.exec && F.causes.length && (F.focus!=="custom" || (F.custom||"").trim()); save.disabled=!ok; }
+  ready();
+  v.appendChild(h("section",{class:"panel"},
+    h("h2",{text:"Log a session"}), h("p",{class:"sub",text:"Once per sitting, under a minute."}),
+    h("div",{class:"field"}, h("label",{class:"q",for:"d-focus"},"Your one focus"), fsel, custom),
+    h("div",{class:"field"}, h("div",{class:"q",text:"Did you run it?"}), execG),
+    h("div",{class:"field"}, h("div",{class:"q"},"How did your runs end?",h("span",{class:"note",text:"Tap all that happened."})), causeG),
+    h("div",{class:"two"}, h("div",{class:"field"},h("label",{class:"q",for:"d-place"},"Best placement",h("span",{class:"opt"}," (optional)")),place), h("div",{class:"field"},h("label",{class:"q",for:"d-rp"},"RP change",h("span",{class:"opt"}," (optional)")),rp)),
+    h("div",{class:"field"}, h("label",{class:"q",for:"d-note"},"Note",h("span",{class:"opt"}," (optional)")), note),
+    save));
+
+  // current habit
+  var g=focusGroups(), cp=h("section",{class:"panel"});
+  if(!g.length){
+    var f0=S.profile.focus||P.habits[0].id;
+    cp.appendChild(h("div",{class:"focus"},h("div",{class:"label",text:"Start here"}),h("div",{class:"name",text:focusName(f0)}),h("p",{text:FOCI[f0]?FOCI[f0].what:""})));
+    cp.appendChild(h("p",{class:"verdict",text:"Say it out loud before you queue, play, then log it. A habit is installing when you nail it two sessions in a row."}));
+  } else {
+    var cur=g[0], inst=installing(cur.seq), nx=cur.focusId&&isHabit(cur.focusId)?nextHabitId(cur.focusId):null;
+    cp.appendChild(h("div",{class:"focus"},h("div",{class:"label",text:cur.mod!==""&&MODS[cur.mod]?"Module "+cur.mod+" · "+MODS[cur.mod]:"Current focus"}),h("div",{class:"name",text:cur.focus}),dotsEl(cur.seq)));
+    cp.appendChild(h("p",{class:"verdict"}, inst ? [h("b",{text:"Installing."})," Move on"+(nx?" to ":"."), nx?h("b",{text:focusName(nx)}):null, nx?".":null] : [h("b",{text:"Keep it."})," Stay on this focus until you nail it two sessions in a row."]));
+    if(inst && nx && S.profile.focus!==nx) cp.appendChild(h("button",{type:"button",class:"ghost",style:"margin-top:10px",onclick:function(){ S.profile.focus=nx; saveProfile(); S.dform.focus=nx; safeRender(); toast("New focus: "+focusName(nx)); }},"Make it my focus"));
+    if(g.length>1) cp.appendChild(h("div",{style:"margin-top:12px"}, g.slice(1,5).map(function(x){ return h("div",{class:"frow"},h("div",{class:"ft"},h("span",{text:x.focus}),h("span",{class:"faint",text:installing(x.seq)?"installing":""})),dotsEl(x.seq)); })));
+  }
+  v.appendChild(cp);
+
+  // leaks + study next
+  var lp=h("section",{class:"panel"}, h("h3",{text:"How your runs end"}));
+  if(!list.length) lp.appendChild(h("p",{class:"empty",text:"Empty until your first log."}));
+  else {
+    var cnt={}; Object.keys(C).forEach(function(k){ cnt[k]=0; }); list.forEach(function(s){ (s.causes||[]).forEach(function(k){ if(k in cnt) cnt[k]++; }); });
+    bars(lp, Object.keys(C).sort(function(a,b){ return cnt[b]-cnt[a]; }).map(function(k){ return {label:C[k].label,n:cnt[k],color:C[k].color}; }));
+    var recent=list.slice(-10);
+    if(recent.length>=3){
+      var rc={}; recent.forEach(function(s){ (s.causes||[]).forEach(function(k){ if(k!=="other") rc[k]=(rc[k]||0)+1; }); });
+      var top=Object.keys(rc).sort(function(a,b){ return rc[b]-rc[a]; })[0];
+      if(top && C[top].mod!=null){ var m=C[top].mod;
+        lp.appendChild(h("div",{class:"focus",style:"margin-top:14px"}, h("div",{class:"label",text:"Study next"}), h("div",{class:"name",text:"Module "+m+" · "+MODS[m]}), h("p",{text:(P.moduleWhy[m]||"")+" Based on your last "+recent.length+" sessions."}),
+          h("button",{type:"button",class:"linkbtn",onclick:function(){ S.ui.tab="manual"; S.ui.manualSub="library"; S.ui.libMod=m; saveUI(); safeRender(); window.scrollTo(0,0); }},"Open Module "+m+" in the Manual"))); }
+    }
+  }
+  v.appendChild(lp);
+
+  // RP sparkline
+  if(list.length>=2){
+    var cum=0, pts=list.map(function(s){ cum+=s.rp||0; return cum; });
+    var mn=Math.min.apply(null,pts.concat([0])), mx=Math.max.apply(null,pts.concat([0])), range=(mx-mn)||1, W=600, H=60, pd=6;
+    var x=function(i){ return pd+i*((W-2*pd)/(pts.length-1)); }, y=function(val){ return H-pd-((val-mn)/range)*(H-2*pd); };
+    var d=pts.map(function(val,i){ return (i?"L":"M")+x(i).toFixed(1)+" "+y(val).toFixed(1); }).join(" "), last=pts[pts.length-1], col=last>=0?"var(--teal)":"var(--red)";
+    var sp=h("section",{class:"panel"}, h("h3",{text:"RP over your logged sessions"}));
+    var svg=document.createElementNS("http://www.w3.org/2000/svg","svg"); svg.setAttribute("viewBox","0 0 "+W+" "+H); svg.setAttribute("preserveAspectRatio","none"); svg.setAttribute("class","spark");
+    svg.innerHTML='<line x1="0" y1="'+y(0).toFixed(1)+'" x2="'+W+'" y2="'+y(0).toFixed(1)+'" stroke="var(--line)" stroke-width="1" stroke-dasharray="3 4"/><path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="'+x(pts.length-1).toFixed(1)+'" cy="'+y(last).toFixed(1)+'" r="3.4" fill="'+col+'"/>';
+    sp.appendChild(svg); v.appendChild(sp);
+  }
+
+  // history
+  var hp=h("section",{class:"panel"}, h("h3",{text:"History"}));
+  var rev=list.slice().reverse();
+  if(!rev.length) hp.appendChild(h("p",{class:"empty",text:"Your logged sessions will list here, newest first."}));
+  rev.forEach(function(s){
+    var col=s.exec==="nailed"?"var(--teal)":s.exec==="some"?"var(--amber)":"var(--red)", txt=s.exec==="nailed"?"nailed it":s.exec==="some"?"some of it":"forgot";
+    var dt=new Date(s.date), when=dt.toLocaleDateString(undefined,{month:"short",day:"numeric"})+" · "+dt.toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"});
+    var ends=(s.causes||[]).map(function(k){ return C[k]?C[k].label.toLowerCase():k; }).join(", ");
+    var del=h("button",{type:"button",class:"del",text:"Delete"}), armT;
+    del.addEventListener("click",function(){
+      if(!del.hasAttribute("data-armed")){ del.setAttribute("data-armed",""); del.textContent="Confirm"; armT=setTimeout(function(){ del.removeAttribute("data-armed"); del.textContent="Delete"; },3000); return; }
+      clearTimeout(armT); S.sessions=S.sessions.filter(function(x){ return x.id!==s.id; }); saveDebrief(); safeRender(); toast("Session deleted.");
+    });
+    hp.appendChild(h("div",{class:"hitem"},h("span",{class:"hbadge",style:"background:"+col}),
+      h("span",{class:"hmeta"},h("span",null,h("b",{style:"font-weight:500",text:s.focus+" "}),h("span",{style:"color:"+col,text:txt}),s.place!=null?h("span",{class:"faint",text:" · #"+s.place}):null),
+        h("span",{class:"l2",text:when+(ends?" · ended: "+ends:"")+(s.note?" · "+s.note:"")})),
+      h("span",{class:"rp"+(s.rp>0?" pos":s.rp<0?" neg":""),text:(s.rp>0?"+":"")+(s.rp||0)}),del));
+  });
+  v.appendChild(hp);
+}
+
+// ===================== CLIPS =====================
+function startClipTimer(){ var now=Date.now(); if(!S.clipTimer || now-S.clipTimer>3*3600*1000){ S.clipTimer=now; lset(K.clipTimer,now); } }
+function timerEl(){
+  if(!S.clipTimer || Date.now()-S.clipTimer>3*3600*1000) return null;
+  var m=Math.floor((Date.now()-S.clipTimer)/60000);
+  return h("div",{class:"timer"+(m>=20?" warn":""),id:"cliptimer",text:m>=20?m+" min · finish this clip, then stop":"Review time "+m+" of 20 min"});
+}
+setInterval(function(){ var el=document.getElementById("cliptimer"); if(!el) return; var m=Math.floor((Date.now()-S.clipTimer)/60000); el.textContent=m>=20?m+" min · finish this clip, then stop":"Review time "+m+" of 20 min"; el.className="timer"+(m>=20?" warn":""); },30000);
+function cSeg(options, field, small, after){
   var g=h("div",{class:"seg"+(small?" small":"")});
   options.forEach(function(o){
     var k=Array.isArray(o)?o[0]:o, t=Array.isArray(o)?o[1]:o;
     g.appendChild(h("button",{type:"button","data-k":k,"aria-pressed":String(S.draft[field]===k),onclick:function(){
       S.draft[field] = S.draft[field]===k ? (field==="map"||field==="legend"?"":null) : k;
-      setPressed(g, S.draft[field]); saveDraft(); updateNav(); if(after) after();
+      setPressed(g, S.draft[field]); saveDraft(); updateClipNav(); if(after) after();
     }}, t));
   });
   return g;
 }
-function multiSeg(options, field){
+function cMulti(options, field){
   var g=h("div",{class:"seg small"});
-  options.forEach(function(o){
-    g.appendChild(h("button",{type:"button","data-k":o[0],"aria-pressed":String(S.draft[field].indexOf(o[0])>=0),onclick:function(){
-      var a=S.draft[field].slice(), i=a.indexOf(o[0]); if(i>=0) a.splice(i,1); else a.push(o[0]);
-      S.draft[field]=a; setPressed(g,a); saveDraft();
-    }}, o[1]));
-  });
+  options.forEach(function(o){ g.appendChild(h("button",{type:"button","data-k":o[0],"aria-pressed":String(S.draft[field].indexOf(o[0])>=0),onclick:function(){
+    var a=S.draft[field].slice(), i=a.indexOf(o[0]); if(i>=0) a.splice(i,1); else a.push(o[0]); S.draft[field]=a; setPressed(g,a); saveDraft(); }}, o[1])); });
   return g;
 }
-function textField(q, key, ph, optional, rows){
-  var ta=h("textarea",{class:"inp",id:"f-"+key,rows:String(rows||3),placeholder:ph});
-  ta.value=S.draft[key]||"";
+function cText(q, key, ph, optional, rows){
+  var ta=h("textarea",{class:"inp",id:"f-"+key,rows:String(rows||3),placeholder:ph}); ta.value=S.draft[key]||"";
   ta.addEventListener("input",function(){ S.draft[key]=ta.value; saveDraft(); });
   return h("div",{class:"field"}, h("label",{class:"q",for:"f-"+key}, q, optional?h("span",{class:"opt"}," (optional)"):null), ta);
 }
-function field(q, control, note){ return h("div",{class:"field"}, h("div",{class:"q"}, q, note?h("span",{class:"note",text:note}):null), control); }
+function cField(q, control, note){ return h("div",{class:"field"}, h("div",{class:"q"}, q, note?h("span",{class:"note",text:note}):null), control); }
 function askBox(title, items){ return h("div",{class:"ask"}, h("div",{class:"t",text:title}), h("ul",null, items.map(function(t){ return h("li",{text:t}); }))); }
 function checkGroup(key){
-  var G=GROUPS[key];
+  var G=CL.groups[key];
   return h("div",{class:"group"}, h("h3",{text:G.title}), G.checks.map(function(ch){
-    var hint=ch.hint||null; if(ch.legendHint && KIT[S.draft.legend]) hint=S.draft.legend+": "+KIT[S.draft.legend];
+    var hint=ch.hint||null; if(ch.legendHint && P.kit[S.draft.legend]) hint=S.draft.legend+": "+P.kit[S.draft.legend];
     var tri=h("div",{class:"tri"});
     [["y","Yes"],["n","No"],["?","N/A"]].forEach(function(o){
-      tri.appendChild(h("button",{type:"button","data-k":o[0],"data-v":o[0],"aria-pressed":String(S.draft.checks[ch.k]===o[0]),onclick:function(){
+      tri.appendChild(h("button",{type:"button","data-k":o[0],"aria-pressed":String(S.draft.checks[ch.k]===o[0]),onclick:function(){
         if(S.draft.checks[ch.k]===o[0]) delete S.draft.checks[ch.k]; else S.draft.checks[ch.k]=o[0];
-        setPressed(tri, S.draft.checks[ch.k]||null); saveDraft();
-      }}, o[1]));
+        setPressed(tri, S.draft.checks[ch.k]||null); saveDraft(); }}, o[1]));
     });
-    return h("div",{class:"check"}, h("div",{class:"t",text:ch.t}), hint?h("div",{class:"hint",text:hint}):null, tri);
+    return h("div",{class:"check"}, h("div",{class:"t",text:ch.t}), hint?h("div",{class:"hint2",text:hint}):null, tri);
   }));
 }
 function suggestFocus(d){
   if(d.habit) return String(d.habit);
   var c=causeOf(d.cause); if(c&&c.f) return c.f;
   var score={}; ALLCHECKS.forEach(function(ch){ if(d.checks[ch.k]==="n") score[ch.f]=(score[ch.f]||0)+1; });
-  var best=null; for(var k in score) if(best==null||score[k]>score[best]) best=k;
-  return best;
+  var best=null; for(var k in score) if(best==null||score[k]>score[best]) best=k; return best;
 }
-
-// ---------- timer ----------
-function startSession(){ var now=Date.now(); if(!S.sessionStart || now-S.sessionStart>3*3600*1000){ S.sessionStart=now; lset(SESSION_KEY,now); } tickTimer(); }
-function tickTimer(){
-  var el=document.getElementById("timer");
-  if(!S.sessionStart || Date.now()-S.sessionStart>3*3600*1000){ el.hidden=true; return; }
-  var m=Math.floor((Date.now()-S.sessionStart)/60000);
-  el.hidden=false;
-  if(m>=20){ el.textContent=m+" min · finish this clip, then stop"; el.className="timer warn"; }
-  else { el.textContent="Review time "+m+" of 20 min"; el.className="timer"; }
-}
-setInterval(tickTimer,30000);
-
-// ---------- review steps ----------
-function stepContent(n){
+function clipLegends(){ var m=(S.profile.mains||[]).slice(); if(S.draft.legend && m.indexOf(S.draft.legend)<0 && S.draft.legend!=="Other") m.push(S.draft.legend); return m.concat(["Other"]); }
+function clipStep(n){
   var d=S.draft, win=d.type==="win", box=h("div");
   if(n===0){
     box.appendChild(h("p",{class:"how",text:"Pick one clip. Deaths and lost fights teach the most. Watch one win for every three losses."}));
-    box.appendChild(field("What kind of clip?", seg(TYPES,"type")));
-    box.appendChild(field("What was going on?", multiSeg(SITUATIONS,"situation"), "Tap all that fit."));
-    box.appendChild(field("Who started the fight?", seg(STARTERS,"starter",true)));
-    box.appendChild(h("div",{class:"field"}, h("div",{class:"q"},"Map",h("span",{class:"opt"}," (optional)")), seg(MAPS,"map",true)));
-    box.appendChild(h("div",{class:"field"}, h("div",{class:"q"},"Your legend",h("span",{class:"opt"}," (optional, adds kit tips later)")), seg(LEGENDS,"legend",true)));
+    box.appendChild(cField("What kind of clip?", cSeg(CL.types,"type")));
+    box.appendChild(cField("What was going on?", cMulti(CL.situations,"situation"), "Tap all that fit."));
+    box.appendChild(cField("Who started the fight?", cSeg(CL.starters,"starter",true)));
+    box.appendChild(h("div",{class:"field"}, h("div",{class:"q"},"Map",h("span",{class:"opt"}," (optional)")), cSeg(P.maps.map(function(m){ return m.name; }).concat(["Other"]),"map",true)));
+    box.appendChild(h("div",{class:"field"}, h("div",{class:"q"},"Your legend",h("span",{class:"opt"}," (optional, adds kit tips later)")), cSeg(clipLegends(),"legend",true)));
     var inp=h("input",{class:"inp",id:"f-label",placeholder:"e.g. Olympus, Oct 30, 2nd death"}); inp.value=d.label||"";
     inp.addEventListener("input",function(){ d.label=inp.value; saveDraft(); });
     box.appendChild(h("div",{class:"field"}, h("label",{class:"q",for:"f-label"},"Clip name, so you can find it again",h("span",{class:"opt"}," (optional)")), inp));
   }
   if(n===1){
-    box.appendChild(h("p",{class:"how",text:win
-      ? "Before you press play, guess what you did well. Then watch the play at normal speed, around the 2:00 mark."
-      : "Before you press play, guess what went wrong. Then watch at normal speed from the start of the clip. Pause the moment it feels wrong."}));
-    box.appendChild(field("What was your plan at the start of the clip?", seg(PLANS,"plan",true), "\"No real plan\" is an honest answer, and a common one."));
+    box.appendChild(h("p",{class:"how",text:win ? "Before you press play, guess what you did well. Then watch the play at normal speed." : "Before you press play, guess what went wrong. Then watch at normal speed from the start of the clip. Pause the moment it feels wrong."}));
+    box.appendChild(cField("What was your plan at the start of the clip?", cSeg(CL.plans,"plan",true), "\"No real plan\" is an honest answer, and a common one."));
     box.appendChild(askBox("Ask yourself",[ "What was I trying to do here, and did my team know?", win?"What did I do that I usually don't?":"Where did I feel it slip away?", "Was this a high-percentage play, or a coin flip?", "If I was watching a teammate do this, what would I tell them?" ]));
-    box.appendChild(textField(win?"What went right, in one line?":"What went wrong, in one line?","gut", win?"e.g. Waited for the knock, then pushed with Valk":"e.g. Swung a second time without healing"));
+    box.appendChild(cText(win?"What went right, in one line?":"What went wrong, in one line?","gut", win?"e.g. Waited for the knock, then pushed":"e.g. Swung a second time without healing"));
   }
   if(n===2){
-    box.appendChild(h("p",{class:"how",text:win
-      ? "Jump back 30 seconds at a time from the play. Find the moment you took the advantage."
-      : "Jump back 30 seconds at a time from the event. Stop at the last moment you still had a safe choice. That's when your options disappeared."}));
+    box.appendChild(h("p",{class:"how",text:win ? "Jump back 30 seconds at a time from the play. Find the moment you took the advantage." : "Jump back 30 seconds at a time from the event. Stop at the last moment you still had a safe choice. That's when your options disappeared."}));
     box.appendChild(askBox("At each pause, ask",[ "Could I still back up, re-angle, or take height?", "Could we still rotate?", "Was I healed and loaded?", "Did I know where they were, and how many?", "Did I have utility I hadn't used yet?" ]));
-    box.appendChild(field(win?"When did you take the advantage?":"When did your options disappear?", seg(WHEN,"when")));
-    box.appendChild(textField(win?"What set it up?":"What was the safe choice you passed on?","lastGood", win?"e.g. Held the doorway until they split":"e.g. Back up to the rock and pop a cell", true));
+    box.appendChild(cField(win?"When did you take the advantage?":"When did your options disappear?", cSeg(CL.when,"when")));
+    box.appendChild(cText(win?"What set it up?":"What was the safe choice you passed on?","lastGood", win?"e.g. Held the doorway until they split":"e.g. Back up to the rock and pop a cell", true));
   }
   if(n===3){
-    var hot=d.situation.indexOf("hotdrop")>=0;
     box.appendChild(h("p",{class:"how",text:"Watch the minute before the fight, but only the minimap, your teammates and the ring. Tap N/A for anything this clip doesn't show."}));
-    if(hot) box.appendChild(checkGroup("drop"));
+    if(d.situation.indexOf("hotdrop")>=0) box.appendChild(checkGroup("drop"));
     box.appendChild(checkGroup("position"));
   }
   if(n===4){
-    box.appendChild(h("p",{class:"how",text:"Turn the sound up. This pass grades what you said, not what you did. If Outplayed didn't record your mic, answer from memory or tap N/A."}));
+    box.appendChild(h("p",{class:"how",text:"Turn the sound up. This pass grades what you said, not what you did. If your recorder didn't capture your mic, answer from memory or tap N/A."}));
     box.appendChild(checkGroup("comms"));
   }
   if(n===5){
     box.appendChild(h("p",{class:"how",text:"Watch the fight once more, crosshair and abilities only. If the clip has no fight, tap N/A or skip ahead."}));
-    box.appendChild(checkGroup("fight"));
-    box.appendChild(checkGroup("kit"));
+    box.appendChild(checkGroup("fight")); box.appendChild(checkGroup("kit"));
   }
   if(n===6){
     box.appendChild(h("p",{class:"how",text:"Name it, pick the fix, then picture yourself doing the fix once at normal speed. Spotting the mistake isn't enough. Rehearsing the better play is what carries into your games."}));
-    box.appendChild(field(win?"What was this clip about?":"What mainly ended this clip?",
-      seg(CAUSES.map(function(c){ return [c.k,c.label]; }), "cause", false, function(){ S.draft.habit=null; rerender(); })));
-    box.appendChild(field(win?"What made it work?":"Was it the decision or the execution?", seg(KINDS,"kind",true),
-      "Decision: wrong fight, timing or spot. Execution: right idea, but the shots, peeks or movement let you down."));
+    box.appendChild(cField(win?"What was this clip about?":"What mainly ended this clip?", cSeg(CL.causes.map(function(c){ return [c.k,c.label]; }),"cause",false,function(){ S.draft.habit=null; var y=window.scrollY; safeRender(); window.scrollTo(0,y); })));
+    box.appendChild(cField(win?"What made it work?":"Was it the decision or the execution?", cSeg(CL.kinds,"kind",true), "Decision: wrong fight, timing or spot. Execution: right idea, but the shots, peeks or movement let you down."));
     if(d.cause!=="win"){
       var sug=suggestFocus(d), hb=h("div",{class:"habits"});
       FOCUS_ORDER.forEach(function(k){
         hb.appendChild(h("button",{type:"button","data-k":k,"aria-pressed":String(sug===k),onclick:function(){
-          var cur=suggestFocus(S.draft); S.draft.habit = (cur===k && S.draft.habit===k) ? null : k;
-          setPressed(hb, suggestFocus(S.draft)); saveDraft();
-        }}, h("span",{class:"n",text:/^\d$/.test(k)?k:"+"}), h("span",{text:FOCI[k].name}), h("span",{class:"c",text:/^\d$/.test(k)?FOCI[k].note.replace("Cards ",""):""})));
+          var cur=suggestFocus(S.draft); S.draft.habit=(cur===k && S.draft.habit===k)?null:k; setPressed(hb, suggestFocus(S.draft)); saveDraft();
+        }}, h("span",{class:"n",text:isHabit(k)?k:"+"}), h("span",{text:FOCI[k].name}), h("span",{class:"c",text:isHabit(k)?FOCI[k].cards.join(", "):""})));
       });
-      box.appendChild(h("div",{class:"field"}, h("div",{class:"q"},"What fixes it?", h("span",{class:"opt"}, sug&&!d.habit?" (suggested from your answers)":"")), hb));
+      box.appendChild(h("div",{class:"field"}, h("div",{class:"q"},"What fixes it?",h("span",{class:"opt"}, sug&&!d.habit?" (suggested from your answers)":"")), hb));
     }
-    box.appendChild(textField(win?"What will you repeat next game?":"What would a Diamond player have done here?","fix", win?"e.g. Wait for the knock call before swinging":"e.g. Arc Snare first, one shot, back up, cell, re-peek from the rock"));
-    var tg=h("button",{type:"button",class:"toggle","aria-pressed":String(!!d.rehearsed),onclick:function(){
-      S.draft.rehearsed=!S.draft.rehearsed; tg.setAttribute("aria-pressed",String(S.draft.rehearsed)); tg.firstChild.textContent=S.draft.rehearsed?"✓":""; saveDraft();
-    }}, h("span",{class:"box",text:d.rehearsed?"✓":""}), h("span",{text:"I pictured doing the fix once, at normal speed"}));
+    box.appendChild(cText(win?"What will you repeat next game?":"What would a top-tier player have done here?","fix", win?"e.g. Wait for the knock call before swinging":"e.g. Utility first, one shot, back up, heal, re-peek from cover"));
+    var tg=h("button",{type:"button",class:"toggle","aria-pressed":String(!!d.rehearsed),onclick:function(){ S.draft.rehearsed=!S.draft.rehearsed; tg.setAttribute("aria-pressed",String(S.draft.rehearsed)); tg.firstChild.textContent=S.draft.rehearsed?"✓":""; saveDraft(); }},
+      h("span",{class:"box",text:d.rehearsed?"✓":""}), h("span",{text:"I pictured doing the fix once, at normal speed"}));
     box.appendChild(h("div",{class:"field"}, tg));
-    box.appendChild(textField("Anything you're unsure about?","question","e.g. Should I have used Alter's portal to reset here?",true,2));
+    box.appendChild(cText("Anything you're unsure about?","question","e.g. Should I have used my ultimate to reset here?",true,2));
   }
   return box;
 }
 function canNext(n){ if(n===0) return !!S.draft.type; if(n===LAST) return !!S.draft.cause; return true; }
-function updateNav(){
-  var b=document.getElementById("nextbtn"), hint=document.getElementById("navhint"); if(!b) return;
-  var ok=canNext(S.step); b.disabled=!ok; if(hint) hint.hidden=ok;
-}
+function updateClipNav(){ var b=document.getElementById("nextbtn"), hn=document.getElementById("navhint"); if(!b) return; var ok=canNext(S.step); b.disabled=!ok; if(hn) hn.hidden=ok; }
 function goStep(n){ S.step=n; saveDraft(); safeRender(); window.scrollTo(0,0); }
-function rerender(){ var y=window.scrollY; safeRender(); window.scrollTo(0,y); }
 function saveReview(){
   var d=S.draft, now=Date.now();
-  var c={ id:"c"+now, created:now, date:today(), type:d.type, map:d.map||"", legend:d.legend||"", label:(d.label||"").trim(),
-    situation:d.situation||[], starter:d.starter||null, plan:d.plan||null,
+  S.clips.push({ id:"c"+now, created:now, date:today(), type:d.type, map:d.map||"", legend:d.legend||"", label:(d.label||"").trim(), situation:d.situation||[], starter:d.starter||null, plan:d.plan||null,
     gut:(d.gut||"").trim(), when:d.when||null, lastGood:(d.lastGood||"").trim(), checks:d.checks||{}, cause:d.cause, kind:d.kind||null,
-    habit:d.cause==="win"?null:suggestFocus(d), fix:(d.fix||"").trim(), rehearsed:!!d.rehearsed, question:(d.question||"").trim(), answer:"", qDone:false };
-  var btn=document.getElementById("nextbtn"); if(btn){ btn.disabled=true; btn.textContent="Saving…"; }
-  putClip(c).then(function(){
-    S.draft=blankDraft(); S.step=-1; lset(DRAFT_KEY,null); writeDraft(); safeRender(); window.scrollTo(0,0);
-    toast("Saved. "+S.clips.length+" clip"+(S.clips.length===1?"":"s")+" reviewed.");
-  }).catch(function(e){ if(btn){ btn.disabled=false; btn.textContent="Save review"; } toast("Couldn't save ("+(e&&e.code||"error")+"). Try again."); });
+    habit:d.cause==="win"?null:suggestFocus(d), fix:(d.fix||"").trim(), rehearsed:!!d.rehearsed, question:(d.question||"").trim(), answer:"", qDone:false });
+  saveClips(); S.draft=blankDraft(); S.step=-1; lset(K.draft,null); safeRender(); window.scrollTo(0,0);
+  toast("Saved. "+S.clips.length+" clip"+(S.clips.length===1?"":"s")+" reviewed.");
 }
-function renderReview(v){
+function openQCount(){ return S.clips.filter(function(c){ return c.question && !c.qDone; }).length; }
+function renderClips(v){
+  v.appendChild(subTabs([["review","Review"],["patterns","Patterns"],["questions","Questions",openQCount()||null],["log","Log"]], S.ui.clipSub, function(k){ S.ui.clipSub=k; saveUI(); safeRender(); window.scrollTo(0,0); }));
+  if(S.ui.clipSub==="patterns") return renderPatterns(v);
+  if(S.ui.clipSub==="questions") return renderQuestions(v);
+  if(S.ui.clipSub==="log") return renderClipLog(v);
+  var te=timerEl(); if(te) v.appendChild(te);
   if(S.step<0){
-    var hasDraft=!!S.draft.type;
-    v.appendChild(h("section",{class:"panel"},
-      h("h2",{text:"Review a clip"}),
-      h("p",{class:"sub",text:"Your Outplayed clips run about 2 minutes either side of the event. Open one in Outplayed, then follow the steps here."}),
+    v.appendChild(h("section",{class:"panel"}, h("h2",{text:"Review a clip"}), h("p",{class:"sub",text:CL.recorderNote}),
       h("div",{class:"row"},
-        hasDraft?h("button",{type:"button",class:"ghost",onclick:function(){ startSession(); goStep(typeof S.draft._step==="number"&&S.draft._step>=0?Math.min(S.draft._step,LAST):0); }},"Resume unsaved review"):null,
-        h("button",{type:"button",class:"primary",onclick:function(){ S.draft=blankDraft(); startSession(); goStep(0); }},"Start a clip review"))));
-    v.appendChild(h("section",{class:"panel"},
-      h("h3",{text:"How each review runs"}),
+        S.draft.type?h("button",{type:"button",class:"ghost",onclick:function(){ startClipTimer(); goStep(typeof S.draft._step==="number"&&S.draft._step>=0?Math.min(S.draft._step,LAST):0); }},"Resume unsaved review"):null,
+        h("button",{type:"button",class:"primary",onclick:function(){ S.draft=blankDraft(); startClipTimer(); goStep(0); }},"Start a clip review"))));
+    v.appendChild(h("section",{class:"panel"}, h("h3",{text:"How each review runs"}),
       h("ol",{class:"steps-list"},
         h("li",null,h("span",null,h("b",null,"Clip. "),"What kind, what was going on, who started it.")),
         h("li",null,h("span",null,h("b",null,"Gut pass. "),"Your plan going in. Guess first, then watch and pause where it slipped.")),
         h("li",null,h("span",null,h("b",null,"Rewind. "),"Back 30 seconds at a time to when your options disappeared.")),
         h("li",null,h("span",null,h("b",null,"Before the fight. "),"Drop, height, ring, cover, third parties, stacking.")),
         h("li",null,h("span",null,h("b",null,"Comms. "),"Did you call what you saw and say what you were doing?")),
-        h("li",null,h("span",null,h("b",null,"The fight. "),"Crosshair, peeks, pushes, your tactical, ult and grenades.")),
+        h("li",null,h("span",null,h("b",null,"The fight. "),"Crosshair, peeks, pushes, your abilities and grenades.")),
         h("li",null,h("span",null,h("b",null,"Verdict. "),"Cause, decision or execution, the fix, one rehearsal."))),
-      (function(){ var lb=lget(BACKUP_KEY); return (S.clips.length>=3 && (!lb || Date.now()-lb>14*864e5)) ? h("p",{class:"faint",style:"margin:12px 0 0;color:var(--amber)",text:"It's been a while since your last backup. Save one from the Log tab."}) : null; })(),
-      h("p",{class:"faint",style:"margin:12px 0 0",text:"Pace: 8–10 minutes a clip. The yes/no checks are quick. Tap N/A for anything the clip doesn't show. Do 2–3 clips the day after you play, then stop at 20 minutes."})));
+      h("p",{class:"faint",style:"margin:12px 0 0",text:"Pace: 8–10 minutes a clip. Tap N/A for anything the clip doesn't show. Do 2–3 clips the day after you play, then stop at 20 minutes."})));
     return;
   }
-  var n=S.step;
+  var n=S.step, last=n===LAST;
   v.appendChild(h("div",{class:"stepbar","aria-hidden":"true"}, STEPS.map(function(_,i){ return h("span",{class:i<n?"done":i===n?"on":""}); })));
   v.appendChild(h("div",{class:"steplabel",text:"Step "+(n+1)+" of "+STEPS.length+" · "+STEPS[n]}));
-  var panel=h("section",{class:"panel"}, h("h2",{text:STEPS[n]}), stepContent(n));
-  var last=n===LAST;
-  panel.appendChild(h("div",{class:"nav"},
+  var panel=h("section",{class:"panel"}, h("h2",{text:STEPS[n]}), clipStep(n));
+  panel.appendChild(h("div",{class:"nav2"},
     h("button",{type:"button",class:"ghost",onclick:function(){ goStep(n===0?-1:n-1); }}, n===0?"Cancel":"Back"),
-    h("button",{type:"button",class:"primary",id:"nextbtn",disabled:!canNext(n),onclick:function(){ if(!canNext(S.step)) return; if(last) saveReview(); else goStep(n+1); }},
-      last?"Save review":(n===LAST-1?"Next: verdict":"Next"))));
+    h("button",{type:"button",class:"primary",id:"nextbtn",disabled:!canNext(n),onclick:function(){ if(!canNext(S.step)) return; if(last) saveReview(); else goStep(n+1); }}, last?"Save review":(n===LAST-1?"Next: verdict":"Next"))));
   panel.appendChild(h("p",{class:"faint",id:"navhint",hidden:canNext(n),style:"margin:8px 0 0",text:n===0?"Pick the clip type to continue.":"Pick what mainly ended the clip to save."}));
   v.appendChild(panel);
 }
-
-// ---------- patterns ----------
-function bars(panel, rows, colorFn){
-  var max=0; rows.forEach(function(r){ if(r.n>max) max=r.n; });
-  rows.forEach(function(r){ panel.appendChild(h("div",{class:"bar"}, h("span",{class:"lbl",text:r.label}), h("span",{class:"track"}, h("span",{class:"fill",style:"width:"+(max?Math.round(r.n/max*100):0)+"%;background:"+(r.color||"var(--amber)")})), h("span",{class:"ct",text:String(r.n)}))); });
-}
 function renderPatterns(v){
-  var clips=S.clips, total=clips.length;
-  var week=clips.filter(function(c){ return Date.now()-(c.created||0)<7*864e5; }).length;
-  var openQ=clips.filter(function(c){ return c.question && !c.qDone; }).length;
+  var clips=S.clips, total=clips.length, week=clips.filter(function(c){ return Date.now()-(c.created||0)<7*864e5; }).length;
   v.appendChild(h("div",{class:"band"},
     h("div",{class:"stat"},h("div",{class:"k",text:"Clips reviewed"}),h("div",{class:"v",text:String(total)})),
     h("div",{class:"stat"},h("div",{class:"k",text:"Last 7 days"}),h("div",{class:"v",text:String(week)})),
-    h("div",{class:"stat"},h("div",{class:"k",text:"Open questions"}),h("div",{class:"v",text:String(openQ)}))));
-  if(!total){
-    v.appendChild(h("section",{class:"panel"}, h("h2",{text:"Your patterns show up here"}),
-      h("p",{class:"sub",style:"margin:0",text:"After each review this page counts what ended your clips, whether it was the decision or the execution, which checks you miss most, and how early your options disappear. After 3 clips it names what to work on next. Start with a death clip from your last ranked session."})));
-    return;
-  }
-  var leaks=clips.filter(function(c){ return c.cause && c.cause!=="win"; });
-  var score={};
+    h("div",{class:"stat"},h("div",{class:"k",text:"Open questions"}),h("div",{class:"v",text:String(openQCount())}))));
+  if(!total){ v.appendChild(h("section",{class:"panel"}, h("h2",{text:"Your patterns show up here"}), h("p",{class:"sub",style:"margin:0",text:"After each review this page counts what ended your clips, whether it was the decision or the execution, which checks you miss most, and how early your options disappear. After 3 clips it names what to work on next."}))); return; }
+  var leaks=clips.filter(function(c){ return c.cause && c.cause!=="win"; }), score={};
   leaks.forEach(function(c){ var ca=causeOf(c.cause); if(ca&&ca.f) score[ca.f]=(score[ca.f]||0)+2; });
   clips.forEach(function(c){ ALLCHECKS.forEach(function(ch){ if(c.checks&&c.checks[ch.k]==="n") score[ch.f]=(score[ch.f]||0)+1; }); });
   var best=null; for(var k in score) if(best==null||score[k]>score[best]) best=k;
   var fp=h("section",{class:"panel"});
-  if(total<3 || !best){
-    var left=Math.max(3-total,1);
-    fp.appendChild(h("div",{class:"focus"}, h("div",{class:"label",text:"Your next focus"}), h("div",{class:"name",text:"Review "+left+" more clip"+(left===1?"":"s")}),
-      h("p",{text:"Three clips is the fewest that shows a real pattern rather than one bad fight."})));
-  } else {
-    fp.appendChild(h("div",{class:"focus"}, h("div",{class:"label",text:"Your next focus"}), h("div",{class:"name",text:focusName(best)}),
-      h("p",{text:FOCI[best].note+". Your clips point here most often."+(/^\d$/.test(best)?" Set it as your focus in the Ranked Debrief.":" Make it your one focus for your next ranked session.")})));
+  if(total<3 || !best){ var left=Math.max(3-total,1); fp.appendChild(h("div",{class:"focus"}, h("div",{class:"label",text:"Your next focus"}), h("div",{class:"name",text:"Review "+left+" more clip"+(left===1?"":"s")}), h("p",{text:"Three clips is the fewest that shows a real pattern rather than one bad fight."}))); }
+  else {
+    fp.appendChild(h("div",{class:"focus"}, h("div",{class:"label",text:"Your next focus"}), h("div",{class:"name",text:focusName(best)}), h("p",{text:FOCI[best].note+". Your clips point here most often."})));
+    if(S.profile.focus!==best) fp.appendChild(h("button",{type:"button",class:"ghost",style:"margin-top:10px",onclick:function(){ S.profile.focus=best; saveProfile(); S.dform.focus=best; safeRender(); toast("Ranked focus set: "+focusName(best)); }},"Make it my ranked focus"));
+    else fp.appendChild(h("p",{class:"faint",style:"margin:8px 0 0",text:"This is already your ranked focus."}));
   }
   v.appendChild(fp);
-
   var kp=h("section",{class:"panel"}, h("h3",{text:"Decision or execution"}), h("p",{class:"sub",text:"Decisions are fixed by review and cards. Execution is fixed in the firing range."}));
   var kc={}; leaks.forEach(function(c){ if(c.kind) kc[c.kind]=(kc[c.kind]||0)+1; });
   if(!Object.keys(kc).length) kp.appendChild(h("p",{class:"empty",text:"Not marked yet. The verdict step asks this."}));
-  else bars(kp, KINDS.map(function(k){ return {label:k[1], n:kc[k[0]]||0, color:k[0]==="decision"?"var(--blue)":k[0]==="execution"?"var(--violet)":"var(--grey)"}; }));
+  else bars(kp, CL.kinds.map(function(k){ return {label:k[1], n:kc[k[0]]||0, color:k[0]==="decision"?"var(--blue)":k[0]==="execution"?"var(--violet)":"var(--grey)"}; }));
   v.appendChild(kp);
-
   var cp=h("section",{class:"panel"}, h("h3",{text:"What ends your clips"}));
   if(!leaks.length) cp.appendChild(h("p",{class:"empty",text:"Only wins so far. Add a death clip to see what's costing you."}));
-  else { var counts={}; leaks.forEach(function(c){ counts[c.cause]=(counts[c.cause]||0)+1; });
-    bars(cp, CAUSES.filter(function(c){ return counts[c.k]; }).sort(function(a,b){ return counts[b.k]-counts[a.k]; }).map(function(c){ return {label:c.label,n:counts[c.k],color:c.color}; })); }
+  else { var counts={}; leaks.forEach(function(c){ counts[c.cause]=(counts[c.cause]||0)+1; }); bars(cp, CL.causes.filter(function(c){ return counts[c.k]; }).sort(function(a,b){ return counts[b.k]-counts[a.k]; }).map(function(c){ return {label:c.label,n:counts[c.k],color:c.color}; })); }
   v.appendChild(cp);
-
   var mp=h("section",{class:"panel"}, h("h3",{text:"Checks you miss most"}));
-  var rows=ALLCHECKS.map(function(ch){ var y=0,nn=0; clips.forEach(function(c){ var a=c.checks&&c.checks[ch.k]; if(a==="y") y++; if(a==="n") nn++; }); return {ch:ch,y:y,n:nn}; })
-    .filter(function(r){ return r.n>0; }).sort(function(a,b){ return (b.n/(b.n+b.y))-(a.n/(a.n+a.y)) || b.n-a.n; }).slice(0,8);
-  if(!rows.length) mp.appendChild(h("p",{class:"empty",text:"No misses marked yet. Answer the yes or no checks in steps 4 to 6."}));
+  var rows=ALLCHECKS.map(function(ch){ var y=0,nn=0; clips.forEach(function(c){ var a=c.checks&&c.checks[ch.k]; if(a==="y") y++; if(a==="n") nn++; }); return {ch:ch,y:y,n:nn}; }).filter(function(r){ return r.n>0; }).sort(function(a,b){ return (b.n/(b.n+b.y))-(a.n/(a.n+a.y)) || b.n-a.n; }).slice(0,8);
+  if(!rows.length) mp.appendChild(h("p",{class:"empty",text:"No misses marked yet."}));
   rows.forEach(function(r){ mp.appendChild(h("div",{class:"miss"}, h("span",null, r.ch.t, h("span",{class:"h",text:r.ch.group+" · "+focusName(r.ch.f)})), h("span",{class:"r",text:"missed "+r.n+" of "+(r.n+r.y)}))); });
   v.appendChild(mp);
-
   var pp=h("section",{class:"panel"}, h("h3",{text:"Your plan going in"}), h("p",{class:"sub",text:"A lot of \"No real plan\" means fights are choosing you."}));
   var pc={}, anyP=false; clips.forEach(function(c){ if(c.plan){ pc[c.plan]=(pc[c.plan]||0)+1; anyP=true; } });
   if(!anyP) pp.appendChild(h("p",{class:"empty",text:"Not marked yet. The gut pass asks this."}));
-  else bars(pp, PLANS.filter(function(p){ return pc[p[0]]; }).map(function(p){ return {label:p[1], n:pc[p[0]], color:p[0]==="noplan"?"var(--red)":"var(--amber)"}; }));
+  else bars(pp, CL.plans.filter(function(p){ return pc[p[0]]; }).map(function(p){ return {label:p[1], n:pc[p[0]], color:p[0]==="noplan"?"var(--red)":"var(--amber)"}; }));
   v.appendChild(pp);
-
   var wp=h("section",{class:"panel"}, h("h3",{text:"When your options disappear"}), h("p",{class:"sub",text:"Earlier means the mistake is a decision or rotation, not aim."}));
   var wc={}, anyW=false; leaks.forEach(function(c){ if(c.when){ wc[c.when]=(wc[c.when]||0)+1; anyW=true; } });
   if(!anyW) wp.appendChild(h("p",{class:"empty",text:"Not marked yet. The rewind step asks this."}));
-  else bars(wp, WHEN.map(function(w){ return {label:w[1], n:wc[w[0]]||0}; }));
+  else bars(wp, CL.when.map(function(w){ return {label:w[1], n:wc[w[0]]||0}; }));
   v.appendChild(wp);
 }
-
-// ---------- questions ----------
-function metaLine(c){ return [fmtDate(c.date), label(TYPES,c.type), c.map, c.label].filter(Boolean).join(" · "); }
+function metaLine(c){ return [fmtDate(c.date), label(CL.types,c.type), c.map, c.label].filter(Boolean).join(" · "); }
+function newestClips(){ return S.clips.slice().sort(function(a,b){ return (b.created||0)-(a.created||0); }); }
 function renderQuestions(v){
-  var open=newestFirst().filter(function(c){ return c.question && !c.qDone; });
-  var done=newestFirst().filter(function(c){ return c.question && c.qDone; });
-  var p=h("section",{class:"panel"}, h("h2",{text:"Open questions"}),
-    h("p",{class:"sub",text:"Things you weren't sure about while reviewing. Test them in the firing range, ask a teammate, or bring them to Claude. Write the answer here once you have it."}));
+  var open=newestClips().filter(function(c){ return c.question && !c.qDone; }), done=newestClips().filter(function(c){ return c.question && c.qDone; });
+  var p=h("section",{class:"panel"}, h("h2",{text:"Open questions"}), h("p",{class:"sub",text:"Things you weren't sure about while reviewing. Test them in the firing range, ask a teammate, or bring them to Claude. Write the answer here once you have it."}));
   if(!open.length) p.appendChild(h("p",{class:"empty",text:"No open questions. The last step of a review has a spot for one."}));
   open.forEach(function(c){
     var ta=h("textarea",{class:"inp",id:"ans-"+c.id,rows:"2",placeholder:"What you found out"}); ta.value=(S.ans[c.id]!=null?S.ans[c.id]:(c.answer||""));
     ta.addEventListener("input",function(){ S.ans[c.id]=ta.value; });
-    function save(markDone){
-      var nc={}; for(var k in c) nc[k]=c[k]; nc.answer=ta.value.trim(); if(markDone) nc.qDone=true;
-      putClip(nc).then(function(){ delete S.ans[c.id]; safeRender(); toast(markDone?"Marked answered.":"Answer saved."); }).catch(function(){ toast("Couldn't save. Try again."); });
-    }
+    function save(markDone){ c.answer=ta.value.trim(); if(markDone) c.qDone=true; delete S.ans[c.id]; saveClips(); safeRender(); toast(markDone?"Marked answered.":"Answer saved."); }
     p.appendChild(h("div",{class:"qcard"}, h("div",{class:"qt",text:c.question}), h("div",{class:"meta",text:metaLine(c)}), ta,
       h("div",{class:"row"}, h("button",{type:"button",class:"ghost",onclick:function(){ save(false); }},"Save answer"), h("button",{type:"button",class:"ghost",onclick:function(){ save(true); }},"Mark answered"))));
   });
   v.appendChild(p);
-  if(done.length){
-    var dp=h("section",{class:"panel"}, h("h3",{text:"Answered ("+done.length+")"}));
-    done.forEach(function(c){ dp.appendChild(h("div",{class:"qcard"}, h("div",{class:"qt",text:c.question}), h("div",{class:"meta",text:metaLine(c)}), h("p",{class:"ans",text:c.answer||"No answer written."}))); });
-    v.appendChild(dp);
-  }
+  if(done.length) v.appendChild(h("section",{class:"panel"}, h("h3",{text:"Answered ("+done.length+")"}), done.map(function(c){ return h("div",{class:"qcard"}, h("div",{class:"qt",text:c.question}), h("div",{class:"meta",text:metaLine(c)}), h("p",{class:"ans",text:c.answer||"No answer written."})); })));
 }
-
-// ---------- log ----------
 function missedList(c){ return ALLCHECKS.filter(function(ch){ return c.checks&&c.checks[ch.k]==="n"; }).map(function(ch){ return ch.t; }); }
 function toTSV(){
   var cols=["Date","Clip type","Map","Legend","Clip name","Situation","Who started","Plan","What happened","Options gone / advantage","Safe choice / setup","Main cause","Decision or execution","Fix focus","Fix","Rehearsed","Missed checks","Question","Answer"];
-  function clean(s){ return String(s==null?"":s).replace(/[\t\r\n]+/g," "); }
+  function cl(s){ return String(s==null?"":s).replace(/[\t\r\n]+/g," "); }
   var lines=[cols.join("\t")];
-  newestFirst().forEach(function(c){ var ca=causeOf(c.cause);
-    lines.push([c.date,label(TYPES,c.type),c.map,c.legend,c.label,labels(SITUATIONS,c.situation),label(STARTERS,c.starter),label(PLANS,c.plan),c.gut,label(WHEN,c.when),c.lastGood,ca?ca.label:"",label(KINDS,c.kind),focusName(c.habit),c.fix,c.rehearsed?"Yes":"No",missedList(c).join("; "),c.question,c.answer].map(clean).join("\t")); });
+  newestClips().forEach(function(c){ var ca=causeOf(c.cause);
+    lines.push([c.date,label(CL.types,c.type),c.map,c.legend,c.label,labels(CL.situations,c.situation),label(CL.starters,c.starter),label(CL.plans,c.plan),c.gut,label(CL.when,c.when),c.lastGood,ca?ca.label:"",label(CL.kinds,c.kind),focusName(c.habit),c.fix,c.rehearsed?"Yes":"No",missedList(c).join("; "),c.question,c.answer].map(cl).join("\t")); });
   return lines.join("\n");
 }
-function renderLog(v){
-  var p=h("section",{class:"panel"}, h("h2",{text:"Review log"}));
-  var list=newestFirst();
+function renderClipLog(v){
+  var p=h("section",{class:"panel"}, h("h2",{text:"Review log"})), list=newestClips();
   if(!list.length){ p.appendChild(h("p",{class:"empty",text:"Your saved reviews will be listed here, newest first. Tap one to see everything you wrote."})); v.appendChild(p); return; }
   var copyWrap=h("div");
   p.appendChild(h("p",{class:"sub",text:list.length+" review"+(list.length===1?"":"s")+". Copy as a table to paste into a spreadsheet."}));
@@ -654,96 +872,123 @@ function renderLog(v){
   var box=h("div",{style:"margin-top:8px"});
   list.forEach(function(c){
     var ca=causeOf(c.cause), isOpen=!!S.open[c.id];
-    var row=h("div",{class:"logrow"}, h("button",{type:"button","aria-expanded":String(isOpen),onclick:function(){ S.open[c.id]=!isOpen; rerender(); }},
-      h("span",{class:"chip "+(c.type==="win"?"win":"bad"),text:label(TYPES,c.type)||"Clip"}), h("span",{class:"s",text:c.gut||c.fix||(ca?ca.label:"Review")}), h("span",{class:"d",text:fmtDate(c.date)})));
+    var row=h("div",{class:"logrow"}, h("button",{type:"button","aria-expanded":String(isOpen),onclick:function(){ S.open[c.id]=!isOpen; var y=window.scrollY; safeRender(); window.scrollTo(0,y); }},
+      h("span",{class:"chip "+(c.type==="win"?"win":"bad"),text:label(CL.types,c.type)||"Clip"}), h("span",{class:"s",text:c.gut||c.fix||(ca?ca.label:"Review")}), h("span",{class:"d",text:fmtDate(c.date)})));
     if(isOpen){
-      var dl=h("dl");
-      function add(k,val){ if(val){ dl.appendChild(h("dt",{text:k})); dl.appendChild(h("dd",{text:val})); } }
-      add("Clip", [c.map,c.legend,c.label].filter(Boolean).join(" · "));
-      add("Situation", labels(SITUATIONS,c.situation));
-      add("Who started", label(STARTERS,c.starter));
-      add("Plan", label(PLANS,c.plan));
-      add(c.type==="win"?"What went right":"What went wrong", c.gut);
-      add(c.type==="win"?"Took the advantage":"Options gone", label(WHEN,c.when));
-      add(c.type==="win"?"Setup":"Safe choice", c.lastGood);
-      add("Main cause", ca?ca.label:"");
-      add("Decision or execution", label(KINDS,c.kind));
-      add("Fix focus", focusName(c.habit));
-      add("Fix", c.fix);
-      add("Rehearsed", c.rehearsed?"Yes":"");
-      add("Missed", missedList(c).join("; "));
-      add("Question", c.question); add("Answer", c.answer);
+      var dl=h("dl"); function add(k,val){ if(val){ dl.appendChild(h("dt",{text:k})); dl.appendChild(h("dd",{text:val})); } }
+      add("Clip",[c.map,c.legend,c.label].filter(Boolean).join(" · ")); add("Situation",labels(CL.situations,c.situation)); add("Who started",label(CL.starters,c.starter)); add("Plan",label(CL.plans,c.plan));
+      add(c.type==="win"?"What went right":"What went wrong",c.gut); add(c.type==="win"?"Took the advantage":"Options gone",label(CL.when,c.when)); add(c.type==="win"?"Setup":"Safe choice",c.lastGood);
+      add("Main cause",ca?ca.label:""); add("Decision or execution",label(CL.kinds,c.kind)); add("Fix focus",focusName(c.habit)); add("Fix",c.fix); add("Rehearsed",c.rehearsed?"Yes":"");
+      add("Missed",missedList(c).join("; ")); add("Question",c.question); add("Answer",c.answer);
       var armed=S.delArm===c.id;
-      row.appendChild(h("div",{class:"detail"}, dl, h("div",{class:"row",style:"margin-top:12px"},
-        h("button",{type:"button",class:"ghost"+(armed?" danger":""),onclick:function(){
-          if(!armed){ S.delArm=c.id; rerender(); setTimeout(function(){ if(S.delArm===c.id){ S.delArm=null; rerender(); } },4000); return; }
-          S.delArm=null; removeClip(c.id).then(function(){ safeRender(); toast("Review deleted."); }).catch(function(){ toast("Couldn't delete. Try again."); });
-        }}, armed?"Tap again to delete":"Delete review"))));
+      row.appendChild(h("div",{class:"detail"}, dl, h("div",{class:"row",style:"margin-top:12px"}, h("button",{type:"button",class:"ghost"+(armed?" danger":""),onclick:function(){
+        if(!armed){ S.delArm=c.id; safeRender(); setTimeout(function(){ if(S.delArm===c.id){ S.delArm=null; safeRender(); } },4000); return; }
+        S.delArm=null; S.clips=S.clips.filter(function(x){ return x.id!==c.id; }); saveClips(); safeRender(); toast("Review deleted.");
+      }}, armed?"Tap again to delete":"Delete review"))));
     }
     box.appendChild(row);
   });
-  p.appendChild(box);
-  v.appendChild(p);
+  p.appendChild(box); v.appendChild(p);
 }
 
+// ===================== MAPS =====================
+function renderMaps(v){
+  var maps=P.maps, i=Math.min(S.ui.map||0, maps.length-1), m=maps[i], mains=S.profile.mains||[];
+  var chips=h("div",{class:"mapchips"});
+  maps.forEach(function(mm,j){ chips.appendChild(h("button",{type:"button","aria-pressed":String(j===i),onclick:function(){ S.ui.map=j; saveUI(); safeRender(); }}, mm.name, mm.ranked?h("span",{class:"rk",text:"ranked"}):null)); });
+  v.appendChild(chips);
+  var panel=h("section",{class:"panel"}, h("h2",{text:m.name}), h("p",{class:"sig",text:m.sig}));
+  m.rows.forEach(function(r){
+    var html=r[1];
+    if(r[0]==="Legend fits") mains.forEach(function(L){ var short=L.replace("Mad ",""); html=html.split("<b>"+L).join('<b class="mains-hl">'+L).split("<b>"+short).join('<b class="mains-hl">'+short); });
+    panel.appendChild(h("div",{class:"mrow"+(r[2]==="focus"?" focus2":r[2]?" "+r[2]:"")}, h("div",{class:"k",text:r[0]}), h("div",{class:"v",html:html})));
+  });
+  v.appendChild(panel);
+  v.appendChild(h("p",{class:"faint",text:P.mapsNote+" \"ranked\" marks maps in the ranked rotation as of the pack date ("+P.version+")."}));
+}
 
-// ---------- backup ----------
+// ===================== SETTINGS + BACKUP =====================
 function fmtAgo(ts){ var d=Math.floor((Date.now()-ts)/864e5); return d<=0?"today":d===1?"yesterday":d+" days ago"; }
+function exportData(){ return {app:"clip-review", pack:P.id, version:2, exported:new Date().toISOString(), profile:S.profile, manual:{reviews:S.reviews}, sessions:S.sessions, clips:S.clips, draft:S.draft}; }
 function saveBackup(){
-  var data=JSON.stringify({app:"clip-review",version:1,exported:new Date().toISOString(),clips:S.clips,draft:S.draft},null,1);
-  var url=URL.createObjectURL(new Blob([data],{type:"application/json"}));
+  var url=URL.createObjectURL(new Blob([JSON.stringify(exportData(),null,1)],{type:"application/json"}));
   var a=h("a",{href:url,download:"clip-review-backup-"+today()+".json"}); document.body.appendChild(a); a.click();
   setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); },1500);
-  lset(BACKUP_KEY,Date.now()); safeRender(); toast("Backup saved to your Downloads.");
+  lset(K.backup,Date.now()); safeRender(); toast("Backup saved to your Downloads.");
 }
+var restoreInput=h("input",{type:"file",accept:".json,application/json,text/plain",hidden:true});
+document.body.appendChild(restoreInput);
+restoreInput.addEventListener("change",function(){ var f=restoreInput.files&&restoreInput.files[0]; if(f) restoreFrom(f); restoreInput.value=""; });
+function pickRestore(){ restoreInput.click(); }
 function restoreFrom(file){
   var r=new FileReader();
   r.onload=function(){
     try{
-      var o=JSON.parse(r.result), list=Array.isArray(o)?o:(o&&o.clips)||[], added=0;
-      if(!Array.isArray(list)) throw new Error("bad");
-      list.forEach(function(c){ if(c&&c.id&&!S.clips.some(function(x){ return x.id===c.id; })){ S.clips.push(c); added++; } });
-      var gotDraft=false;
-      if(o&&o.draft&&o.draft.type&&!S.draft.type){ S.draft=normDraft(o.draft); S.step=(typeof o.draft._step==="number"&&o.draft._step>=0)?Math.min(o.draft._step,LAST):-1; lset(DRAFT_KEY,S.draft); gotDraft=true; }
-      saveLocal(); safeRender();
-      toast(added||gotDraft ? "Restored "+added+" review"+(added===1?"":"s")+(gotDraft?" and your unfinished one":"")+"." : "Nothing new in that file.");
-    }catch(e){ toast("That file isn't a Clip Review backup."); }
+      var o=JSON.parse(r.result); if(!o || (o.pack && o.pack!==P.id)) throw new Error("pack");
+      var added={clips:0,sessions:0,cards:0}, gotDraft=false;
+      (o.clips||[]).forEach(function(c){ if(c&&c.id&&!S.clips.some(function(x){ return x.id===c.id; })){ S.clips.push(c); added.clips++; } });
+      (o.sessions||[]).forEach(function(s){ if(s&&s.id&&!S.sessions.some(function(x){ return x.id===s.id; })){ S.sessions.push(s); added.sessions++; } });
+      var rv=(o.manual&&o.manual.reviews)||{}; Object.keys(rv).forEach(function(id){ var mine=S.reviews[id], theirs=rv[id]; if(theirs && (!mine || (theirs.last||"")>(mine.last||""))){ S.reviews[id]=theirs; added.cards++; } });
+      if(o.draft && o.draft.type && !S.draft.type){ S.draft=normDraft(o.draft); S.step=(typeof o.draft._step==="number"&&o.draft._step>=0)?Math.min(o.draft._step,LAST):-1; lset(K.draft,S.draft); gotDraft=true; }
+      if(o.profile && o.profile.setup && !S.profile.setup){ S.profile=Object.assign(S.profile,o.profile); }
+      saveClips(); saveDebrief(); saveManual(); saveProfile(); S.settings=false; safeRender(); window.scrollTo(0,0);
+      var parts=[]; if(added.cards) parts.push(added.cards+" card"+(added.cards===1?"":"s")); if(added.sessions) parts.push(added.sessions+" session"+(added.sessions===1?"":"s")); if(added.clips) parts.push(added.clips+" clip review"+(added.clips===1?"":"s")); if(gotDraft) parts.push("your unfinished review");
+      toast(parts.length?"Restored "+parts.join(", ")+".":"Nothing new in that file.");
+    }catch(e){ toast(e&&e.message==="pack"?"That backup is for a different game.":"That file isn't a Clip Review backup."); }
   };
   r.readAsText(file);
 }
-function renderBackup(v){
-  var last=lget(BACKUP_KEY);
-  var inp=h("input",{type:"file",accept:".json,application/json",id:"restorefile",hidden:true});
-  inp.addEventListener("change",function(){ var f=inp.files&&inp.files[0]; if(f) restoreFrom(f); inp.value=""; });
+function renderSettings(v){
+  var p=S.profile, last=lget(K.backup);
+  v.appendChild(h("button",{type:"button",class:"linkbtn",onclick:function(){ S.settings=false; safeRender(); }},"← Back"));
+  var rankSel=h("select",{class:"inp",id:"set-rank"}, P.ranks.map(function(r){ var o=h("option",{value:r,text:r}); if(r===p.rank) o.selected=true; return o; }));
+  rankSel.addEventListener("change",function(){ S.profile.rank=rankSel.value; saveProfile(); toast("Rank saved."); });
+  var mainsG=h("div",{class:"seg small"});
+  P.legends.forEach(function(L){ mainsG.appendChild(h("button",{type:"button","data-k":L,"aria-pressed":String((p.mains||[]).indexOf(L)>=0),onclick:function(){ var a=(S.profile.mains||[]).slice(), i=a.indexOf(L); if(i>=0) a.splice(i,1); else a.push(L); S.profile.mains=a; setPressed(mainsG,a); saveProfile(); }}, L)); });
+  var npdG=h("div",{class:"seg"});
+  [1,2,3].forEach(function(n){ npdG.appendChild(h("button",{type:"button","data-k":String(n),"aria-pressed":String((p.newPerDay||3)===n),onclick:function(){ S.profile.newPerDay=n; setPressed(npdG,String(n)); saveProfile(); }}, String(n))); });
+  v.appendChild(h("section",{class:"panel"}, h("h2",{text:"Your profile"}),
+    h("div",{class:"field"}, h("label",{class:"q",for:"set-rank"},"Rank"), rankSel),
+    h("div",{class:"field"}, h("div",{class:"q",text:"Legends you play"}), mainsG),
+    h("div",{class:"field"}, h("div",{class:"q",text:"New cards per day"}), npdG)));
   v.appendChild(h("section",{class:"panel"}, h("h2",{text:"Backup"}),
-    h("p",{class:"sub",text:(last?"Last backup "+fmtAgo(last)+". ":"No backup yet. ")+"Your reviews live only on this phone. Save a backup file every week or two, and keep it somewhere safe like Google Drive."}),
-    h("div",{class:"row"}, h("button",{type:"button",class:"ghost",onclick:saveBackup},"Save backup file"), h("button",{type:"button",class:"ghost",onclick:function(){ inp.click(); }},"Restore from file")), inp));
+    h("p",{class:"sub",text:(last?"Last backup "+fmtAgo(last)+". ":"No backup yet. ")+"Everything lives only on this phone: cards, sessions and clip reviews. Save a backup file every week or two and keep it somewhere safe, like Google Drive."}),
+    h("div",{class:"row"}, h("button",{type:"button",class:"ghost",onclick:saveBackup},"Save backup file"), h("button",{type:"button",class:"ghost",onclick:pickRestore},"Restore from file"))));
+  v.appendChild(h("details",{class:"panel more"}, h("summary",{text:"The method behind this app"}),
+    h("p",{text:"Built on the ideas in Learning How to Learn (Oakley and Sejnowski)."}),
+    h("p",null,h("b",{text:"Recall beats rereading. "}),"The Manual makes you answer before it shows you."),
+    h("p",null,h("b",{text:"Spacing. "}),"Cards come back after 1, 3, 7, 14 and 30 days, right before you'd forget."),
+    h("p",null,h("b",{text:"Interleaving. "}),"Reviews mix topics, so you practice picking the right idea."),
+    h("p",null,h("b",{text:"Chunking. "}),"One habit at a time in ranked until it runs on its own."),
+    h("p",null,h("b",{text:"Honest feedback. "}),"The Debrief and clip reviews show what's really happening, not what it felt like."),
+    h("p",null,h("b",{text:"Sleep and breaks. "}),"Short sessions, then walk away. Your brain finishes the work offline.")));
+  v.appendChild(h("p",{class:"faint",text:"Clip Review · "+P.game+" pack "+P.version+" · works offline"}));
 }
 
-// ---------- render ----------
-function renderTabs(){
-  var tabs=document.querySelectorAll(".tabs button");
-  var openQ=S.clips.filter(function(c){ return c.question && !c.qDone; }).length;
-  for(var i=0;i<tabs.length;i++){ var b=tabs[i], t=b.getAttribute("data-tab"); b.setAttribute("aria-selected",String(S.tab===t));
-    if(t==="questions"){ clear(b); b.appendChild(document.createTextNode("Questions")); if(openQ) b.appendChild(h("span",{class:"badge",text:String(openQ)})); } }
+// ===================== render =====================
+function render(){
+  var setup=!S.profile.setup;
+  document.getElementById("nav").hidden=setup||S.settings;
+  document.getElementById("gear").hidden=setup;
+  var navBtns=document.querySelectorAll("#nav button");
+  for(var i=0;i<navBtns.length;i++){ var b=navBtns[i], t=b.getAttribute("data-tab"); b.setAttribute("aria-selected",String(S.ui.tab===t));
+    var old=b.querySelector(".dot"); if(old) old.remove();
+    var n=t==="manual"?dueList(today()).length:t==="clips"?openQCount():0; if(n) b.appendChild(h("span",{class:"dot",text:String(n)})); }
+  clear(view);
+  if(setup) return renderSetup(view);
+  if(S.settings) return renderSettings(view);
+  if(S.ui.tab==="debrief") renderDebrief(view);
+  else if(S.ui.tab==="clips") renderClips(view);
+  else if(S.ui.tab==="maps") renderMaps(view);
+  else renderManual(view);
 }
-// render(true) = new data arrived in the background. It never rebuilds a review in progress or a screen where you're typing.
-function render(fromData){
-  renderTabs();
-  if(fromData===true && ((S.tab==="review" && S.step>=0) || typing())){ tickTimer(); return; }
-  var v=document.getElementById("view"); clear(v);
-  if(S.tab==="review") renderReview(v);
-  else if(S.tab==="patterns") renderPatterns(v);
-  else if(S.tab==="questions") renderQuestions(v);
-  else { renderLog(v); renderBackup(v); }
-  tickTimer();
-}
-function safeRender(fromData){ try{ render(fromData); }catch(e){ showErr(e&&e.message||e); } }
-document.querySelector(".tabs").addEventListener("click",function(e){ var b=e.target.closest("button[data-tab]"); if(!b) return; S.tab=b.getAttribute("data-tab"); safeRender(); window.scrollTo(0,0); });
+function safeRender(){ try{ render(); }catch(e){ showErr(e&&e.message||e); } }
+document.getElementById("nav").addEventListener("click",function(e){ var b=e.target.closest("button[data-tab]"); if(!b) return; goTab(b.getAttribute("data-tab")); });
+document.getElementById("gear").addEventListener("click",function(){ S.settings=!S.settings; safeRender(); window.scrollTo(0,0); });
+// Coming back to the app on a new day: refresh due counts.
+document.addEventListener("visibilitychange",function(){ if(document.visibilityState==="visible" && S.ui.tab==="manual" && !S.settings && !S.mSession && !typing()) safeRender(); });
 
-// ---------- boot ----------
 safeRender();
-setSync("Saved on this phone. Works offline.","ok");
 try{ if(navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function(){}); }catch(e){}
 if("serviceWorker" in navigator){ window.addEventListener("load",function(){ navigator.serviceWorker.register("sw.js").catch(function(){}); }); }
 })();

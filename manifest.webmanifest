@@ -1,7 +1,7 @@
 {
   "name": "Clip Review",
   "short_name": "Clip Review",
-  "description": "Guided review for your Apex Legends clips.",
+  "description": "Study, play with one focus, log it, review your clips. A learning loop for competitive games.",
   "id": "./",
   "start_url": "./",
   "scope": "./",
