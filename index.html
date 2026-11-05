@@ -658,20 +658,24 @@ function liveSummary(L){
   g.forEach(function(x){ if(x.end && x.end!=="won") ends[x.end]=(ends[x.end]||0)+1; });
   return {n:g.length, ran:ran, ends:ends};
 }
-function startLive(fid, custom){
-  var name=fid&&fid!=="custom"?FOCI[fid].name:(custom||"").trim(); if(!name) return;
-  S.live={start:Date.now(), focusId:fid!=="custom"?fid:null, focus:name, mod:fid&&fid!=="custom"&&FOCI[fid].mod!=null?FOCI[fid].mod:"", games:[], pend:{exec:null,end:null,place:""}};
+function lastEndRp(){ var ss=sortedSessions(); for(var i=ss.length-1;i>=0;i--){ if(ss[i].endRp!=null) return ss[i].endRp; } return null; }
+function fmtRp(n){ return Number(n).toLocaleString(); }
+function startLive(fid, custom, startRp){
+  var name=fid&&fid!=="custom"?FOCI[fid].name:(custom||"").trim(); if(!name){ toast("Type your focus first."); return; }
+  var sr=parseInt(startRp,10);
+  S.live={start:Date.now(), focusId:fid!=="custom"?fid:null, focus:name, mod:fid&&fid!=="custom"&&FOCI[fid].mod!=null?FOCI[fid].mod:"", startRp:isNaN(sr)?null:sr, games:[], pend:{exec:null,end:null,place:""}};
   if(fid && fid!=="custom"){ S.profile.focus=fid; saveProfile(); }
   saveLive(); safeRender(); window.scrollTo(0,0); toast("Session started. Say your focus out loud, then queue.");
 }
-function endLive(rp, note){
+function endLive(rp, note, endRp){
   var L=S.live, g=L.games; if(!g.length) return;
+  var er=parseInt(endRp,10); if(L.startRp!=null && !isNaN(er)) rp=String(er-L.startRp);
   var score=g.reduce(function(a,x){ return a+(x.exec==="nailed"?1:x.exec==="some"?0.5:0); },0)/g.length;
   var causes=[]; g.forEach(function(x){ if(x.end && x.end!=="won" && causes.indexOf(x.end)<0) causes.push(x.end); });
   var places=g.map(function(x){ return x.place; }).filter(function(x){ return x!=null; });
   var r=parseInt(rp,10);
   S.sessions.push({id:"s"+Date.now(), date:new Date(L.start).toISOString(), focusId:L.focusId, focus:L.focus, mod:L.mod, exec:score>=0.75?"nailed":score>=0.4?"some":"forgot",
-    causes:causes, place:places.length?Math.min.apply(null,places):null, rp:isNaN(r)?0:r, note:(note||"").trim(), games:g.map(function(x){ return {exec:x.exec,end:x.end,place:x.place}; }), mins:Math.round((Date.now()-L.start)/60000)});
+    causes:causes, place:places.length?Math.min.apply(null,places):null, rp:isNaN(r)?0:r, startRp:L.startRp, endRp:(L.startRp!=null&&!isNaN(er))?er:null, note:(note||"").trim(), games:g.map(function(x){ return {exec:x.exec,end:x.end,place:x.place}; }), mins:Math.round((Date.now()-L.start)/60000)});
   saveDebrief(); S.live=null; saveLive(); safeRender(); window.scrollTo(0,0);
   toast("Session saved: "+g.length+" game"+(g.length===1?"":"s")+".");
 }
@@ -679,7 +683,7 @@ function renderLive(v){
   var L=S.live, sum=liveSummary(L), mins=Math.round((Date.now()-L.start)/60000), C=P.debriefCauses, pend=L.pend||(L.pend={exec:null,end:null,place:""});
   var panel=h("section",{class:"panel live"},
     h("div",{class:"livehead"}, h("span",{class:"livetag",text:"Session live"}), h("span",{class:"faint",text:(mins<60?mins+" min":Math.floor(mins/60)+"h "+(mins%60)+"m")+" · "+sum.n+" game"+(sum.n===1?"":"s")})),
-    h("div",{class:"focus",style:"margin-top:10px"}, h("div",{class:"label",text:"Your focus"}), h("div",{class:"name",text:L.focus}), h("p",{text:"Say it out loud before every queue."})));
+    h("div",{class:"focus",style:"margin-top:10px"}, h("div",{class:"label",text:"Your focus"}), h("div",{class:"name",text:L.focus}), h("p",{text:"Say it out loud before every queue."+(L.startRp!=null?" Started at "+fmtRp(L.startRp)+" RP.":"")})));
   // tilt check: three games in a row without the focus
   var last3=L.games.slice(-3);
   if(last3.length===3 && last3.every(function(x){ return x.exec==="forgot"; })) panel.appendChild(h("div",{class:"tilt",text:"Three games in a row without your focus. Take 5 minutes and reset before you queue again. Tilt costs more RP than any single death."}));
@@ -707,13 +711,17 @@ function renderLive(v){
     panel.appendChild(h("button",{type:"button",class:"linkbtn",onclick:function(){ L.games.pop(); saveLive(); safeRender(); toast("Last game removed."); }},"Undo last game"));
   }
   // end session
-  var rp=h("input",{class:"inp",id:"live-rp",type:"number",inputmode:"numeric",placeholder:"e.g. -35"});
+  var hasStart=L.startRp!=null;
+  var rp=h("input",{class:"inp",id:"live-rp",type:"number",inputmode:"numeric",placeholder:hasStart?"e.g. "+(L.startRp+35):"e.g. -35"});
+  var delta=h("p",{class:"faint",style:"margin:6px 0 0;min-height:18px"});
+  if(hasStart) rp.addEventListener("input",function(){ var e=parseInt(rp.value,10); if(isNaN(e)){ delta.textContent=""; return; } var d=e-L.startRp; delta.textContent=(d>0?"+":"")+fmtRp(d)+" RP this session"; delta.style.color=d>0?"var(--teal)":d<0?"var(--red)":""; });
   var note=h("input",{class:"inp",id:"live-note",placeholder:"One line you want to remember"});
   var disc=h("button",{type:"button",class:"ghost",text:"Discard"}), armed=false;
   disc.addEventListener("click",function(){ if(!armed){ armed=true; disc.textContent="Tap again to discard"; disc.classList.add("danger"); setTimeout(function(){ armed=false; disc.textContent="Discard"; disc.classList.remove("danger"); },3000); return; } S.live=null; saveLive(); safeRender(); toast("Session discarded."); });
   panel.appendChild(h("details",{class:"more",style:"margin-top:8px"}, h("summary",{text:"End session"}),
-    h("div",{class:"two",style:"margin-top:8px"}, h("div",{class:"field"},h("label",{class:"q",for:"live-rp"},"RP change for the session"),rp), h("div",{class:"field"},h("label",{class:"q",for:"live-note"},"Note",h("span",{class:"opt"}," (optional)")),note)),
-    h("div",{class:"nav2"}, disc, h("button",{type:"button",class:"primary",disabled:!sum.n,onclick:function(){ endLive(rp.value, note.value); }},"Save session"))));
+    h("div",{class:"field",style:"margin-top:8px"},h("label",{class:"q",for:"live-rp"},hasStart?"Your RP now":"RP change for the session",hasStart?h("span",{class:"note",text:"You started at "+fmtRp(L.startRp)+". The app works out the change."}):null),rp,delta),
+    h("div",{class:"field"},h("label",{class:"q",for:"live-note"},"Note",h("span",{class:"opt"}," (optional)")),note),
+    h("div",{class:"nav2"}, disc, h("button",{type:"button",class:"primary",disabled:!sum.n,onclick:function(){ if(hasStart){ endLive("", note.value, rp.value); } else endLive(rp.value, note.value); }},"Save session"))));
   v.appendChild(panel);
 }
 function renderLiveStart(v){
@@ -723,9 +731,12 @@ function renderLiveStart(v){
   var oc=h("option",{value:"custom",text:"Something else…"}); if(f==="custom") oc.selected=true; fsel.appendChild(oc);
   var custom=h("input",{class:"inp",id:"live-custom",placeholder:"Your focus, in a few words",style:"margin-top:8px",hidden:f!=="custom"});
   fsel.addEventListener("change",function(){ S.dform.liveFocus=fsel.value; custom.hidden=fsel.value!=="custom"; });
+  var prev=lastEndRp(), srp=h("input",{class:"inp",id:"live-start-rp",type:"number",inputmode:"numeric",placeholder:"e.g. 4250"});
+  if(prev!=null) srp.value=String(prev);
   v.appendChild(h("section",{class:"panel"}, h("h2",{text:"Playing ranked?"}), h("p",{class:"sub",text:"Start a session and log each game in two taps. Built for long sessions: 5 games or 25."}),
     h("div",{class:"field"}, h("label",{class:"q",for:"live-focus"},"Your one focus for this session"), fsel, custom),
-    h("button",{type:"button",class:"primary",onclick:function(){ startLive(fsel.value, custom.value); }},"Start session")));
+    h("div",{class:"field"}, h("label",{class:"q",for:"live-start-rp"},"Your RP right now",h("span",{class:"note",text:prev!=null?"Filled in from where your last session ended. Fix it if it changed.":"Your total ranked points from the in-game rank screen."})), srp),
+    h("button",{type:"button",class:"primary",onclick:function(){ startLive(fsel.value, custom.value, srp.value); }},"Start session")));
 }
 
 function renderDebrief(v){
@@ -831,7 +842,7 @@ function renderDebrief(v){
       clearTimeout(armT); S.sessions=S.sessions.filter(function(x){ return x.id!==s.id; }); saveDebrief(); safeRender(); toast("Session deleted.");
     });
     hp.appendChild(h("div",{class:"hitem"},h("span",{class:"hbadge",style:"background:"+col}),
-      h("span",{class:"hmeta"},h("span",null,h("b",{style:"font-weight:500",text:s.focus+" "}),h("span",{style:"color:"+col,text:s.games&&s.games.length?"ran it "+s.games.filter(function(g){ return g.exec==="nailed"; }).length+"/"+s.games.length:txt}),s.place!=null?h("span",{class:"faint",text:" · best #"+s.place}):null, s.games&&s.games.length?h("span",{class:"faint",text:" · "+s.games.length+" games"}):null),
+      h("span",{class:"hmeta"},h("span",null,h("b",{style:"font-weight:500",text:s.focus+" "}),h("span",{style:"color:"+col,text:s.games&&s.games.length?"ran it "+s.games.filter(function(g){ return g.exec==="nailed"; }).length+"/"+s.games.length:txt}),s.place!=null?h("span",{class:"faint",text:" · best #"+s.place}):null, s.games&&s.games.length?h("span",{class:"faint",text:" · "+s.games.length+" games"}):null, s.endRp!=null?h("span",{class:"faint",text:" · "+fmtRp(s.startRp)+" → "+fmtRp(s.endRp)+" RP"}):null),
         h("span",{class:"l2",text:when+(ends?" · ended: "+ends:"")+(s.note?" · "+s.note:"")})),
       h("span",{class:"rp"+(s.rp>0?" pos":s.rp<0?" neg":""),text:(s.rp>0?"+":"")+(s.rp||0)}),del));
   });
@@ -1159,6 +1170,8 @@ function proofBlocks(D){
   if(D.recall.cur.t) B.push({big:pct(D.recall.cur.h,D.recall.cur.t)+"%", lab:"Key points hit from memory, last 7 days"+(D.recall.prev.t?" (was "+pct(D.recall.prev.h,D.recall.prev.t)+"%)":"")});
   B.push({big:D.cards.now.own+" / "+D.cards.total, lab:"Concepts owned"+(D.cards.first?" (was "+D.cards.first.own+" on "+fmtDate(D.cards.firstDay)+")":"")+" · "+D.cards.now.started+" started"});
   if(D.habits.installed.length) B.push({big:String(D.habits.installed.length), lab:"Habit"+(D.habits.installed.length===1?"":"s")+" installed in ranked"});
+  var rps=sortedSessions().filter(function(x){ return x.startRp!=null && x.endRp!=null; });
+  if(rps.length && rps[rps.length-1].endRp>rps[0].startRp) B.push({big:"+"+fmtRp(rps[rps.length-1].endRp-rps[0].startRp)+" RP", lab:"Climbed from "+fmtRp(rps[0].startRp)+" to "+fmtRp(rps[rps.length-1].endRp)});
   if(D.sessions && D.sessions.split) B.push({big:D.sessions.recent+"%", lab:"Sessions where I ran my focus (was "+D.sessions.early+"%)"});
   if(B.length<4 && S.clips.length) B.push({big:String(S.clips.length), lab:"Clips reviewed like a coach"});
   if(B.length<4 && D.recall.all.n) B.push({big:String(D.recall.all.h), lab:"Key points recalled, all time"});
@@ -1212,6 +1225,8 @@ function renderProof(v){
     if(D.sessions.split) hp.appendChild(h("div",{class:"trend"}, h("span",{text:"Ran my focus (nailed it)"}), h("span",{class:"r "+(D.sessions.recent>=D.sessions.early?"up":"down"),text:D.sessions.early+"% → "+D.sessions.recent+"%"})));
     hp.appendChild(h("div",{class:"trend"}, h("span",{text:"Habits installed"}), h("span",{class:"r",text:D.habits.installed.length?D.habits.installed.join(", "):"none yet"})));
     hp.appendChild(h("div",{class:"trend"}, h("span",{text:"Net RP logged"}), h("span",{class:"r",text:(D.sessions.rp>0?"+":"")+D.sessions.rp})));
+    var withRp=sortedSessions().filter(function(x){ return x.startRp!=null && x.endRp!=null; });
+    if(withRp.length) hp.appendChild(h("div",{class:"trend"}, h("span",{text:"RP climb (first log → latest)"}), h("span",{class:"r "+(withRp[withRp.length-1].endRp>=withRp[0].startRp?"up":"down"),text:fmtRp(withRp[0].startRp)+" → "+fmtRp(withRp[withRp.length-1].endRp)})));
   }
   v.appendChild(hp);
 }

@@ -15,6 +15,7 @@ The goal: help people learn whatever they want in a fun, efficient way, built on
 - [x] "Go deeper" points with a ★ Full answer mark
 - [x] Proof screen: clips then vs now, recall accuracy, concepts owned, ranked stats, share image
 - [x] Session mode: two taps per game in long ranked sessions, tilt check, auto-tallied session log
+- [x] Starting RP at session start (prefilled from last session), ending RP at the end; the app computes the change and shows the RP climb on Proof
 - [x] Content separated into `pack-apex.js` so other games or subjects can reuse the engine
 
 ## Up next
