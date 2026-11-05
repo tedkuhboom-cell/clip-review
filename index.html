@@ -139,6 +139,40 @@ details.more p{font-size:14px;margin:6px 0}
 .rrow{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}
 .rrow b{flex:none;width:92px}
 
+/* typed recall */
+.answerbox{min-height:110px}
+.recallhint{color:var(--faint);font-size:12.5px;margin:6px 0 14px}
+.verdictbar{display:flex;align-items:baseline;justify-content:space-between;gap:10px;border-radius:12px;padding:12px 14px;margin-bottom:12px;border:1px solid var(--line)}
+.verdictbar b{font-family:var(--display);font-size:24px;letter-spacing:.5px}
+.verdictbar.got{background:var(--teal-bg);border-color:var(--teal)} .verdictbar.got b{color:var(--teal-ink)}
+.verdictbar.shaky{background:var(--amber-bg);border-color:var(--amber)} .verdictbar.shaky b{color:var(--amber-ink2)}
+.verdictbar.miss{background:var(--red-bg);border-color:var(--red)} .verdictbar.miss b{color:var(--red-ink)}
+.youranswer{background:var(--panel-2);border-radius:10px;padding:10px 12px;font-size:14px;color:var(--muted);margin:0 0 12px;white-space:pre-wrap;overflow-wrap:anywhere}
+.kplist{list-style:none;margin:0 0 14px;padding:0}
+.kplist li{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--line);font-size:14.5px;opacity:0;animation:kpin .35s ease forwards}
+.kplist li:last-child{border-bottom:0}
+.kplist .mk{flex:none;width:22px;height:22px;border-radius:6px;display:grid;place-items:center;font-weight:700;font-size:13px}
+.kplist .hit .mk{background:var(--teal);color:var(--amber-ink)}
+.kplist .no .mk{background:var(--red-bg);color:var(--red-ink);border:1px solid var(--red)}
+.kplist .no span{color:var(--muted)}
+@keyframes kpin{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.kplist li{animation:none;opacity:1}}
+.appeal{background:none;border:0;color:var(--faint);text-decoration:underline;font-size:12.5px;padding:10px 0 0;min-height:36px}
+
+/* proof */
+.proofcard{background:linear-gradient(160deg,#1d2530,#141a22);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:12px}
+.proofcard .ph{font-family:var(--display);font-size:13px;letter-spacing:1.5px;color:var(--amber);text-transform:uppercase}
+.proofcard .pt{font-family:var(--display);font-size:28px;font-weight:700;margin:2px 0 12px}
+.pblocks{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pblock{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:11px 12px;min-width:0}
+.pblock .big{font-family:var(--display);font-size:26px;font-weight:700;line-height:1.05;color:var(--teal-ink);font-variant-numeric:tabular-nums}
+.pblock .lab{font-size:12.5px;color:var(--muted);margin-top:4px}
+.pfoot{font-size:12px;color:var(--faint);margin-top:12px}
+.trend{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
+.trend:last-child{border-bottom:0}
+.trend .r{flex:none;font-variant-numeric:tabular-nums;font-size:13px}
+.trend .up{color:var(--teal-ink)} .trend .down{color:var(--red-ink)}
+
 /* debrief */
 .dots{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap}
 .edot{width:15px;height:15px;border-radius:4px;flex:none}
@@ -245,7 +279,10 @@ svg.spark{width:100%;height:60px;display:block}
       <div class="chevron" aria-hidden="true"></div>
       <div><h1>Clip Review</h1><p id="tagline">Study. Play one focus. Log it. Review it.</p></div>
     </div>
+    <div style="display:flex;gap:8px">
+    <button class="iconbtn" id="proofbtn" type="button" aria-label="Your progress proof"><svg viewBox="0 0 24 24"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3"/><path d="M7 5H4v2a3 3 0 0 0 3 3"/></svg></button>
     <button class="iconbtn" id="gear" type="button" aria-label="Settings and backup"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+    </div>
   </header>
   <div id="err" class="err" hidden></div>
   <main id="view"></main>
@@ -320,12 +357,37 @@ var ALLCHECKS = []; GROUP_ORDER.forEach(function(g){ if(CL.groups[g]) CL.groups[
 function causeOf(k){ for(var i=0;i<CL.causes.length;i++) if(CL.causes[i].k===k) return CL.causes[i]; return null; }
 var STEPS = ["Clip","Gut pass","Rewind","Before the fight","Comms","The fight","Verdict"], LAST = STEPS.length-1;
 
+// ===================== key-point grader =====================
+// Each card lists key points; each point has accepted phrasings. A phrasing hits when every word stem in it
+// appears in the answer (prefix match, with a one-letter typo allowed on longer stems).
+function gnorm(s){ return String(s||"").toLowerCase().replace(/[’'`]/g,"").replace(/-/g,"").replace(/[^a-z0-9]+/g," ").trim(); }
+function lev1(a,b){ if(a===b) return true; var la=a.length, lb=b.length; if(Math.abs(la-lb)>1) return false;
+  var i=0,j=0,ed=0; while(i<la&&j<lb){ if(a[i]===b[j]){i++;j++;continue;} if(++ed>1) return false; if(la>lb) i++; else if(lb>la) j++; else {i++;j++;} }
+  return ed+(la-i)+(lb-j)<=1; }
+function stemHit(stem, toks){ for(var i=0;i<toks.length;i++){ var t=toks[i];
+    if(t.indexOf(stem)===0) return true;
+    if(stem.length>=5 && t.indexOf(stem)>=0) return true;
+    if(stem.length>=5 && t.length>=stem.length-1 && lev1(t.slice(0,stem.length),stem)) return true;
+    if(stem.length>=5 && lev1(t,stem)) return true; } return false; }
+function altHit(alt, toks){ var st=gnorm(alt).split(" ").filter(Boolean); return st.length>0 && st.every(function(x){ return stemHit(x,toks); }); }
+function gradeAnswer(answer, kps){
+  var toks=gnorm(answer).split(" ").filter(Boolean), total=kps.length;
+  if(toks.length<2) return {hits:kps.map(function(){ return false; }), n:0, total:total, grade:"miss"};
+  var hits=kps.map(function(kp){ return kp[1].some(function(a){ return altHit(a,toks); }); }), n=hits.filter(Boolean).length;
+  var gotAt=Math.max(total-1, Math.ceil(total*0.75)), shakyAt=Math.ceil(total/2);
+  return {hits:hits, n:n, total:total, grade:n>=gotAt?"got":n>=shakyAt?"shaky":"miss"};
+}
+var GRADE_NAME={got:"Got it",shaky:"Shaky",miss:"Missed"};
+
 // ===================== state =====================
 function blankDraft(){ return {type:null,map:"",legend:"",label:"",situation:[],starter:null,plan:null,gut:"",when:null,lastGood:"",checks:{},cause:null,kind:null,habit:null,fix:"",rehearsed:false,question:""}; }
 function normDraft(d){ var b=blankDraft(); d=d||{}; for(var k in b) if(d[k]===undefined) d[k]=b[k]; if(!Array.isArray(d.situation)) d.situation=[]; if(!d.checks||typeof d.checks!=="object") d.checks={}; return d; }
 var S = {
   profile: Object.assign({setup:false, rank:"", mains:[], newPerDay:3, focus:P.habits[0].id}, lget(K.profile)||{}),
   reviews: ((lget(K.manual)||{}).reviews)||{},
+  recall: ((lget(K.manual)||{}).recall)||[],
+  snap: ((lget(K.manual)||{}).snap)||{},
+  proof:false,
   sessions: ((lget(K.debrief)||{}).sessions)||[],
   clips: ((lget(K.clips)||{}).clips)||[],
   draft: normDraft(lget(K.draft)), step:-1,
@@ -334,7 +396,7 @@ var S = {
 };
 if(typeof S.draft._step==="number" && S.draft._step>=0) S.step=Math.min(S.draft._step,LAST);
 function saveProfile(){ lset(K.profile,S.profile); }
-function saveManual(){ lset(K.manual,{reviews:S.reviews}); }
+function saveManual(){ lset(K.manual,{reviews:S.reviews, recall:S.recall, snap:S.snap}); }
 function saveDebrief(){ lset(K.debrief,{sessions:S.sessions}); }
 function saveClips(){ lset(K.clips,{clips:S.clips}); }
 function saveDraft(){ S.draft._step=S.step; S.draft._updated=Date.now(); lset(K.draft,S.draft); }
@@ -350,7 +412,7 @@ function bars(panel, rows){
   var max=0; rows.forEach(function(r){ if(r.n>max) max=r.n; });
   rows.forEach(function(r){ panel.appendChild(h("div",{class:"bar"}, h("span",{class:"lbl",text:r.label}), h("span",{class:"track"}, h("span",{class:"fill",style:"width:"+(max?Math.round(r.n/max*100):0)+"%;background:"+(r.color||"var(--amber)")})), h("span",{class:"ct",text:String(r.n)}))); });
 }
-function goTab(tab){ S.settings=false; S.ui.tab=tab; saveUI(); safeRender(); window.scrollTo(0,0); }
+function goTab(tab){ S.settings=false; S.proof=false; S.ui.tab=tab; saveUI(); safeRender(); window.scrollTo(0,0); }
 
 // ===================== SETUP (first run) =====================
 function renderSetup(v){
@@ -359,7 +421,7 @@ function renderSetup(v){
     h("h2",{text:"Welcome to Clip Review"}),
     h("p",{class:"sub",text:"A learning loop for "+P.game+", built on the Learning How to Learn method: short recall sessions spaced over days, one focus per game session, and honest review of your own clips."}),
     h("ol",{class:"steps-list"},
-      h("li",null,h("span",null,h("b",null,"Manual. "),"A few cards a day. Answer out loud before you reveal.")),
+      h("li",null,h("span",null,h("b",null,"Manual. "),"A few cards a day. Type your answer, and the app grades it.")),
       h("li",null,h("span",null,h("b",null,"Debrief. "),"Play ranked with one focus, then log whether you ran it.")),
       h("li",null,h("span",null,h("b",null,"Clips. "),"Review a few clips the day after, one pass at a time.")),
       h("li",null,h("span",null,h("b",null,"Maps. "),"Read each map's structure before you drop.")))));
@@ -422,15 +484,16 @@ function renderManual(v){
         h("span",null,h("i",{style:"background:var(--amber)"}),"Learning "+counts.learn),
         h("span",null,h("i",{style:"background:var(--line)"}),"Not started "+counts.new))),
     h("div",{style:"margin-top:14px"}, h("button",{type:"button",class:"primary",disabled:total===0,onclick:startMSession}, total? "Start · "+total+" card"+(total>1?"s":"") : "All caught up")),
-    h("p",{class:"hint",text: total ? "About "+mins+" min. Answer out loud before you reveal." : (nd? "Next review "+pretty(nd)+". Go play your focus." : "Go play your focus.")}),
+    h("p",{class:"hint",text: total ? "About "+mins+" min. Type your answer, and the app grades it on the key points." : (nd? "Next review "+pretty(nd)+". Go play your focus." : "Go play your focus.")}),
     nq.length ? h("p",{class:"hint"},"Next new card: ",h("b",{text:nq[0].id+" "+nq[0].title}),".") : h("p",{class:"hint",text:"Every card is started."})));
   var f=S.profile.focus;
   v.appendChild(h("section",{class:"panel"}, h("div",{class:"focus"}, h("div",{class:"label",text:"Your ranked focus"}), h("div",{class:"name",text:focusName(f)||"Pick one in the Debrief"}),
       f&&FOCI[f]?h("p",{text:FOCI[f].what}):null),
     h("button",{type:"button",class:"linkbtn",onclick:function(){ goTab("debrief"); }},"Log a session in the Debrief")));
   v.appendChild(h("details",{class:"panel more"}, h("summary",{text:"How this works"}),
-    h("p",null,h("b",{text:"Answer out loud, then reveal."})," Pulling the answer out of memory is what builds it. Rereading only feels like learning."),
-    h("p",null,h("b",{text:"Grade honestly."})," Got it moves a card up the ladder: 1 day, 3 days, 1 week, 2 weeks, then owned at a month. Shaky brings it back tomorrow. Missed sends it back to the start."),
+    h("p",null,h("b",{text:"Type it, then check."})," Pulling the answer out of memory is what builds it. Rereading only feels like learning."),
+    h("p",null,h("b",{text:"Graded on key points."})," Hit them all (or all but one on big cards) for Got it, half for Shaky, less for Missed. Wording doesn't matter. Got it moves a card up the ladder: 1 day, 3 days, 1 week, 2 weeks, then owned at a month. Shaky brings it back tomorrow. Missed sends it back to the start."),
+    h("p",null,h("b",{text:"Grader wrong?"})," If you said it in different words, tap \u201cThe grader missed something\u201d to move up one level. Use it honestly. You're only fooling your future self."),
     h("p",null,h("b",{text:"Mixed on purpose."})," Reviews are shuffled across modules so you practice choosing which idea applies."),
     h("p",null,h("b",{text:"Then stop."})," A session is a few minutes. A card isn't really yours until you've run its drill in a game.")));
 }
@@ -449,40 +512,68 @@ function renderMSession(v){
       h("button",{type:"button",class:"ghost",style:"min-height:36px;padding:6px 12px;font-size:12.5px",onclick:function(){ S.mSession=null; safeRender(); }},"End")),
     h("div",{class:"tagrow"},h("span",{class:"tag "+(it.kind==="new"?"new":"due"),text:it.kind==="new"?"New card":"Review"}),h("span",{class:"tag",text:c.id+" · "+MODS[c.mod]})));
   function go(ph){ s.phase=ph; safeRender(); window.scrollTo(0,0); }
+  function cardBody(){ return [h("h2",{class:"cardtitle",text:c.title}), h("p",{class:"concept",text:c.concept}), h("p",{class:"drill"},h("b",{text:"Drill · "}),c.drill)]; }
   if(it.kind==="new" && s.phase==="front"){
-    panel.appendChild(h("h2",{class:"cardtitle",text:c.title}));
-    panel.appendChild(h("p",{class:"concept",text:c.concept}));
-    panel.appendChild(h("p",{class:"drill"},h("b",{text:"Drill · "}),c.drill));
-    panel.appendChild(h("button",{type:"button",class:"primary",onclick:function(){ go("test"); }},"Read it. Test me"));
-  } else if(s.phase!=="back"){
-    panel.appendChild(h("p",{class:"cardq",text:c.recall}));
-    panel.appendChild(h("p",{class:"say",text:"Say your answer out loud first."}));
-    panel.appendChild(h("button",{type:"button",class:"primary",onclick:function(){ go("back"); }},"Reveal"));
-  } else {
-    panel.appendChild(h("p",{class:"say",style:"margin-bottom:6px",text:c.recall}));
-    panel.appendChild(h("h2",{class:"cardtitle",text:c.title}));
-    panel.appendChild(h("p",{class:"concept",text:c.concept}));
-    panel.appendChild(h("p",{class:"drill"},h("b",{text:"Drill · "}),c.drill));
-    var g=h("div",{class:"grades"});
-    if(it.kind==="new") g.appendChild(h("button",{type:"button",class:"grade got",onclick:function(){ gradeCard(c,"learn"); }},h("span",{text:"Learned"}),h("small",{text:"see it again tomorrow"})));
-    else {
-      var gb=Math.min((rev?rev.box:0)+1,5);
-      g.appendChild(h("button",{type:"button",class:"grade miss",onclick:function(){ gradeCard(c,"miss"); }},h("span",{text:"Missed"}),h("small",{text:"back to the start · tomorrow"})));
-      g.appendChild(h("button",{type:"button",class:"grade shaky",onclick:function(){ gradeCard(c,"shaky"); }},h("span",{text:"Shaky"}),h("small",{text:"again tomorrow"})));
-      g.appendChild(h("button",{type:"button",class:"grade got",onclick:function(){ gradeCard(c,"got"); }},h("span",{text:"Got it"}),h("small",{text:gb>=5?"owned · back in a month":inDays(INTERVAL[gb])})));
+    panel.appendChild(h("div",null,cardBody()));
+    panel.appendChild(h("button",{type:"button",class:"primary",onclick:function(){ s.answer=""; go("test"); }},"Read it. Test me"));
+  } else if(s.phase!=="result"){
+    var ta=h("textarea",{class:"inp answerbox",id:"recall-input",rows:"4",placeholder:"Type the key ideas. Short is fine."});
+    ta.value=s.answer||""; ta.addEventListener("input",function(){ s.answer=ta.value; });
+    function check(dontKnow){
+      s.answer=dontKnow?"":ta.value.trim(); s.appealed=false;
+      if(c.selfGrade){ s.result=null; } else { s.result=dontKnow?{hits:c.kp.map(function(){ return false; }),n:0,total:c.kp.length,grade:"miss"}:gradeAnswer(s.answer,c.kp); }
+      go("result");
     }
-    panel.appendChild(g);
+    panel.appendChild(h("p",{class:"cardq",text:c.recall}));
+    panel.appendChild(h("label",{class:"sr",for:"recall-input",style:"position:absolute;left:-9999px",text:"Your answer"}));
+    panel.appendChild(ta);
+    panel.appendChild(h("p",{class:"recallhint",text:c.selfGrade?"Type your honest answer, then reveal and grade yourself.":"Hit the key points in your own words. Your keyboard's mic button works too."}));
+    panel.appendChild(h("div",{class:"nav2"},
+      h("button",{type:"button",class:"ghost",onclick:function(){ check(true); }},"I don't know"),
+      h("button",{type:"button",class:"primary",onclick:function(){ check(false); }}, c.selfGrade?"Reveal":"Check my answer")));
+  } else {
+    var r=s.result;
+    if(r){
+      var g=r.grade, shown=s.appealed?bump(g):g;
+      panel.appendChild(h("div",{class:"verdictbar "+shown}, h("b",{text:GRADE_NAME[shown]}), h("span",{class:"faint",text:r.n+" of "+r.total+" key point"+(r.total===1?"":"s")+(s.appealed?" · upgraded":"")})));
+      if(s.answer) panel.appendChild(h("p",{class:"youranswer",text:s.answer}));
+      panel.appendChild(h("ul",{class:"kplist"}, c.kp.map(function(kp,i){ return h("li",{class:r.hits[i]?"hit":"no",style:"animation-delay:"+(i*180)+"ms"}, h("span",{class:"mk",text:r.hits[i]?"✓":"✕"}), h("span",{text:kp[0]})); })));
+    } else if(s.answer) panel.appendChild(h("p",{class:"youranswer",text:s.answer}));
+    panel.appendChild(h("div",null,cardBody()));
+    if(c.selfGrade){
+      var gb=Math.min((rev?rev.box:0)+1,5), grades=h("div",{class:"grades"});
+      if(it.kind==="new") grades.appendChild(h("button",{type:"button",class:"grade got",onclick:function(){ finishCard(c,"learn",null); }},h("span",{text:"Learned"}),h("small",{text:"see it again tomorrow"})));
+      else {
+        grades.appendChild(h("button",{type:"button",class:"grade miss",onclick:function(){ finishCard(c,"miss",null); }},h("span",{text:"Missed"}),h("small",{text:"back to the start · tomorrow"})));
+        grades.appendChild(h("button",{type:"button",class:"grade shaky",onclick:function(){ finishCard(c,"shaky",null); }},h("span",{text:"Shaky"}),h("small",{text:"again tomorrow"})));
+        grades.appendChild(h("button",{type:"button",class:"grade got",onclick:function(){ finishCard(c,"got",null); }},h("span",{text:"Got it"}),h("small",{text:gb>=5?"owned · back in a month":inDays(INTERVAL[gb])})));
+      }
+      panel.appendChild(grades);
+    } else {
+      var fg=s.appealed?bump(r.grade):r.grade, nb=Math.min((rev?rev.box:0)+1,5);
+      var when = it.kind==="new" ? "Back tomorrow to lock it in." : fg==="got" ? (nb>=5?"Owned. Back in a month.":"Moves up. Back "+inDays(INTERVAL[nb])+".") : fg==="shaky" ? "Back tomorrow." : "Back to the start. Back tomorrow.";
+      panel.appendChild(h("p",{class:"hint",style:"margin:0 0 10px",text:when}));
+      panel.appendChild(h("button",{type:"button",class:"primary",onclick:function(){ finishCard(c, it.kind==="new"?"learn":fg, r); }},"Next card"));
+      if(r.grade!=="got" && !s.appealed) panel.appendChild(h("button",{type:"button",class:"appeal",onclick:function(){ s.appealed=true; safeRender(); }},"The grader missed something I said"));
+    }
   }
   v.appendChild(panel);
+  if(s.phase!=="result" && !(it.kind==="new" && s.phase==="front")){ var box=document.getElementById("recall-input"); if(box) setTimeout(function(){ try{ box.focus(); }catch(e){} },50); }
 }
-function gradeCard(c,g){
+function bump(g){ return g==="miss"?"shaky":g==="shaky"?"got":g; }
+function finishCard(c,g,r){
   var s=S.mSession, it=s.items[s.i];
-  S.reviews[c.id]=schedule(S.reviews[c.id], g, today()); saveManual();
-  s.done[it.kind]++; s.i++; s.phase="front"; safeRender(); window.scrollTo(0,0);
+  S.reviews[c.id]=schedule(S.reviews[c.id], g, today());
+  if(r) S.recall.push({ts:Date.now(), d:today(), id:c.id, n:r.n, t:r.total, g:r.grade, ap:!!s.appealed, k:it.kind});
+  if(S.recall.length>3000) S.recall=S.recall.slice(-3000);
+  saveManual();
+  s.done[it.kind]++; if(r){ s.hit=(s.hit||0)+r.n; s.tot=(s.tot||0)+r.total; }
+  s.i++; s.phase="front"; s.answer=""; s.result=null; s.appealed=false; safeRender(); window.scrollTo(0,0);
 }
 function renderMDone(v){
   var t=today(), d=S.mSession.done, nd=nextDue(t), again=dueList(t).length, parts=[];
   if(d.due) parts.push(d.due+" reviewed"); if(d.new) parts.push(d.new+" learned");
+  if(S.mSession.tot) parts.push(S.mSession.hit+" of "+S.mSession.tot+" key points hit ("+Math.round(100*S.mSession.hit/S.mSession.tot)+"%)");
   v.appendChild(h("section",{class:"panel"}, h("h2",{text:"Done for today"}), h("p",{text:parts.join(", ")+"."}),
     h("p",{class:"sub",text: again ? again+" card"+(again>1?"s are":" is")+" still due from Missed or Shaky. They come back tomorrow." : nd ? "Next review: "+pretty(nd)+"." : ""}),
     h("p",{text:"Now stop and walk away. Take your focus into ranked: "+(focusName(S.profile.focus)||"pick one in the Debrief")+"."}),
@@ -907,9 +998,142 @@ function renderMaps(v){
   v.appendChild(h("p",{class:"faint",text:P.mapsNote+" \"ranked\" marks maps in the ranked rotation as of the pack date ("+P.version+")."}));
 }
 
+// ===================== PROOF =====================
+function takeSnapshot(){
+  var t=today(); if(S.snap[t]) return;
+  var c={own:0,solid:0,learn:0}; CARDS.forEach(function(x){ var st=stage(S.reviews[x.id]); if(st!=="new") c[st]++; });
+  S.snap[t]={own:c.own, solid:c.solid, started:c.own+c.solid+c.learn}; saveManual();
+}
+function pct(a,b){ return b?Math.round(100*a/b):0; }
+function proofData(){
+  var out={clipUps:[], clipWork:[], cards:null, recall:null, habits:null, sessions:null};
+  // clips: earlier half vs recent half
+  var cl=S.clips.slice().sort(function(a,b){ return (a.created||0)-(b.created||0); });
+  if(cl.length>=4){
+    var half=Math.floor(cl.length/2), early=cl.slice(0,half), recent=cl.slice(half);
+    ALLCHECKS.forEach(function(ch){
+      function tally(list){ var y=0,n=0; list.forEach(function(c){ var a=c.checks&&c.checks[ch.k]; if(a==="y") y++; if(a==="n") n++; }); return {y:y,n:n,t:y+n}; }
+      var e=tally(early), r=tally(recent); if(!e.t || !r.t || e.t+r.t<3) return;
+      var re=e.y/e.t, rr=r.y/r.t, row={ch:ch, e:e, r:r, d:rr-re};
+      if(rr>re) out.clipUps.push(row); else if(rr<=0.5 && r.n>=2) out.clipWork.push(row);
+    });
+    out.clipUps.sort(function(a,b){ return b.d-a.d; }); out.clipWork.sort(function(a,b){ return a.d-b.d; });
+    out.clipSplit={early:early.length, recent:recent.length};
+  }
+  // cards
+  var c={own:0,solid:0,started:0}; CARDS.forEach(function(x){ var st=stage(S.reviews[x.id]); if(st!=="new") c.started++; if(st==="own") c.own++; if(st==="solid") c.solid++; });
+  var days=Object.keys(S.snap).sort(), first=days.length?S.snap[days[0]]:null;
+  out.cards={now:c, total:CARDS.length, firstDay:days.length>1?days[0]:null, first:days.length>1?first:null};
+  // recall accuracy (graded reviews)
+  var t=today(), wk=addDays(t,-6), pw=addDays(t,-13), cur={h:0,t:0,n:0,got:0}, prev={h:0,t:0,n:0}, all={h:0,t:0,n:0,ap:0};
+  S.recall.forEach(function(r){ all.h+=r.n; all.t+=r.t; all.n++; if(r.ap) all.ap++;
+    if(r.d>=wk){ cur.h+=r.n; cur.t+=r.t; cur.n++; if(r.g==="got") cur.got++; } else if(r.d>=pw){ prev.h+=r.n; prev.t+=r.t; prev.n++; } });
+  out.recall={cur:cur, prev:prev, all:all};
+  // habits + sessions
+  var g=focusGroups(), inst=g.filter(function(x){ return installing(x.seq); }).map(function(x){ return x.focus; });
+  out.habits={installed:inst};
+  var ss=sortedSessions();
+  if(ss.length){ var hf=Math.floor(ss.length/2), a=ss.slice(0,hf), b=ss.slice(hf);
+    out.sessions={count:ss.length, rp:ss.reduce(function(x,s){ return x+(s.rp||0); },0),
+      early:a.length?pct(a.filter(function(s){ return s.exec==="nailed"; }).length,a.length):null, recent:pct(b.filter(function(s){ return s.exec==="nailed"; }).length,b.length), split:ss.length>=4}; }
+  return out;
+}
+function proofBlocks(D){
+  var B=[];
+  D.clipUps.slice(0,2).forEach(function(u){ B.push({big:pct(u.e.y,u.e.t)+"% → "+pct(u.r.y,u.r.t)+"%", lab:u.ch.t+" (my clips, before → now)"}); });
+  if(D.recall.cur.t) B.push({big:pct(D.recall.cur.h,D.recall.cur.t)+"%", lab:"Key points hit from memory, last 7 days"+(D.recall.prev.t?" (was "+pct(D.recall.prev.h,D.recall.prev.t)+"%)":"")});
+  B.push({big:D.cards.now.own+" / "+D.cards.total, lab:"Concepts owned"+(D.cards.first?" (was "+D.cards.first.own+" on "+fmtDate(D.cards.firstDay)+")":"")+" · "+D.cards.now.started+" started"});
+  if(D.habits.installed.length) B.push({big:String(D.habits.installed.length), lab:"Habit"+(D.habits.installed.length===1?"":"s")+" installed in ranked"});
+  if(D.sessions && D.sessions.split) B.push({big:D.sessions.recent+"%", lab:"Sessions where I ran my focus (was "+D.sessions.early+"%)"});
+  if(B.length<4 && S.clips.length) B.push({big:String(S.clips.length), lab:"Clips reviewed like a coach"});
+  if(B.length<4 && D.recall.all.n) B.push({big:String(D.recall.all.h), lab:"Key points recalled, all time"});
+  return B.slice(0,4);
+}
+function renderProof(v){
+  takeSnapshot();
+  var D=proofData(), B=proofBlocks(D);
+  v.appendChild(h("button",{type:"button",class:"linkbtn",onclick:function(){ S.proof=false; safeRender(); }},"← Back"));
+  v.appendChild(h("div",{class:"proofcard"}, h("div",{class:"ph",text:"Clip Review · "+P.game}), h("div",{class:"pt",text:"My progress"}),
+    h("div",{class:"pblocks"}, B.map(function(b){ return h("div",{class:"pblock"}, h("div",{class:"big",text:b.big}), h("div",{class:"lab",text:b.lab})); })),
+    h("div",{class:"pfoot",text:[S.profile.rank, "Learning How to Learn method", fmtDate(today())].filter(Boolean).join(" · ")})));
+  v.appendChild(h("button",{type:"button",class:"primary",style:"margin-bottom:14px",onclick:function(){ shareProof(B); }},"Share this"));
+
+  var cp=h("section",{class:"panel"}, h("h3",{text:"Your clips: before vs now"}));
+  if(!D.clipSplit) cp.appendChild(h("p",{class:"empty",text:"Review "+Math.max(4-S.clips.length,1)+" more clip"+(4-S.clips.length===1?"":"s")+" to unlock this. It compares your earlier reviews with your recent ones, check by check."}));
+  else {
+    cp.appendChild(h("p",{class:"sub",text:"Your first "+D.clipSplit.early+" reviews vs. your latest "+D.clipSplit.recent+"."}));
+    if(!D.clipUps.length) cp.appendChild(h("p",{class:"empty",text:"No check has improved yet. That's normal early on. Keep your one focus and it will."}));
+    D.clipUps.slice(0,6).forEach(function(u){ cp.appendChild(h("div",{class:"trend"}, h("span",{text:u.ch.t}), h("span",{class:"r up",text:u.e.y+"/"+u.e.t+" → "+u.r.y+"/"+u.r.t}))); });
+    if(D.clipWork.length){ cp.appendChild(h("div",{class:"modhead",text:"Still working on"}));
+      D.clipWork.slice(0,4).forEach(function(u){ cp.appendChild(h("div",{class:"trend"}, h("span",{text:u.ch.t}), h("span",{class:"r down",text:u.r.y+"/"+u.r.t+" lately"}))); }); }
+  }
+  v.appendChild(cp);
+
+  var rp=h("section",{class:"panel"}, h("h3",{text:"Recall from memory"}));
+  if(!D.recall.all.n) rp.appendChild(h("p",{class:"empty",text:"Starts counting with your next Manual session. Every typed answer is graded on its key points."}));
+  else {
+    rp.appendChild(h("div",{class:"trend"}, h("span",{text:"Key points hit, last 7 days"}), h("span",{class:"r",text:pct(D.recall.cur.h,D.recall.cur.t)+"%"+(D.recall.prev.t?" (prior week "+pct(D.recall.prev.h,D.recall.prev.t)+"%)":"")})));
+    rp.appendChild(h("div",{class:"trend"}, h("span",{text:"Cards answered, last 7 days"}), h("span",{class:"r",text:String(D.recall.cur.n)})));
+    rp.appendChild(h("div",{class:"trend"}, h("span",{text:"Key points recalled, all time"}), h("span",{class:"r",text:D.recall.all.h+" of "+D.recall.all.t})));
+    rp.appendChild(h("div",{class:"trend"}, h("span",{text:"Times you overrode the grader"}), h("span",{class:"r",text:String(D.recall.all.ap)})));
+  }
+  v.appendChild(rp);
+
+  var mp=h("section",{class:"panel"}, h("h3",{text:"Concepts"}));
+  mp.appendChild(h("div",{class:"trend"}, h("span",{text:"Owned (30-day recall)"}), h("span",{class:"r",text:D.cards.now.own+" of "+D.cards.total})));
+  mp.appendChild(h("div",{class:"trend"}, h("span",{text:"Solid (a week or more)"}), h("span",{class:"r",text:String(D.cards.now.solid)})));
+  mp.appendChild(h("div",{class:"trend"}, h("span",{text:"Started"}), h("span",{class:"r",text:D.cards.now.started+" of "+D.cards.total})));
+  if(!D.cards.first) mp.appendChild(h("p",{class:"faint",style:"margin:8px 0 0",text:"From today the app keeps a daily snapshot, so this will show how far you've come."}));
+  else mp.appendChild(h("p",{class:"faint",style:"margin:8px 0 0",text:"Since "+fmtDate(D.cards.firstDay)+": owned "+D.cards.first.own+" → "+D.cards.now.own+", started "+D.cards.first.started+" → "+D.cards.now.started+"."}));
+  v.appendChild(mp);
+
+  var hp=h("section",{class:"panel"}, h("h3",{text:"In ranked"}));
+  if(!D.sessions) hp.appendChild(h("p",{class:"empty",text:"Log sessions in the Debrief to see whether you're running your focus more often."}));
+  else {
+    hp.appendChild(h("div",{class:"trend"}, h("span",{text:"Sessions logged"}), h("span",{class:"r",text:String(D.sessions.count)})));
+    if(D.sessions.split) hp.appendChild(h("div",{class:"trend"}, h("span",{text:"Ran my focus (nailed it)"}), h("span",{class:"r "+(D.sessions.recent>=D.sessions.early?"up":"down"),text:D.sessions.early+"% → "+D.sessions.recent+"%"})));
+    hp.appendChild(h("div",{class:"trend"}, h("span",{text:"Habits installed"}), h("span",{class:"r",text:D.habits.installed.length?D.habits.installed.join(", "):"none yet"})));
+    hp.appendChild(h("div",{class:"trend"}, h("span",{text:"Net RP logged"}), h("span",{class:"r",text:(D.sessions.rp>0?"+":"")+D.sessions.rp})));
+  }
+  v.appendChild(hp);
+}
+function wrapText(ctx, text, x, y, maxW, lh, maxLines){
+  var words=String(text).split(" "), line="", lines=0;
+  for(var i=0;i<words.length;i++){ var test=line?line+" "+words[i]:words[i];
+    if(ctx.measureText(test).width>maxW && line){ ctx.fillText(line,x,y); y+=lh; line=words[i]; if(++lines>=maxLines-1){ var rest=words.slice(i).join(" "); while(ctx.measureText(rest+"…").width>maxW && rest.length) rest=rest.slice(0,-1); ctx.fillText(rest+(rest.length<words.slice(i).join(" ").length?"…":""),x,y); return y+lh; } }
+    else line=test; }
+  if(line){ ctx.fillText(line,x,y); y+=lh; } return y;
+}
+function shareProof(B){
+  var W=1080,H=1350, cv=document.createElement("canvas"); cv.width=W; cv.height=H; var x=cv.getContext("2d");
+  var disp="'Barlow Condensed','Arial Narrow',Arial,sans-serif", body="Inter,system-ui,-apple-system,'Segoe UI',sans-serif";
+  var gr=x.createLinearGradient(0,0,W,H); gr.addColorStop(0,"#1d2530"); gr.addColorStop(1,"#0f1319"); x.fillStyle=gr; x.fillRect(0,0,W,H);
+  x.fillStyle="#e8a33d"; x.beginPath(); x.moveTo(80,90); x.lineTo(150,90); x.lineTo(150,133); x.lineTo(115,160); x.lineTo(80,133); x.closePath(); x.fill();
+  x.fillStyle="#e8a33d"; x.font="600 34px "+disp; x.fillText("CLIP REVIEW · "+P.game.toUpperCase(),175,118);
+  x.fillStyle="#e9e5da"; x.font="700 104px "+disp; x.fillText("My progress",80,275);
+  var bw=(W-160-30)/2, bh=380;
+  B.forEach(function(b,i){ var bx=80+(i%2)*(bw+30), by=330+Math.floor(i/2)*(bh+30);
+    x.fillStyle="rgba(255,255,255,0.04)"; x.strokeStyle="#28323f"; x.lineWidth=3; x.beginPath(); if(x.roundRect) x.roundRect(bx,by,bw,bh,28); else x.rect(bx,by,bw,bh); x.fill(); x.stroke();
+    x.fillStyle="#a9e4d4"; var fs=96; x.font="700 "+fs+"px "+disp; while(x.measureText(b.big).width>bw-60 && fs>40){ fs-=6; x.font="700 "+fs+"px "+disp; }
+    x.fillText(b.big,bx+30,by+40+fs);
+    x.fillStyle="#b9c0cc"; x.font="400 34px "+body; wrapText(x,b.lab,bx+30,by+fs+110,bw-60,46,5); });
+  x.fillStyle="#6a7482"; x.font="400 30px "+body;
+  x.fillText([S.profile.rank,"Learning How to Learn method",fmtDate(today())].filter(Boolean).join("  ·  "),80,H-80);
+  cv.toBlob(function(blob){
+    if(!blob){ toast("Couldn't make the image."); return; }
+    var file; try{ file=new File([blob],"clip-review-progress.png",{type:"image/png"}); }catch(e){}
+    if(file && navigator.canShare && navigator.canShare({files:[file]})){
+      navigator.share({files:[file], title:"My progress", text:"My progress in Clip Review"}).catch(function(){});
+    } else {
+      var url=URL.createObjectURL(blob), a=h("a",{href:url,download:"clip-review-progress.png"}); document.body.appendChild(a); a.click();
+      setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); },1500); toast("Image saved to your Downloads.");
+    }
+  },"image/png");
+}
+
 // ===================== SETTINGS + BACKUP =====================
 function fmtAgo(ts){ var d=Math.floor((Date.now()-ts)/864e5); return d<=0?"today":d===1?"yesterday":d+" days ago"; }
-function exportData(){ return {app:"clip-review", pack:P.id, version:2, exported:new Date().toISOString(), profile:S.profile, manual:{reviews:S.reviews}, sessions:S.sessions, clips:S.clips, draft:S.draft}; }
+function exportData(){ return {app:"clip-review", pack:P.id, version:2, exported:new Date().toISOString(), profile:S.profile, manual:{reviews:S.reviews, recall:S.recall, snap:S.snap}, sessions:S.sessions, clips:S.clips, draft:S.draft}; }
 function saveBackup(){
   var url=URL.createObjectURL(new Blob([JSON.stringify(exportData(),null,1)],{type:"application/json"}));
   var a=h("a",{href:url,download:"clip-review-backup-"+today()+".json"}); document.body.appendChild(a); a.click();
@@ -928,6 +1152,10 @@ function restoreFrom(file){
       var added={clips:0,sessions:0,cards:0}, gotDraft=false;
       (o.clips||[]).forEach(function(c){ if(c&&c.id&&!S.clips.some(function(x){ return x.id===c.id; })){ S.clips.push(c); added.clips++; } });
       (o.sessions||[]).forEach(function(s){ if(s&&s.id&&!S.sessions.some(function(x){ return x.id===s.id; })){ S.sessions.push(s); added.sessions++; } });
+      var seen={}; S.recall.forEach(function(x){ seen[x.ts+"|"+x.id]=1; });
+      ((o.manual&&o.manual.recall)||[]).forEach(function(x){ if(x&&!seen[x.ts+"|"+x.id]){ S.recall.push(x); seen[x.ts+"|"+x.id]=1; } });
+      S.recall.sort(function(a,b){ return a.ts-b.ts; });
+      var sn=(o.manual&&o.manual.snap)||{}; Object.keys(sn).forEach(function(d){ if(!S.snap[d]) S.snap[d]=sn[d]; });
       var rv=(o.manual&&o.manual.reviews)||{}; Object.keys(rv).forEach(function(id){ var mine=S.reviews[id], theirs=rv[id]; if(theirs && (!mine || (theirs.last||"")>(mine.last||""))){ S.reviews[id]=theirs; added.cards++; } });
       if(o.draft && o.draft.type && !S.draft.type){ S.draft=normDraft(o.draft); S.step=(typeof o.draft._step==="number"&&o.draft._step>=0)?Math.min(o.draft._step,LAST):-1; lset(K.draft,S.draft); gotDraft=true; }
       if(o.profile && o.profile.setup && !S.profile.setup){ S.profile=Object.assign(S.profile,o.profile); }
@@ -969,7 +1197,8 @@ function renderSettings(v){
 function render(){
   var setup=!S.profile.setup;
   document.getElementById("nav").hidden=setup||S.settings;
-  document.getElementById("gear").hidden=setup;
+  document.getElementById("gear").hidden=setup; document.getElementById("proofbtn").hidden=setup;
+  document.getElementById("nav").hidden=setup||S.settings||S.proof;
   var navBtns=document.querySelectorAll("#nav button");
   for(var i=0;i<navBtns.length;i++){ var b=navBtns[i], t=b.getAttribute("data-tab"); b.setAttribute("aria-selected",String(S.ui.tab===t));
     var old=b.querySelector(".dot"); if(old) old.remove();
@@ -977,6 +1206,8 @@ function render(){
   clear(view);
   if(setup) return renderSetup(view);
   if(S.settings) return renderSettings(view);
+  if(S.proof) return renderProof(view);
+  takeSnapshot();
   if(S.ui.tab==="debrief") renderDebrief(view);
   else if(S.ui.tab==="clips") renderClips(view);
   else if(S.ui.tab==="maps") renderMaps(view);
@@ -984,7 +1215,8 @@ function render(){
 }
 function safeRender(){ try{ render(); }catch(e){ showErr(e&&e.message||e); } }
 document.getElementById("nav").addEventListener("click",function(e){ var b=e.target.closest("button[data-tab]"); if(!b) return; goTab(b.getAttribute("data-tab")); });
-document.getElementById("gear").addEventListener("click",function(){ S.settings=!S.settings; safeRender(); window.scrollTo(0,0); });
+document.getElementById("gear").addEventListener("click",function(){ S.proof=false; S.settings=!S.settings; safeRender(); window.scrollTo(0,0); });
+document.getElementById("proofbtn").addEventListener("click",function(){ S.settings=false; S.proof=!S.proof; safeRender(); window.scrollTo(0,0); });
 // Coming back to the app on a new day: refresh due counts.
 document.addEventListener("visibilitychange",function(){ if(document.visibilityState==="visible" && S.ui.tab==="manual" && !S.settings && !S.mSession && !typing()) safeRender(); });
 
