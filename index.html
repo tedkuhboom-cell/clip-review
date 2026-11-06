@@ -114,6 +114,9 @@ textarea.inp{min-height:72px}
 .tagrow{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
 .tag{font-size:11.5px;border:1px solid var(--line);border-radius:999px;padding:2px 9px;color:var(--muted)}
 .tag.new{border-color:var(--violet);color:#d9bbe8} .tag.due{border-color:var(--amber);color:var(--amber-ink2)}
+.tag.soon{border-color:var(--blue);color:#bcd3ec} .tag.live{border-color:var(--teal);color:var(--teal-ink)}
+.lcard .src{font-size:12px;color:var(--faint);margin-top:6px}
+.lcard .tagrow{margin:6px 0 0}
 .cardq{font-family:var(--display);font-size:24px;font-weight:600;line-height:1.25;margin:4px 0 8px}
 .say{color:var(--faint);font-size:13px;margin:0 0 16px}
 .cardtitle{font-size:21px;margin:6px 0 8px}
@@ -435,6 +438,10 @@ function bars(panel, rows){
   var max=0; rows.forEach(function(r){ if(r.n>max) max=r.n; });
   rows.forEach(function(r){ panel.appendChild(h("div",{class:"bar"}, h("span",{class:"lbl",text:r.label}), h("span",{class:"track"}, h("span",{class:"fill",style:"width:"+(max?Math.round(r.n/max*100):0)+"%;background:"+(r.color||"var(--amber)")})), h("span",{class:"ct",text:String(r.n)}))); });
 }
+function rankList(){ return S.profile.rankSystem==="s32" && P.ranksS32 ? P.ranksS32 : P.ranks; }
+function rankOptions(cur, blank){ var list=rankList().slice(); if(cur && list.indexOf(cur)<0) list.unshift(cur); return (blank?[h("option",{value:"",text:blank})]:[]).concat(list.map(function(r){ var o=h("option",{value:r,text:r}); if(r===cur) o.selected=true; return o; })); }
+function leagueOf(rank){ if(!rank||!P.leagueOf) return ""; return P.leagueOf[String(rank).split(" ")[0]]||""; }
+function seasonTag(c){ return c.soon ? h("span",{class:"tag soon",text:"Coming in "+c.soon}) : c.tag ? h("span",{class:"tag live",text:c.tag}) : null; }
 function goTab(tab){ S.settings=false; S.proof=false; S.ui.tab=tab; saveUI(); safeRender(); window.scrollTo(0,0); }
 
 // ===================== SETUP (first run) =====================
@@ -448,7 +455,7 @@ function renderSetup(v){
       h("li",null,h("span",null,h("b",null,"Debrief. "),"Play ranked with one focus, then log whether you ran it.")),
       h("li",null,h("span",null,h("b",null,"Clips. "),"Review a few clips the day after, one pass at a time.")),
       h("li",null,h("span",null,h("b",null,"Maps. "),"Read each map's structure before you drop.")))));
-  var rankSel=h("select",{class:"inp",id:"setup-rank"}, h("option",{value:"",text:"Pick your rank"}), P.ranks.map(function(r){ var o=h("option",{value:r,text:r}); if(r===sel.rank) o.selected=true; return o; }));
+  var rankSel=h("select",{class:"inp",id:"setup-rank"}, rankOptions(sel.rank,"Pick your rank"));
   rankSel.addEventListener("change",function(){ sel.rank=rankSel.value; check(); });
   var mainsG=h("div",{class:"seg small"});
   P.legends.forEach(function(L){ mainsG.appendChild(h("button",{type:"button","data-k":L,"aria-pressed":String(sel.mains.indexOf(L)>=0),onclick:function(){ var i=sel.mains.indexOf(L); if(i>=0) sel.mains.splice(i,1); else sel.mains.push(L); setPressed(mainsG, sel.mains); check(); }}, L)); });
@@ -534,7 +541,7 @@ function renderMSession(v){
   var panel=h("section",{class:"panel"},
     h("div",{class:"prog"},h("span",{text:(s.i+1)+" of "+s.items.length}),h("div",{class:"track"},h("span",{style:"width:"+Math.round(s.i/s.items.length*100)+"%"})),
       h("button",{type:"button",class:"ghost",style:"min-height:36px;padding:6px 12px;font-size:12.5px",onclick:function(){ S.mSession=null; safeRender(); }},"End")),
-    h("div",{class:"tagrow"},h("span",{class:"tag "+(it.kind==="new"?"new":"due"),text:it.kind==="new"?"New card":"Review"}),h("span",{class:"tag",text:c.id+" · "+MODS[c.mod]})));
+    h("div",{class:"tagrow"},h("span",{class:"tag "+(it.kind==="new"?"new":"due"),text:it.kind==="new"?"New card":"Review"}),h("span",{class:"tag",text:c.id+" · "+MODS[c.mod]}), seasonTag(c)));
   function go(ph){ s.phase=ph; safeRender(); window.scrollTo(0,0); }
   function cardBody(){ return [h("h2",{class:"cardtitle",text:c.title}), h("p",{class:"concept",text:c.concept}), h("p",{class:"drill"},h("b",{text:"Drill · "}),c.drill)]; }
   if(it.kind==="new" && s.phase==="front"){
@@ -628,10 +635,12 @@ function renderLibrary(v){
       var lab = st==="new"?"Not started" : st==="own"?"Owned" : (r.due<=t?"Due now":"Next "+pretty(r.due));
       panel.appendChild(h("div",{class:"lcard"},
         h("div",{class:"ct"},h("h3",null,h("span",{class:"id",text:c.id}),c.title),h("span",{class:"status s-"+st,text:lab})),
+        seasonTag(c)?h("div",{class:"tagrow"},seasonTag(c)):null,
         h("p",{text:c.concept}),
         h("div",{class:"kv"},h("b",{text:"Recall: "}),c.recall),
         h("div",{class:"kv"},h("b",{text:"Drill: "}),c.drill),
-        c.roles && c.roles[0]!=="All" ? h("div",{class:"kv",text:"Best on: "+c.roles.join(", ")}) : null));
+        c.roles && c.roles[0]!=="All" ? h("div",{class:"kv",text:"Best on: "+c.roles.join(", ")}) : null,
+        c.src ? h("div",{class:"src",text:"Source: "+c.src+(c.soon?". Announced, subject to change.":"")}) : null));
     });
   });
   v.appendChild(panel);
@@ -675,7 +684,7 @@ function endLive(rp, note, endRp){
   var places=g.map(function(x){ return x.place; }).filter(function(x){ return x!=null; });
   var r=parseInt(rp,10);
   S.sessions.push({id:"s"+Date.now(), date:new Date(L.start).toISOString(), focusId:L.focusId, focus:L.focus, mod:L.mod, exec:score>=0.75?"nailed":score>=0.4?"some":"forgot",
-    causes:causes, place:places.length?Math.min.apply(null,places):null, rp:isNaN(r)?0:r, startRp:L.startRp, endRp:(L.startRp!=null&&!isNaN(er))?er:null, note:(note||"").trim(), games:g.map(function(x){ return {exec:x.exec,end:x.end,place:x.place}; }), mins:Math.round((Date.now()-L.start)/60000)});
+    causes:causes, place:places.length?Math.min.apply(null,places):null, rp:isNaN(r)?0:r, startRp:L.startRp, endRp:(L.startRp!=null&&!isNaN(er))?er:null, note:(note||"").trim(), games:g.map(function(x){ return {exec:x.exec,end:x.end,place:x.place,kills:x.kills==null?null:x.kills,lobby:x.lobby||null}; }), mins:Math.round((Date.now()-L.start)/60000)});
   saveDebrief(); S.live=null; saveLive(); safeRender(); window.scrollTo(0,0);
   toast("Session saved: "+g.length+" game"+(g.length===1?"":"s")+".");
 }
@@ -692,22 +701,30 @@ function renderLive(v){
   var execG=h("div",{class:"seg exec"}), endG=h("div",{class:"seg small"});
   [["nailed","Yes"],["some","Some"],["forgot","No"]].forEach(function(o){ execG.appendChild(h("button",{type:"button","data-k":o[0],"aria-pressed":String(pend.exec===o[0]),onclick:function(){ pend.exec=pend.exec===o[0]?null:o[0]; setPressed(execG,pend.exec); saveLive(); maybeLog(); }},o[1])); });
   gameEnds().forEach(function(o){ endG.appendChild(h("button",{type:"button","data-k":o[0],"aria-pressed":String(pend.end===o[0]),onclick:function(){ pend.end=pend.end===o[0]?null:o[0]; setPressed(endG,pend.end); saveLive(); maybeLog(); }},o[1])); });
-  var place=h("input",{class:"inp",id:"live-place",type:"number",inputmode:"numeric",min:"1",max:"20",placeholder:"Place (optional)",style:"max-width:180px"}); place.value=pend.place||"";
+  var place=h("input",{class:"inp",id:"live-place",type:"number",inputmode:"numeric",min:"1",max:"20",placeholder:"Place"}); place.value=pend.place||"";
   place.addEventListener("input",function(){ pend.place=place.value; saveLive(); });
+  var kills=h("input",{class:"inp",id:"live-kills",type:"number",inputmode:"numeric",min:"0",max:"60",placeholder:"Squad kills"}); kills.value=pend.kills||"";
+  kills.addEventListener("input",function(){ pend.kills=kills.value; saveLive(); });
+  var lobbyG=h("div",{class:"seg small"});
+  [["challenger","Challenger"],["normal","Normal"],["goliath","Goliath"]].forEach(function(o){ lobbyG.appendChild(h("button",{type:"button","data-k":o[0],"aria-pressed":String(pend.lobby===o[0]),onclick:function(){ pend.lobby=pend.lobby===o[0]?null:o[0]; setPressed(lobbyG,pend.lobby); saveLive(); }},o[1])); });
   function maybeLog(){
     if(!pend.exec || !pend.end) return;
     var pl=parseInt(pend.place,10);
-    L.games.push({exec:pend.exec, end:pend.end, place:isNaN(pl)?null:pl, ts:Date.now()});
-    L.pend={exec:null,end:null,place:""}; saveLive(); var y=window.scrollY; safeRender(); window.scrollTo(0,y); toast("Game "+L.games.length+" logged.");
+    var kl=parseInt(pend.kills,10);
+    L.games.push({exec:pend.exec, end:pend.end, place:isNaN(pl)?null:pl, kills:isNaN(kl)?null:kl, lobby:pend.lobby||null, ts:Date.now()});
+    L.pend={exec:null,end:null,place:"",kills:"",lobby:null}; saveLive(); var y=window.scrollY; safeRender(); window.scrollTo(0,y); toast("Game "+L.games.length+" logged.");
   }
   box.appendChild(h("div",{class:"field"}, h("div",{class:"q",text:"Did you run your focus?"}), execG));
-  box.appendChild(h("div",{class:"field"}, h("div",{class:"q"},"How did it end?",h("span",{class:"note",text:"Logs the game as soon as both are picked. Add a place first if you want it."})), endG));
-  box.appendChild(place);
+  box.appendChild(h("details",{class:"more"}, h("summary",{text:"Extras (optional): lobby, place, kills"}),
+    h("div",{class:"field",style:"margin-top:6px"}, h("div",{class:"q"},"Lobby type",h("span",{class:"note",text:"Shown at load-in from Season 31. Explains big RP swings."})), lobbyG),
+    h("div",{class:"two"}, place, kills)));
+  box.appendChild(h("div",{class:"field",style:"margin-top:10px;margin-bottom:0"}, h("div",{class:"q"},"How did it end?",h("span",{class:"note",text:"Logs the game as soon as both are picked. Fill in extras first if you want them."})), endG));
   panel.appendChild(box);
   if(sum.n){
     panel.appendChild(h("div",{class:"gdots"}, L.games.map(function(x,i){ return h("span",{class:"gdot "+x.exec,title:"Game "+(i+1),text:x.end==="won"?"★":""}); })));
     var endTxt=Object.keys(sum.ends).sort(function(a,b){ return sum.ends[b]-sum.ends[a]; }).map(function(k){ return (C[k]?C[k].label.toLowerCase():k)+" "+sum.ends[k]; }).join(", ");
-    panel.appendChild(h("p",{class:"faint",style:"margin:4px 0 0",text:"Ran your focus "+sum.ran+" of "+sum.n+(endTxt?" · Ended by: "+endTxt:"")}));
+    var kg=L.games.filter(function(x){ return x.kills!=null; }), kt=kg.reduce(function(a,x){ return a+x.kills; },0);
+    panel.appendChild(h("p",{class:"faint",style:"margin:4px 0 0",text:"Ran your focus "+sum.ran+" of "+sum.n+(endTxt?" · Ended by: "+endTxt:"")+(kg.length?" · Squad kills "+kt+" in "+kg.length+" game"+(kg.length===1?"":"s"):"")}));
     panel.appendChild(h("button",{type:"button",class:"linkbtn",onclick:function(){ L.games.pop(); saveLive(); safeRender(); toast("Last game removed."); }},"Undo last game"));
   }
   // end session
@@ -735,6 +752,7 @@ function renderLiveStart(v){
   if(prev!=null) srp.value=String(prev);
   v.appendChild(h("section",{class:"panel"}, h("h2",{text:"Playing ranked?"}), h("p",{class:"sub",text:"Start a session and log each game in two taps. Built for long sessions: 5 games or 25."}),
     h("div",{class:"field"}, h("label",{class:"q",for:"live-focus"},"Your one focus for this session"), fsel, custom),
+    (S.profile.banBackups&&S.profile.banBackups.length)?h("p",{class:"faint",style:"margin:-6px 0 12px",text:"If your legend gets banned: "+S.profile.banBackups.join(", then ")+"."}):null,
     h("div",{class:"field"}, h("label",{class:"q",for:"live-start-rp"},"Your RP right now",h("span",{class:"note",text:prev!=null?"Filled in from where your last session ended. Fix it if it changed.":"Your total ranked points from the in-game rank screen."})), srp),
     h("button",{type:"button",class:"primary",onclick:function(){ startLive(fsel.value, custom.value, srp.value); }},"Start session")));
 }
@@ -1183,7 +1201,7 @@ function renderProof(v){
   v.appendChild(h("button",{type:"button",class:"linkbtn",onclick:function(){ S.proof=false; safeRender(); }},"← Back"));
   v.appendChild(h("div",{class:"proofcard"}, h("div",{class:"ph",text:"Clip Review · "+P.game}), h("div",{class:"pt",text:"My progress"}),
     h("div",{class:"pblocks"}, B.map(function(b){ return h("div",{class:"pblock"}, h("div",{class:"big",text:b.big}), h("div",{class:"lab",text:b.lab})); })),
-    h("div",{class:"pfoot",text:[S.profile.rank, "Learning How to Learn method", fmtDate(today())].filter(Boolean).join(" · ")})));
+    h("div",{class:"pfoot",text:[S.profile.rank, S.profile.goalRank?"Goal: "+S.profile.goalRank:null, "Learning How to Learn method", fmtDate(today())].filter(Boolean).join(" · ")})));
   v.appendChild(h("button",{type:"button",class:"primary",style:"margin-bottom:14px",onclick:function(){ shareProof(B); }},"Share this"));
 
   var cp=h("section",{class:"panel"}, h("h3",{text:"Your clips: before vs now"}));
@@ -1217,6 +1235,7 @@ function renderProof(v){
   v.appendChild(mp);
 
   var hp=h("section",{class:"panel"}, h("h3",{text:"In ranked"}));
+  if(S.profile.goalRank) hp.appendChild(h("div",{class:"trend"}, h("span",{text:"Season goal"}), h("span",{class:"r",text:S.profile.goalRank+(leagueOf(S.profile.goalRank)?" · "+leagueOf(S.profile.goalRank):"")+(S.profile.rank?" (now "+S.profile.rank+")":"")})));
   if(!D.sessions) hp.appendChild(h("p",{class:"empty",text:"Log sessions in the Debrief to see whether you're running your focus more often."}));
   else {
     hp.appendChild(h("div",{class:"trend"}, h("span",{text:"Sessions logged"}), h("span",{class:"r",text:String(D.sessions.count)})));
@@ -1225,6 +1244,10 @@ function renderProof(v){
     if(D.sessions.split) hp.appendChild(h("div",{class:"trend"}, h("span",{text:"Ran my focus (nailed it)"}), h("span",{class:"r "+(D.sessions.recent>=D.sessions.early?"up":"down"),text:D.sessions.early+"% → "+D.sessions.recent+"%"})));
     hp.appendChild(h("div",{class:"trend"}, h("span",{text:"Habits installed"}), h("span",{class:"r",text:D.habits.installed.length?D.habits.installed.join(", "):"none yet"})));
     hp.appendChild(h("div",{class:"trend"}, h("span",{text:"Net RP logged"}), h("span",{class:"r",text:(D.sessions.rp>0?"+":"")+D.sessions.rp})));
+    var allG=[]; S.sessions.forEach(function(x){ (x.games||[]).forEach(function(g){ allG.push(g); }); });
+    var pg=allG.filter(function(g){ return g.place!=null; }), kgs=allG.filter(function(g){ return g.kills!=null; });
+    if(pg.length) hp.appendChild(h("div",{class:"trend"}, h("span",{text:"Average placement"}), h("span",{class:"r",text:"#"+(pg.reduce(function(a,g){ return a+g.place; },0)/pg.length).toFixed(1)+" over "+pg.length+" games"})));
+    if(kgs.length) hp.appendChild(h("div",{class:"trend"}, h("span",{text:"Squad kills per game"}), h("span",{class:"r",text:(kgs.reduce(function(a,g){ return a+g.kills; },0)/kgs.length).toFixed(1)+" over "+kgs.length+" games"})));
     var withRp=sortedSessions().filter(function(x){ return x.startRp!=null && x.endRp!=null; });
     if(withRp.length) hp.appendChild(h("div",{class:"trend"}, h("span",{text:"RP climb (first log → latest)"}), h("span",{class:"r "+(withRp[withRp.length-1].endRp>=withRp[0].startRp?"up":"down"),text:fmtRp(withRp[0].startRp)+" → "+fmtRp(withRp[withRp.length-1].endRp)})));
   }
@@ -1251,7 +1274,7 @@ function shareProof(B){
     x.fillText(b.big,bx+30,by+40+fs);
     x.fillStyle="#b9c0cc"; x.font="400 34px "+body; wrapText(x,b.lab,bx+30,by+fs+110,bw-60,46,5); });
   x.fillStyle="#6a7482"; x.font="400 30px "+body;
-  x.fillText([S.profile.rank,"Learning How to Learn method",fmtDate(today())].filter(Boolean).join("  ·  "),80,H-80);
+  x.fillText([S.profile.rank,S.profile.goalRank?"Goal: "+S.profile.goalRank:null,fmtDate(today())].filter(Boolean).join("  ·  "),80,H-80);
   cv.toBlob(function(blob){
     if(!blob){ toast("Couldn't make the image."); return; }
     var file; try{ file=new File([blob],"clip-review-progress.png",{type:"image/png"}); }catch(e){}
@@ -1303,7 +1326,7 @@ function restoreFrom(file){
 function renderSettings(v){
   var p=S.profile, last=lget(K.backup);
   v.appendChild(h("button",{type:"button",class:"linkbtn",onclick:function(){ S.settings=false; safeRender(); }},"← Back"));
-  var rankSel=h("select",{class:"inp",id:"set-rank"}, P.ranks.map(function(r){ var o=h("option",{value:r,text:r}); if(r===p.rank) o.selected=true; return o; }));
+  var rankSel=h("select",{class:"inp",id:"set-rank"}, rankOptions(p.rank));
   rankSel.addEventListener("change",function(){ S.profile.rank=rankSel.value; saveProfile(); toast("Rank saved."); });
   var mainsG=h("div",{class:"seg small"});
   P.legends.forEach(function(L){ mainsG.appendChild(h("button",{type:"button","data-k":L,"aria-pressed":String((p.mains||[]).indexOf(L)>=0),onclick:function(){ var a=(S.profile.mains||[]).slice(), i=a.indexOf(L); if(i>=0) a.splice(i,1); else a.push(L); S.profile.mains=a; setPressed(mainsG,a); saveProfile(); }}, L)); });
@@ -1313,6 +1336,20 @@ function renderSettings(v){
     h("div",{class:"field"}, h("label",{class:"q",for:"set-rank"},"Rank"), rankSel),
     h("div",{class:"field"}, h("div",{class:"q",text:"Legends you play"}), mainsG),
     h("div",{class:"field"}, h("div",{class:"q",text:"New cards per day"}), npdG)));
+  // ranked: system, goal, ban backups
+  var sysG=h("div",{class:"seg small"});
+  [["s31","Season 31 ranks"],["s32","Season 32 ranks"]].forEach(function(o){ sysG.appendChild(h("button",{type:"button","data-k":o[0],"aria-pressed":String((p.rankSystem||"s31")===o[0]),onclick:function(){ S.profile.rankSystem=o[0]; saveProfile(); safeRender(); toast(o[0]==="s32"?"Using Season 32 ranks: Iron to Grandmaster.":"Using Season 31 ranks."); }},o[1])); });
+  var goalSel=h("select",{class:"inp",id:"set-goal"}, [h("option",{value:"",text:"No goal yet"})].concat((P.ranksS32||P.ranks).map(function(r){ var o=h("option",{value:r,text:r}); if(r===p.goalRank) o.selected=true; return o; })));
+  goalSel.addEventListener("change",function(){ S.profile.goalRank=goalSel.value; saveProfile(); toast(goalSel.value?"Goal set: "+goalSel.value+(leagueOf(goalSel.value)?" ("+leagueOf(goalSel.value)+")":"")+".":"Goal cleared."); });
+  var banG=h("div",{class:"seg small"}), bans=(p.banBackups||[]).slice();
+  var banNote=h("span",{class:"note"});
+  function banText(){ var b=S.profile.banBackups||[]; banNote.textContent=b.length? "Plan B: "+b[0]+(b[1]?" · Plan C: "+b[1]:"") : "Pick two legends you'll switch to if yours gets banned. Tap in order: Plan B, then Plan C."; }
+  P.legends.forEach(function(L){ banG.appendChild(h("button",{type:"button","data-k":L,"aria-pressed":String(bans.indexOf(L)>=0),onclick:function(){ var a=(S.profile.banBackups||[]).slice(), i=a.indexOf(L); if(i>=0) a.splice(i,1); else { a.push(L); if(a.length>2) a.shift(); } S.profile.banBackups=a; setPressed(banG,a); saveProfile(); banText(); }}, L)); });
+  banText();
+  v.appendChild(h("section",{class:"panel"}, h("h2",{text:"Ranked"}),
+    h("div",{class:"field"}, h("div",{class:"q"},"Rank system",h("span",{class:"note",text:"Season 32 (early 2027) adds Iron, Emerald and Grandmaster and splits ranked into Open and Pro-Am leagues. Switch when it launches."})), sysG),
+    h("div",{class:"field"}, h("label",{class:"q",for:"set-goal"},"Season 32 goal",h("span",{class:"note",text:"Pick a division, not just a tier. Shows on your Proof screen."})), goalSel),
+    h("div",{class:"field"}, h("div",{class:"q"},"Ban backups",banNote), banG)));
   v.appendChild(h("section",{class:"panel"}, h("h2",{text:"Backup"}),
     h("p",{class:"sub",text:(last?"Last backup "+fmtAgo(last)+". ":"No backup yet. ")+"Everything lives only on this phone: cards, sessions and clip reviews. Save a backup file every week or two and keep it somewhere safe, like Google Drive."}),
     h("div",{class:"row"}, h("button",{type:"button",class:"ghost",onclick:saveBackup},"Save backup file"), h("button",{type:"button",class:"ghost",onclick:pickRestore},"Restore from file"))));
