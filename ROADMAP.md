@@ -19,7 +19,12 @@ The goal: help people learn whatever they want in a fun, efficient way, built on
 - [x] Content separated into `pack-apex.js` so other games or subjects can reuse the engine
 - [x] Season 31/32 prep (2026-11-06): new cards (Reset timer 3.10, Cover the heal 5.7, Own the drop 1.12, Nothing stays cleared 5.8, Strongholds 2.5, 0.2 rewritten and auto-graded, fourth-team depth on 2.4); new Module 8 "Ranked & the Climb" (squad up, legend bans, Challenger/Goliath, demotion shields, plus five Season 32 cards marked Coming soon); ban backups (Plan B/C), Season 32 rank list toggle, season goal on Proof; lobby type + squad kills per game in Session mode; Stronghold chip and new drop/heal/reset checks in Clips; Axle and Crypto kit tips
 
+- [x] Grader appeals (2026-11-07): pick the missed point and say what you wrote; upgrade happens right away, note saved to Settings → Grader appeals with "Copy for Claude" for tuning
+- [x] Paste blocked in the answer box (voice dictation still works)
+- [x] Full-answer streak: counter during a session, best streak on Proof
+
 ## Up next
+- [ ] **Tune the grader from appeals.** Every so often, copy the appeals list to Claude: add accepted phrasings where the grader was wrong, flag notes that stretch the truth.
 - [ ] **Make answers more thorough.** Ideas: after a Got it, ask a quick "why does that work?" follow-up (explaining *why* is a strong memory booster). Track Full-answer rate per card. Surface cards that keep getting Got it without the depth.
 - [ ] **Session mode polish.** Optional per-game note, end-of-session "biggest leak this session" callout, compare one session against your average.
 - [ ] **New-user test pass.** Run a fresh first-run in a Chrome Incognito window. Have a friend install it on their own phone and try to break it.

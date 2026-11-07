@@ -182,6 +182,20 @@ details.more p{font-size:14px;margin:6px 0}
 .tilt{background:var(--red-bg);border:1px solid var(--red);border-radius:10px;padding:10px 12px;font-size:13.5px;margin:10px 0}
 .seg.exec button[data-k="nailed"][aria-pressed="true"]{background:var(--teal-bg);border-color:var(--teal);color:var(--teal-ink)}
 
+/* appeals + streak */
+.appealbox{background:var(--panel-2);border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:12px}
+.appealbox .q{font-size:14px;font-weight:500;margin-bottom:8px}
+.appealbox .seg{flex-direction:column;align-items:stretch}
+.appealbox .seg button{text-align:left}
+.streak{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:#d9bbe8;border:1px solid var(--violet);background:var(--violet-bg);border-radius:999px;padding:2px 9px;flex:none}
+.streak.bump{animation:bump .5s ease}
+@keyframes bump{0%{transform:scale(1)}40%{transform:scale(1.25)}100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.streak.bump{animation:none}}
+.applog{border-bottom:1px solid var(--line);padding:10px 0;font-size:13.5px}
+.applog:last-child{border-bottom:0}
+.applog .who{color:var(--faint);font-size:12px}
+.applog .said{color:var(--muted);margin-top:4px;overflow-wrap:anywhere}
+
 /* proof */
 .proofcard{background:linear-gradient(160deg,#1d2530,#141a22);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:12px}
 .proofcard .ph{font-family:var(--display);font-size:13px;letter-spacing:1.5px;color:var(--amber);text-transform:uppercase}
@@ -410,6 +424,8 @@ var S = {
   profile: Object.assign({setup:false, rank:"", mains:[], newPerDay:3, focus:P.habits[0].id}, lget(K.profile)||{}),
   reviews: ((lget(K.manual)||{}).reviews)||{},
   recall: ((lget(K.manual)||{}).recall)||[],
+  appeals: ((lget(K.manual)||{}).appeals)||[],
+  bestStreak: ((lget(K.manual)||{}).bestStreak)||0,
   snap: ((lget(K.manual)||{}).snap)||{},
   proof:false,
   sessions: ((lget(K.debrief)||{}).sessions)||[],
@@ -421,7 +437,7 @@ var S = {
 };
 if(typeof S.draft._step==="number" && S.draft._step>=0) S.step=Math.min(S.draft._step,LAST);
 function saveProfile(){ lset(K.profile,S.profile); }
-function saveManual(){ lset(K.manual,{reviews:S.reviews, recall:S.recall, snap:S.snap}); }
+function saveManual(){ lset(K.manual,{reviews:S.reviews, recall:S.recall, snap:S.snap, appeals:S.appeals, bestStreak:S.bestStreak}); }
 function saveDebrief(){ lset(K.debrief,{sessions:S.sessions}); }
 function saveClips(){ lset(K.clips,{clips:S.clips}); }
 function saveDraft(){ S.draft._step=S.step; S.draft._updated=Date.now(); lset(K.draft,S.draft); }
@@ -524,7 +540,9 @@ function renderManual(v){
     h("p",null,h("b",{text:"Type it, then check."})," Pulling the answer out of memory is what builds it. Rereading only feels like learning."),
     h("p",null,h("b",{text:"Full answers."})," Each card also has \u201cgo deeper\u201d points. They don't change your grade, but hitting all of them earns a ★ Full answer, which counts on your Proof screen."),
     h("p",null,h("b",{text:"Graded on key points."})," Hit them all (or all but one on big cards) for Got it, half for Shaky, less for Missed. Wording doesn't matter. Got it moves a card up the ladder: 1 day, 3 days, 1 week, 2 weeks, then owned at a month. Shaky brings it back tomorrow. Missed sends it back to the start."),
-    h("p",null,h("b",{text:"Grader wrong?"})," If you said it in different words, tap \u201cThe grader missed something\u201d to move up one level. Use it honestly. You're only fooling your future self."),
+    h("p",null,h("b",{text:"Grader wrong?"})," If you said it in different words, tap \u201cThe grader missed something\u201d, pick the point you covered, and say what you wrote. You move up one level and your note is saved so the grader can be tuned. Use it honestly. You're only fooling your future self."),
+    h("p",null,h("b",{text:"Streaks."})," Full answers in a row build a streak. Your best streak shows on the Proof screen."),
+    h("p",null,h("b",{text:"No pasting."})," The answer box doesn't accept pasted text. Type it, or use your keyboard's mic."),
     h("p",null,h("b",{text:"Mixed on purpose."})," Reviews are shuffled across modules so you practice choosing which idea applies."),
     h("p",null,h("b",{text:"Then stop."})," A session is a few minutes. A card isn't really yours until you've run its drill in a game.")));
 }
@@ -532,7 +550,7 @@ function startMSession(){
   var t=today(), due=interleave(dueList(t)), news=newQueue().slice(0,newAvailable(t));
   var items=due.map(function(c){ return {card:c,kind:"due"}; }).concat(news.map(function(c){ return {card:c,kind:"new"}; }));
   if(!items.length) return;
-  S.mSession={items:items,i:0,phase:"front",done:{due:0,new:0}}; safeRender(); window.scrollTo(0,0);
+  S.mSession={items:items,i:0,phase:"front",done:{due:0,new:0},streak:0,bestRun:0}; safeRender(); window.scrollTo(0,0);
 }
 function renderMSession(v){
   var s=S.mSession;
@@ -540,6 +558,7 @@ function renderMSession(v){
   var it=s.items[s.i], c=it.card, rev=S.reviews[c.id];
   var panel=h("section",{class:"panel"},
     h("div",{class:"prog"},h("span",{text:(s.i+1)+" of "+s.items.length}),h("div",{class:"track"},h("span",{style:"width:"+Math.round(s.i/s.items.length*100)+"%"})),
+      s.streak>=2?h("span",{class:"streak",title:"Full answers in a row",text:"★ "+s.streak+" in a row"}):null,
       h("button",{type:"button",class:"ghost",style:"min-height:36px;padding:6px 12px;font-size:12.5px",onclick:function(){ S.mSession=null; safeRender(); }},"End")),
     h("div",{class:"tagrow"},h("span",{class:"tag "+(it.kind==="new"?"new":"due"),text:it.kind==="new"?"New card":"Review"}),h("span",{class:"tag",text:c.id+" · "+MODS[c.mod]}), seasonTag(c)));
   function go(ph){ s.phase=ph; safeRender(); window.scrollTo(0,0); }
@@ -550,6 +569,8 @@ function renderMSession(v){
   } else if(s.phase!=="result"){
     var ta=h("textarea",{class:"inp answerbox",id:"recall-input",rows:"4",placeholder:"Type the key ideas. Short is fine."});
     ta.value=s.answer||""; ta.addEventListener("input",function(){ s.answer=ta.value; });
+    ta.addEventListener("paste",function(e){ e.preventDefault(); toast("Type it from memory. Pasting is off here."); });
+    ta.addEventListener("drop",function(e){ e.preventDefault(); toast("Type it from memory. Pasting is off here."); });
     function check(dontKnow){
       s.answer=dontKnow?"":ta.value.trim(); s.appealed=false;
       if(c.selfGrade){ s.result=null; } else { s.result=dontKnow?{hits:c.kp.map(function(){ return false; }),n:0,total:c.kp.length,grade:"miss"}:gradeAnswer(s.answer,c.kp);
@@ -568,7 +589,8 @@ function renderMSession(v){
     var r=s.result;
     if(r){
       var g=r.grade, shown=s.appealed?bump(g):g;
-      panel.appendChild(h("div",{class:"verdictbar "+shown}, h("b",null,GRADE_NAME[shown], r.full?h("span",{class:"fullstar",text:"★ Full answer"}):null), h("span",{class:"faint",text:r.n+" of "+r.total+" key point"+(r.total===1?"":"s")+(s.appealed?" · upgraded":"")})));
+      var runNow=r.full?(s.streak||0)+1:0;
+      panel.appendChild(h("div",{class:"verdictbar "+shown}, h("b",null,GRADE_NAME[shown], r.full?h("span",{class:"fullstar",text:"★ Full answer"}):null, runNow>=2?h("span",{class:"streak bump",style:"margin-left:8px;vertical-align:middle",text:runNow+" in a row"}):null), h("span",{class:"faint",text:r.n+" of "+r.total+" key point"+(r.total===1?"":"s")+(s.appealed?" · upgraded":"")})));
       if(s.answer) panel.appendChild(h("p",{class:"youranswer",text:s.answer}));
       panel.appendChild(h("div",{class:"kphead",text:"Must-have"}));
       panel.appendChild(h("ul",{class:"kplist"}, c.kp.map(function(kp,i){ return h("li",{class:r.hits[i]?"hit":"no",style:"animation-delay:"+(i*180)+"ms"}, h("span",{class:"mk",text:r.hits[i]?"✓":"✕"}), h("span",{text:kp[0]})); })));
@@ -592,7 +614,28 @@ function renderMSession(v){
       var when = it.kind==="new" ? "Back tomorrow to lock it in." : fg==="got" ? (nb>=5?"Owned. Back in a month.":"Moves up. Back "+inDays(INTERVAL[nb])+".") : fg==="shaky" ? "Back tomorrow." : "Back to the start. Back tomorrow.";
       panel.appendChild(h("p",{class:"hint",style:"margin:0 0 10px",text:when}));
       panel.appendChild(h("button",{type:"button",class:"primary",onclick:function(){ finishCard(c, it.kind==="new"?"learn":fg, r); }},"Next card"));
-      if(r.grade!=="got" && !s.appealed) panel.appendChild(h("button",{type:"button",class:"appeal",onclick:function(){ s.appealed=true; safeRender(); }},"The grader missed something I said"));
+      if(r.grade!=="got" && !s.appealed && !s.appealOpen) panel.appendChild(h("button",{type:"button",class:"appeal",onclick:function(){ s.appealOpen=true; s.claim=[]; s.appealNote=""; safeRender(); }},"The grader missed something I said"));
+      if(s.appealOpen && !s.appealed){
+        var missed=c.kp.map(function(kp,i){ return {i:i,label:kp[0]}; }).filter(function(x){ return !r.hits[x.i]; });
+        var claimG=h("div",{class:"seg small"});
+        missed.forEach(function(m){ claimG.appendChild(h("button",{type:"button","data-k":String(m.i),"aria-pressed":String((s.claim||[]).indexOf(String(m.i))>=0),onclick:function(){ var a=(s.claim||[]).slice(), j=a.indexOf(String(m.i)); if(j>=0) a.splice(j,1); else a.push(String(m.i)); s.claim=a; setPressed(claimG,a); ready(); }}, m.label)); });
+        var note=h("textarea",{class:"inp",id:"appeal-note",rows:"2",placeholder:"e.g. I said \"leave the fight\", which is the same as disengage"}); note.value=s.appealNote||"";
+        var go=h("button",{type:"button",class:"primary",style:"margin-top:10px",onclick:function(){
+          if(go.disabled) return;
+          var pts=(s.claim||[]).map(function(i){ return c.kp[+i][0]; });
+          S.appeals.push({ts:Date.now(), d:today(), id:c.id, points:pts, note:note.value.trim(), answer:s.answer, from:r.grade, to:bump(r.grade)});
+          if(S.appeals.length>500) S.appeals=S.appeals.slice(-500);
+          saveManual(); s.appealed=true; s.appealOpen=false; safeRender(); toast("Upgraded. Your note is saved for review.");
+        }},"Upgrade and save my note");
+        function ready(){ var words=note.value.trim().split(/\s+/).filter(Boolean).length; go.disabled=!((s.claim||[]).length && words>=3); }
+        note.addEventListener("input",function(){ s.appealNote=note.value; ready(); });
+        panel.appendChild(h("div",{class:"appealbox"},
+          h("div",{class:"q",text:"Which point did you cover?"}), claimG,
+          h("label",{class:"q",for:"appeal-note",style:"display:block;margin-top:12px"},"What did you say for it?"), note,
+          h("p",{class:"faint",style:"margin:6px 0 0",text:"Your note is saved so the grader can be tuned. Be honest; you're only fooling your future self."}),
+          go, h("button",{type:"button",class:"appeal",onclick:function(){ s.appealOpen=false; safeRender(); }},"Never mind")));
+        ready();
+      }
     }
   }
   v.appendChild(panel);
@@ -604,6 +647,8 @@ function finishCard(c,g,r){
   S.reviews[c.id]=schedule(S.reviews[c.id], g, today());
   if(r) S.recall.push({ts:Date.now(), d:today(), id:c.id, n:r.n, t:r.total, g:r.grade, ap:!!s.appealed, k:it.kind, dn:r.dn||0, dt:r.dt||0, f:!!r.full});
   if(r) s.full=(s.full||0)+(r.full?1:0);
+  if(r){ s.streak = r.full ? (s.streak||0)+1 : 0; if(s.streak>(s.bestRun||0)) s.bestRun=s.streak; if(s.streak>(S.bestStreak||0)){ S.bestStreak=s.streak; saveManual(); } }
+  s.appealOpen=false; s.claim=[]; s.appealNote="";
   if(S.recall.length>3000) S.recall=S.recall.slice(-3000);
   saveManual();
   s.done[it.kind]++; if(r){ s.hit=(s.hit||0)+r.n; s.tot=(s.tot||0)+r.total; }
@@ -614,6 +659,7 @@ function renderMDone(v){
   if(d.due) parts.push(d.due+" reviewed"); if(d.new) parts.push(d.new+" learned");
   if(S.mSession.tot) parts.push(S.mSession.hit+" of "+S.mSession.tot+" must-have points hit ("+Math.round(100*S.mSession.hit/S.mSession.tot)+"%)");
   if(S.mSession.full) parts.push(S.mSession.full+" full answer"+(S.mSession.full===1?"":"s")+" ★");
+  if((S.mSession.bestRun||0)>=2) parts.push("longest streak "+S.mSession.bestRun+(S.mSession.bestRun>=(S.bestStreak||0)?" (your best)":""));
   v.appendChild(h("section",{class:"panel"}, h("h2",{text:"Done for today"}), h("p",{text:parts.join(", ")+"."}),
     h("p",{class:"sub",text: again ? again+" card"+(again>1?"s are":" is")+" still due from Missed or Shaky. They come back tomorrow." : nd ? "Next review: "+pretty(nd)+"." : ""}),
     h("p",{text:"Now stop and walk away. Take your focus into ranked: "+(focusName(S.profile.focus)||"pick one in the Debrief")+"."}),
@@ -1222,6 +1268,7 @@ function renderProof(v){
     rp.appendChild(h("div",{class:"trend"}, h("span",{text:"Cards answered, last 7 days"}), h("span",{class:"r",text:String(D.recall.cur.n)})));
     rp.appendChild(h("div",{class:"trend"}, h("span",{text:"★ Full answers, last 7 days"}), h("span",{class:"r",text:D.recall.cur.full+" of "+D.recall.cur.deepN})));
     rp.appendChild(h("div",{class:"trend"}, h("span",{text:"Key points recalled, all time"}), h("span",{class:"r",text:D.recall.all.h+" of "+D.recall.all.t})));
+    rp.appendChild(h("div",{class:"trend"}, h("span",{text:"Best full-answer streak"}), h("span",{class:"r",text:"★ "+(S.bestStreak||0)})));
     rp.appendChild(h("div",{class:"trend"}, h("span",{text:"Times you overrode the grader"}), h("span",{class:"r",text:String(D.recall.all.ap)})));
   }
   v.appendChild(rp);
@@ -1289,7 +1336,7 @@ function shareProof(B){
 
 // ===================== SETTINGS + BACKUP =====================
 function fmtAgo(ts){ var d=Math.floor((Date.now()-ts)/864e5); return d<=0?"today":d===1?"yesterday":d+" days ago"; }
-function exportData(){ return {app:"clip-review", pack:P.id, version:2, exported:new Date().toISOString(), profile:S.profile, manual:{reviews:S.reviews, recall:S.recall, snap:S.snap}, sessions:S.sessions, live:S.live, clips:S.clips, draft:S.draft}; }
+function exportData(){ return {app:"clip-review", pack:P.id, version:2, exported:new Date().toISOString(), profile:S.profile, manual:{reviews:S.reviews, recall:S.recall, snap:S.snap, appeals:S.appeals, bestStreak:S.bestStreak}, sessions:S.sessions, live:S.live, clips:S.clips, draft:S.draft}; }
 function saveBackup(){
   var url=URL.createObjectURL(new Blob([JSON.stringify(exportData(),null,1)],{type:"application/json"}));
   var a=h("a",{href:url,download:"clip-review-backup-"+today()+".json"}); document.body.appendChild(a); a.click();
@@ -1308,6 +1355,9 @@ function restoreFrom(file){
       var added={clips:0,sessions:0,cards:0}, gotDraft=false;
       (o.clips||[]).forEach(function(c){ if(c&&c.id&&!S.clips.some(function(x){ return x.id===c.id; })){ S.clips.push(c); added.clips++; } });
       (o.sessions||[]).forEach(function(s){ if(s&&s.id&&!S.sessions.some(function(x){ return x.id===s.id; })){ S.sessions.push(s); added.sessions++; } });
+      var aseen={}; S.appeals.forEach(function(x){ aseen[x.ts+"|"+x.id]=1; });
+      ((o.manual&&o.manual.appeals)||[]).forEach(function(x){ if(x&&!aseen[x.ts+"|"+x.id]){ S.appeals.push(x); aseen[x.ts+"|"+x.id]=1; } });
+      if(o.manual&&o.manual.bestStreak>(S.bestStreak||0)) S.bestStreak=o.manual.bestStreak;
       var seen={}; S.recall.forEach(function(x){ seen[x.ts+"|"+x.id]=1; });
       ((o.manual&&o.manual.recall)||[]).forEach(function(x){ if(x&&!seen[x.ts+"|"+x.id]){ S.recall.push(x); seen[x.ts+"|"+x.id]=1; } });
       S.recall.sort(function(a,b){ return a.ts-b.ts; });
@@ -1353,6 +1403,25 @@ function renderSettings(v){
   v.appendChild(h("section",{class:"panel"}, h("h2",{text:"Backup"}),
     h("p",{class:"sub",text:(last?"Last backup "+fmtAgo(last)+". ":"No backup yet. ")+"Everything lives only on this phone: cards, sessions and clip reviews. Save a backup file every week or two and keep it somewhere safe, like Google Drive."}),
     h("div",{class:"row"}, h("button",{type:"button",class:"ghost",onclick:saveBackup},"Save backup file"), h("button",{type:"button",class:"ghost",onclick:pickRestore},"Restore from file"))));
+  // grader appeals: review and send for tuning
+  var ap=S.appeals.slice().reverse(), apPanel=h("section",{class:"panel"}, h("h2",{text:"Grader appeals ("+ap.length+")"}),
+    h("p",{class:"sub",text:"Every time someone says the grader missed something, the answer and their note land here. Copy them and send them to Claude to tune the key points, or to spot answers that stretch the truth."}));
+  if(!ap.length) apPanel.appendChild(h("p",{class:"empty",text:"No appeals yet."}));
+  else {
+    var copyWrap=h("div");
+    function apText(){ return ap.map(function(a){ var c=byId[a.id]; return "["+a.d+"] Card "+a.id+(c?" "+c.title:"")+" | "+a.from+" -> "+a.to+"\nClaimed: "+a.points.join("; ")+"\nAnswer: "+(a.answer||"")+"\nNote: "+(a.note||""); }).join("\n\n"); }
+    var clr=h("button",{type:"button",class:"ghost",text:"Clear list"}), armed=false;
+    clr.addEventListener("click",function(){ if(!armed){ armed=true; clr.textContent="Tap again to clear"; clr.classList.add("danger"); setTimeout(function(){ armed=false; clr.textContent="Clear list"; clr.classList.remove("danger"); },3000); return; } S.appeals=[]; saveManual(); safeRender(); toast("Appeals cleared."); });
+    apPanel.appendChild(h("div",{class:"row"}, h("button",{type:"button",class:"ghost",onclick:function(){
+      var t=apText(); function fb(){ clear(copyWrap); var ta=h("textarea",{class:"inp copybox",readonly:true,"aria-label":"Appeals to copy"}); ta.value=t; copyWrap.appendChild(ta); ta.focus(); ta.select(); }
+      try{ navigator.clipboard.writeText(t).then(function(){ toast("Copied. Paste it to Claude."); }, fb); }catch(e){ fb(); }
+    }},"Copy for Claude"), clr));
+    apPanel.appendChild(copyWrap);
+    ap.slice(0,15).forEach(function(a){ var c=byId[a.id];
+      apPanel.appendChild(h("div",{class:"applog"}, h("div",{class:"who",text:fmtDate(a.d)+" · "+a.id+(c?" "+c.title:"")+" · "+GRADE_NAME[a.from]+" → "+GRADE_NAME[a.to]}),
+        h("div",null,h("b",{text:"Claimed: "}),a.points.join("; ")), h("div",{class:"said"},h("b",{text:"Answer: "}),a.answer||"(blank)"), h("div",{class:"said"},h("b",{text:"Note: "}),a.note||""))); });
+  }
+  v.appendChild(apPanel);
   v.appendChild(h("details",{class:"panel more"}, h("summary",{text:"The method behind this app"}),
     h("p",{text:"Built on the ideas in Learning How to Learn (Oakley and Sejnowski)."}),
     h("p",null,h("b",{text:"Recall beats rereading. "}),"The Manual makes you answer before it shows you."),
