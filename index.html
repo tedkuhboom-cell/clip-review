@@ -572,7 +572,7 @@ function renderMSession(v){
     ta.addEventListener("paste",function(e){ e.preventDefault(); toast("Type it from memory. Pasting is off here."); });
     ta.addEventListener("drop",function(e){ e.preventDefault(); toast("Type it from memory. Pasting is off here."); });
     function check(dontKnow){
-      s.answer=dontKnow?"":ta.value.trim(); s.appealed=false;
+      s.answer=dontKnow?"":ta.value.trim(); s.appealed=false; s.appealUp=false; s.dclaimed=[];
       if(c.selfGrade){ s.result=null; } else { s.result=dontKnow?{hits:c.kp.map(function(){ return false; }),n:0,total:c.kp.length,grade:"miss"}:gradeAnswer(s.answer,c.kp);
         var dh=dontKnow?(c.dp||[]).map(function(){ return false; }):depthHits(s.answer,c.dp); s.result.dhits=dh; s.result.dn=dh.filter(Boolean).length; s.result.dt=dh.length;
         s.result.full = s.result.n===s.result.total && s.result.dn===s.result.dt && s.result.total>0; }
@@ -588,15 +588,15 @@ function renderMSession(v){
   } else {
     var r=s.result;
     if(r){
-      var g=r.grade, shown=s.appealed?bump(g):g;
+      var g=r.grade, shown=s.appealUp?bump(g):g;
       var runNow=r.full?(s.streak||0)+1:0;
-      panel.appendChild(h("div",{class:"verdictbar "+shown}, h("b",null,GRADE_NAME[shown], r.full?h("span",{class:"fullstar",text:"★ Full answer"}):null, runNow>=2?h("span",{class:"streak bump",style:"margin-left:8px;vertical-align:middle",text:runNow+" in a row"}):null), h("span",{class:"faint",text:r.n+" of "+r.total+" key point"+(r.total===1?"":"s")+(s.appealed?" · upgraded":"")})));
+      panel.appendChild(h("div",{class:"verdictbar "+shown}, h("b",null,GRADE_NAME[shown], r.full?h("span",{class:"fullstar",text:"★ Full answer"}):null, runNow>=2?h("span",{class:"streak bump",style:"margin-left:8px;vertical-align:middle",text:runNow+" in a row"}):null), h("span",{class:"faint",text:r.n+" of "+r.total+" key point"+(r.total===1?"":"s")+(s.appealUp?" · upgraded":"")})));
       if(s.answer) panel.appendChild(h("p",{class:"youranswer",text:s.answer}));
       panel.appendChild(h("div",{class:"kphead",text:"Must-have"}));
       panel.appendChild(h("ul",{class:"kplist"}, c.kp.map(function(kp,i){ return h("li",{class:r.hits[i]?"hit":"no",style:"animation-delay:"+(i*180)+"ms"}, h("span",{class:"mk",text:r.hits[i]?"✓":"✕"}), h("span",{text:kp[0]})); })));
       if(c.dp && c.dp.length){
         panel.appendChild(h("div",{class:"kphead",text:"Go deeper · not needed for the grade, needed for a full answer"}));
-        panel.appendChild(h("ul",{class:"kplist"}, c.dp.map(function(kp,i){ var hit=r.dhits&&r.dhits[i]; return h("li",{class:"deep"+(hit?" hit":""),style:"animation-delay:"+((c.kp.length+i)*180)+"ms"}, h("span",{class:"mk",text:hit?"✓":""}), h("span",{text:kp[0]})); })));
+        panel.appendChild(h("ul",{class:"kplist"}, c.dp.map(function(kp,i){ var cl=(s.dclaimed||[]).indexOf(i)>=0, hit=(r.dhits&&r.dhits[i])||cl; return h("li",{class:"deep"+(hit?" hit":""),title:cl?"Claimed by you":null,style:"animation-delay:"+((c.kp.length+i)*180)+"ms"}, h("span",{class:"mk",text:hit?"✓":""}), h("span",{text:kp[0]})); })));
       }
     } else if(s.answer) panel.appendChild(h("p",{class:"youranswer",text:s.answer}));
     panel.appendChild(h("div",null,cardBody()));
@@ -610,29 +610,38 @@ function renderMSession(v){
       }
       panel.appendChild(grades);
     } else {
-      var fg=s.appealed?bump(r.grade):r.grade, nb=Math.min((rev?rev.box:0)+1,5);
+      var fg=s.appealUp?bump(r.grade):r.grade, nb=Math.min((rev?rev.box:0)+1,5);
       var when = it.kind==="new" ? "Back tomorrow to lock it in." : fg==="got" ? (nb>=5?"Owned. Back in a month.":"Moves up. Back "+inDays(INTERVAL[nb])+".") : fg==="shaky" ? "Back tomorrow." : "Back to the start. Back tomorrow.";
       panel.appendChild(h("p",{class:"hint",style:"margin:0 0 10px",text:when}));
       panel.appendChild(h("button",{type:"button",class:"primary",onclick:function(){ finishCard(c, it.kind==="new"?"learn":fg, r); }},"Next card"));
-      if(r.grade!=="got" && !s.appealed && !s.appealOpen) panel.appendChild(h("button",{type:"button",class:"appeal",onclick:function(){ s.appealOpen=true; s.claim=[]; s.appealNote=""; safeRender(); }},"The grader missed something I said"));
+      var mustMiss=r.grade!=="got", deepMiss=!!(r.dt && r.dn<r.dt);
+      if((mustMiss||deepMiss) && !s.appealed && !s.appealOpen) panel.appendChild(h("button",{type:"button",class:"appeal",onclick:function(){ s.appealOpen=true; s.claim=[]; s.appealNote=""; safeRender(); }}, mustMiss?"The grader missed something I said":"The grader missed a go-deeper point"));
       if(s.appealOpen && !s.appealed){
-        var missed=c.kp.map(function(kp,i){ return {i:i,label:kp[0]}; }).filter(function(x){ return !r.hits[x.i]; });
+        var missK=c.kp.map(function(kp,i){ return {k:"k"+i,i:i,label:kp[0]}; }).filter(function(x){ return !r.hits[x.i]; });
+        var missD=(c.dp||[]).map(function(kp,i){ return {k:"d"+i,i:i,label:kp[0]}; }).filter(function(x){ return !(r.dhits&&r.dhits[x.i]); });
         var claimG=h("div",{class:"seg small"});
-        missed.forEach(function(m){ claimG.appendChild(h("button",{type:"button","data-k":String(m.i),"aria-pressed":String((s.claim||[]).indexOf(String(m.i))>=0),onclick:function(){ var a=(s.claim||[]).slice(), j=a.indexOf(String(m.i)); if(j>=0) a.splice(j,1); else a.push(String(m.i)); s.claim=a; setPressed(claimG,a); ready(); }}, m.label)); });
+        function claimBtn(m){ return h("button",{type:"button","data-k":m.k,"aria-pressed":String((s.claim||[]).indexOf(m.k)>=0),onclick:function(){ var a=(s.claim||[]).slice(), j=a.indexOf(m.k); if(j>=0) a.splice(j,1); else a.push(m.k); s.claim=a; setPressed(claimG,a); ready(); }}, m.label); }
+        if(missK.length){ claimG.appendChild(h("div",{class:"kphead",text:"Must-have"})); missK.forEach(function(m){ claimG.appendChild(claimBtn(m)); }); }
+        if(missD.length){ claimG.appendChild(h("div",{class:"kphead",style:"margin-top:6px",text:"Go deeper"})); missD.forEach(function(m){ claimG.appendChild(claimBtn(m)); }); }
         var note=h("textarea",{class:"inp",id:"appeal-note",rows:"2",placeholder:"e.g. I said \"leave the fight\", which is the same as disengage"}); note.value=s.appealNote||"";
         var go=h("button",{type:"button",class:"primary",style:"margin-top:10px",onclick:function(){
           if(go.disabled) return;
-          var pts=(s.claim||[]).map(function(i){ return c.kp[+i][0]; });
-          S.appeals.push({ts:Date.now(), d:today(), id:c.id, points:pts, note:note.value.trim(), answer:s.answer, from:r.grade, to:bump(r.grade)});
+          var cl=s.claim||[], kC=cl.filter(function(x){ return x[0]==="k"; }).map(function(x){ return +x.slice(1); }), dC=cl.filter(function(x){ return x[0]==="d"; }).map(function(x){ return +x.slice(1); });
+          s.appealUp = kC.length>0 && r.grade!=="got"; s.dclaimed=dC;
+          var allMust=r.hits.every(function(hh,i){ return hh || kC.indexOf(i)>=0; }), allDeep=(r.dhits||[]).every(function(hh,i){ return hh || dC.indexOf(i)>=0; });
+          if(!r.full && allMust && allDeep && r.total>0){ r.full=true; r.fullAppealed=true; }
+          var pts=kC.map(function(i){ return c.kp[i][0]; }).concat(dC.map(function(i){ return "Go deeper: "+c.dp[i][0]; }));
+          S.appeals.push({ts:Date.now(), d:today(), id:c.id, points:pts, note:note.value.trim(), answer:s.answer, from:r.grade, to:s.appealUp?bump(r.grade):r.grade, full:!!r.fullAppealed});
           if(S.appeals.length>500) S.appeals=S.appeals.slice(-500);
-          saveManual(); s.appealed=true; s.appealOpen=false; safeRender(); toast("Upgraded. Your note is saved for review.");
-        }},"Upgrade and save my note");
+          saveManual(); s.appealed=true; s.appealOpen=false; safeRender();
+          toast(s.appealUp?"Upgraded. Your note is saved for review.":r.fullAppealed?"★ Full answer. Your note is saved for review.":"Saved for review.");
+        }}, mustMiss?"Upgrade and save my note":"Save my note");
         function ready(){ var words=note.value.trim().split(/\s+/).filter(Boolean).length; go.disabled=!((s.claim||[]).length && words>=3); }
         note.addEventListener("input",function(){ s.appealNote=note.value; ready(); });
         panel.appendChild(h("div",{class:"appealbox"},
           h("div",{class:"q",text:"Which point did you cover?"}), claimG,
           h("label",{class:"q",for:"appeal-note",style:"display:block;margin-top:12px"},"What did you say for it?"), note,
-          h("p",{class:"faint",style:"margin:6px 0 0",text:"Your note is saved so the grader can be tuned. Be honest; you're only fooling your future self."}),
+          h("p",{class:"faint",style:"margin:6px 0 0",text:(mustMiss?"A must-have claim moves you up one grade. ":"")+"Go-deeper claims don't change the grade but can complete a ★ Full answer. Your note is saved so the grader can be tuned. Be honest; you're only fooling your future self."}),
           go, h("button",{type:"button",class:"appeal",onclick:function(){ s.appealOpen=false; safeRender(); }},"Never mind")));
         ready();
       }
@@ -652,7 +661,7 @@ function finishCard(c,g,r){
   if(S.recall.length>3000) S.recall=S.recall.slice(-3000);
   saveManual();
   s.done[it.kind]++; if(r){ s.hit=(s.hit||0)+r.n; s.tot=(s.tot||0)+r.total; }
-  s.i++; s.phase="front"; s.answer=""; s.result=null; s.appealed=false; safeRender(); window.scrollTo(0,0);
+  s.i++; s.phase="front"; s.answer=""; s.result=null; s.appealed=false; s.appealUp=false; s.dclaimed=[]; safeRender(); window.scrollTo(0,0);
 }
 function renderMDone(v){
   var t=today(), d=S.mSession.done, nd=nextDue(t), again=dueList(t).length, parts=[];
@@ -1418,7 +1427,7 @@ function renderSettings(v){
     }},"Copy for Claude"), clr));
     apPanel.appendChild(copyWrap);
     ap.slice(0,15).forEach(function(a){ var c=byId[a.id];
-      apPanel.appendChild(h("div",{class:"applog"}, h("div",{class:"who",text:fmtDate(a.d)+" · "+a.id+(c?" "+c.title:"")+" · "+GRADE_NAME[a.from]+" → "+GRADE_NAME[a.to]}),
+      apPanel.appendChild(h("div",{class:"applog"}, h("div",{class:"who",text:fmtDate(a.d)+" · "+a.id+(c?" "+c.title:"")+" · "+(a.from===a.to?GRADE_NAME[a.from]:GRADE_NAME[a.from]+" → "+GRADE_NAME[a.to])+(a.full?" · ★ via appeal":"")}),
         h("div",null,h("b",{text:"Claimed: "}),a.points.join("; ")), h("div",{class:"said"},h("b",{text:"Answer: "}),a.answer||"(blank)"), h("div",{class:"said"},h("b",{text:"Note: "}),a.note||""))); });
   }
   v.appendChild(apPanel);

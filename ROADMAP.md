@@ -20,6 +20,7 @@ The goal: help people learn whatever they want in a fun, efficient way, built on
 - [x] Season 31/32 prep (2026-11-06): new cards (Reset timer 3.10, Cover the heal 5.7, Own the drop 1.12, Nothing stays cleared 5.8, Strongholds 2.5, 0.2 rewritten and auto-graded, fourth-team depth on 2.4); new Module 8 "Ranked & the Climb" (squad up, legend bans, Challenger/Goliath, demotion shields, plus five Season 32 cards marked Coming soon); ban backups (Plan B/C), Season 32 rank list toggle, season goal on Proof; lobby type + squad kills per game in Session mode; Stronghold chip and new drop/heal/reset checks in Clips; Axle and Crypto kit tips
 
 - [x] Grader appeals (2026-11-07): pick the missed point and say what you wrote; upgrade happens right away, note saved to Settings → Grader appeals with "Copy for Claude" for tuning
+- [x] Go-deeper appeals (2026-11-08): claim a missed go-deeper point with a note; grade unchanged, but it can complete a ★ Full answer; logged with other appeals
 - [x] Paste blocked in the answer box (voice dictation still works)
 - [x] Full-answer streak: counter during a session, best streak on Proof
 
