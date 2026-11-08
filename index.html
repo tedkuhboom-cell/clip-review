@@ -505,13 +505,39 @@ function renderSetup(v){
 }
 
 // ===================== MANUAL =====================
-function schedule(rev, grade, t){
-  var box = rev ? rev.box : 0;
-  if(grade==="learn") box=1; else if(grade==="got") box=Math.min(box+1,5); else if(grade==="shaky") box=Math.max(box,1); else box=1;
-  var gap = grade==="got" ? INTERVAL[box] : 1;
-  return { box:box, due:addDays(t,gap), last:t, learned:(rev&&rev.learned)||t, n:((rev&&rev.n)||0)+1 };
+// ----- FSRS adaptive schedule (FSRS-4.5, default weights) -----
+// Each card tracks Stability (days until recall chance falls to 90%) and Difficulty (1-10, learned from your answers).
+// A card is due when your predicted chance of remembering it drops to your target (Settings, 90% by default).
+var FW=[0.4872,1.4003,3.7145,13.8206,5.1618,1.2298,0.8975,0.031,1.6474,0.1367,1.0461,2.1072,0.0793,0.3246,1.587,0.2272,2.8755];
+var F_DECAY=-0.5, F_FACTOR=19/81, LADDER_S={1:1,2:3,3:7,4:14,5:30};
+function clampD(d){ return Math.min(10,Math.max(1,d)); }
+function fR(t,Sx){ return Math.pow(1+F_FACTOR*t/Sx, F_DECAY); }
+function fIvl(Sx,r){ return Sx/F_FACTOR*(Math.pow(r,1/F_DECAY)-1); }
+function fD0(G){ return clampD(FW[4]-(G-3)*FW[5]); }
+function fNextD(D,G){ return clampD(FW[7]*fD0(3)+(1-FW[7])*(D-FW[6]*(G-3))); }
+function fSRecall(D,Sx,R,G){ return Sx*(1+Math.exp(FW[8])*(11-D)*Math.pow(Sx,-FW[9])*(Math.exp(FW[10]*(1-R))-1)*(G===2?FW[15]:1)*(G===4?FW[16]:1)); }
+function fSForget(D,Sx,R){ return FW[11]*Math.pow(D,-FW[12])*(Math.pow(Sx+1,FW[13])-1)*Math.exp(FW[14]*(1-R)); }
+function dayNum(x){ var q=x.split("-"); return Math.round(Date.UTC(+q[0],+q[1]-1,+q[2])/864e5); }
+function daysBetween(a,b){ return dayNum(b)-dayNum(a); }
+function retention(){ return S.profile.retention||0.9; }
+function gradeNum(grade, full){ return grade==="miss"?1 : grade==="shaky"?2 : full?4 : 3; }
+function cardS(rev){ return rev ? (rev.s!=null ? rev.s : (LADDER_S[rev.box]||1)) : 0; }
+function boxFromS(x){ return x<3?1 : x<7?2 : x<14?3 : x<30?4 : 5; }
+function schedule(rev, grade, t, full){
+  var G=gradeNum(grade, full), S1, D1;
+  if(!rev){ S1=FW[G-1]; D1=fD0(G); }
+  else {
+    var S0=cardS(rev), D0=rev.d!=null?rev.d:clampD(fD0(3)+0.8*Math.max(0,((rev.n||0)-(rev.box||0)))-0.3*Math.max(0,(rev.box||1)-3)), el=Math.max(0,daysBetween(rev.last||t,t)), R=fR(el,S0);
+    D1=fNextD(D0,G); S1 = G===1 ? Math.min(fSForget(D0,S0,R), S0) : fSRecall(D0,S0,R,G);
+  }
+  S1=Math.max(0.1,S1);
+  var ivl = G===1 ? 1 : Math.max(1, Math.min(365, Math.round(fIvl(S1, retention()))));
+  if(G===2) ivl=Math.min(ivl,7);   // Shaky = only half the must-haves: recheck within a week
+  return { box:boxFromS(S1), s:Math.round(S1*1000)/1000, d:Math.round(D1*1000)/1000, due:addDays(t,ivl), last:t, learned:(rev&&rev.learned)||t, n:((rev&&rev.n)||0)+1 };
 }
-function stage(rev){ if(!rev) return "new"; if(rev.box>=5) return "own"; if(rev.box>=3) return "solid"; return "learn"; }
+function previewGap(rev, grade, full){ return daysBetween(today(), schedule(rev, grade, today(), full).due); }
+function fmtGap(n){ return n<=1?"tomorrow" : n<14?"in "+n+" days" : n<60?"in about "+Math.round(n/7)+" weeks" : "in about "+Math.round(n/30)+" months"; }
+function stage(rev){ if(!rev) return "new"; var x=cardS(rev); if(x>=30) return "own"; if(x>=7) return "solid"; return "learn"; }
 function dueList(t){ return CARDS.filter(function(c){ var r=S.reviews[c.id]; return r && r.due<=t; }).sort(function(a,b){ return S.reviews[a.id].due.localeCompare(S.reviews[b.id].due) || a.mod-b.mod; }); }
 function newQueue(){ var seen={}, q=[]; (P.newOrder||[]).forEach(function(id){ if(byId[id] && !S.reviews[id] && !seen[id]){ seen[id]=1; q.push(byId[id]); } }); CARDS.forEach(function(c){ if(!S.reviews[c.id] && !seen[c.id]) q.push(c); }); return q; }
 function learnedToday(t){ var n=0; for(var k in S.reviews){ if(S.reviews[k].learned===t && S.reviews[k].n===1) n++; } return n; }
@@ -556,7 +582,8 @@ function renderManual(v){
     h("p",null,h("b",{text:"A daily cap."})," Sessions stop at your session size (Settings), most overdue cards first. Anything left waits for the next session, and new cards pause until you catch up, so missing a few days never buries you."),
     h("p",null,h("b",{text:"Today's drill."})," At the end of a session, pick one drill to try in your next ranked games. A card isn't really yours until you've used it in a match."),
     h("p",null,h("b",{text:"Full answers."})," Each card also has \u201cgo deeper\u201d points. They don't change your grade, but hitting all of them earns a ★ Full answer, which counts on your Proof screen."),
-    h("p",null,h("b",{text:"Graded on key points."})," Hit them all (or all but one on big cards) for Got it, half for Shaky, less for Missed. Wording doesn't matter. Got it moves a card up the ladder: 1 day, 3 days, 1 week, 2 weeks, then owned at a month. Shaky brings it back tomorrow. Missed sends it back to the start."),
+    h("p",null,h("b",{text:"Graded on key points."})," Hit them all (or all but one on big cards) for Got it, half for Shaky, less for Missed. Wording doesn't matter."),
+    h("p",null,h("b",{text:"Adaptive schedule."})," Each card comes back right before you\u2019d forget it, at your target (90% by default, in Settings). Cards you know well spread out to weeks and months; hard ones come back sooner. Missed brings a card back tomorrow, and a \u2605 Full answer spaces it out further than a plain Got it."),
     h("p",null,h("b",{text:"Grader wrong?"})," If you said it in different words, tap \u201cThe grader missed something\u201d, pick the point you covered, and say what you wrote. You move up one level and your note is saved so the grader can be tuned. Use it honestly. You're only fooling your future self."),
     h("p",null,h("b",{text:"Streaks."})," Full answers in a row build a streak. Your best streak shows on the Proof screen."),
     h("p",null,h("b",{text:"No pasting."})," The answer box doesn't accept pasted text. Type it, or use your keyboard's mic."),
@@ -635,19 +662,20 @@ function renderMSession(v){
     } else if(s.answer) panel.appendChild(h("p",{class:"youranswer",text:s.answer}));
     panel.appendChild(h("div",null,cardBody()));
     if(c.selfGrade){
-      var gb=Math.min((rev?rev.box:0)+1,5), grades=h("div",{class:"grades"});
-      if(it.kind==="new") grades.appendChild(h("button",{type:"button",class:"grade got",onclick:function(){ finishCard(c,"learn",null); }},h("span",{text:"Learned"}),h("small",{text:"see it again tomorrow"})));
+      var grades=h("div",{class:"grades"});
+      if(it.kind==="new") grades.appendChild(h("button",{type:"button",class:"grade got",onclick:function(){ finishCard(c,"learn",null); }},h("span",{text:"Learned"}),h("small",{text:"back "+fmtGap(previewGap(null,"got"))})));
       else {
-        grades.appendChild(h("button",{type:"button",class:"grade miss",onclick:function(){ finishCard(c,"miss",null); }},h("span",{text:"Missed"}),h("small",{text:"back to the start · tomorrow"})));
-        grades.appendChild(h("button",{type:"button",class:"grade shaky",onclick:function(){ finishCard(c,"shaky",null); }},h("span",{text:"Shaky"}),h("small",{text:"again tomorrow"})));
-        grades.appendChild(h("button",{type:"button",class:"grade got",onclick:function(){ finishCard(c,"got",null); }},h("span",{text:"Got it"}),h("small",{text:gb>=5?"owned · back in a month":inDays(INTERVAL[gb])})));
+        grades.appendChild(h("button",{type:"button",class:"grade miss",onclick:function(){ finishCard(c,"miss",null); }},h("span",{text:"Missed"}),h("small",{text:"back tomorrow"})));
+        grades.appendChild(h("button",{type:"button",class:"grade shaky",onclick:function(){ finishCard(c,"shaky",null); }},h("span",{text:"Shaky"}),h("small",{text:"back "+fmtGap(previewGap(rev,"shaky"))})));
+        grades.appendChild(h("button",{type:"button",class:"grade got",onclick:function(){ finishCard(c,"got",null); }},h("span",{text:"Got it"}),h("small",{text:"back "+fmtGap(previewGap(rev,"got"))})));
       }
       panel.appendChild(grades);
     } else {
       var fg=s.appealUp?bump(r.grade):r.grade, nb=Math.min((rev?rev.box:0)+1,5);
-      var when = it.kind==="new" ? "Back tomorrow to lock it in." : fg==="got" ? (nb>=5?"Owned. Back in a month.":"Moves up. Back "+inDays(INTERVAL[nb])+".") : fg==="shaky" ? "Back tomorrow." : "Back to the start. Back tomorrow.";
+      var nxt=schedule(rev, fg, today(), r.full), gap=daysBetween(today(), nxt.due), newlyOwned=stage(nxt)==="own" && stage(rev)!=="own";
+      var when = fg==="miss" ? "Back tomorrow." : (newlyOwned?"Owned. ":"")+"Back "+fmtGap(gap)+"."+(r.full&&fg==="got"?" A full answer spaces it out further.":"");
       panel.appendChild(h("p",{class:"hint",style:"margin:0 0 10px",text:when}));
-      panel.appendChild(h("button",{type:"button",class:"primary",onclick:function(){ finishCard(c, it.kind==="new"?"learn":fg, r); }},"Next card"));
+      panel.appendChild(h("button",{type:"button",class:"primary",onclick:function(){ finishCard(c, fg, r); }},"Next card"));
       var mustMiss=r.grade!=="got", deepMiss=!!(r.dt && r.dn<r.dt);
       if((mustMiss||deepMiss) && !s.appealed && !s.appealOpen) panel.appendChild(h("button",{type:"button",class:"appeal",onclick:function(){ s.appealOpen=true; s.claim=[]; s.appealNote=""; safeRender(); }}, mustMiss?"The grader missed something I said":"The grader missed a go-deeper point"));
       if(s.appealOpen && !s.appealed){
@@ -687,7 +715,7 @@ function renderMSession(v){
 function bump(g){ return g==="miss"?"shaky":g==="shaky"?"got":g; }
 function finishCard(c,g,r){
   var s=S.mSession, it=s.items[s.i];
-  S.reviews[c.id]=schedule(S.reviews[c.id], g, today());
+  S.reviews[c.id]=schedule(S.reviews[c.id], g, today(), !!(r && r.full));
   if(r) S.recall.push({ts:Date.now(), d:today(), id:c.id, n:r.n, t:r.total, g:r.grade, ap:!!s.appealed, k:it.kind, dn:r.dn||0, dt:r.dt||0, f:!!r.full});
   if(r) s.full=(s.full||0)+(r.full?1:0);
   if(r){ s.streak = r.full ? (s.streak||0)+1 : 0; if(s.streak>(s.bestRun||0)) s.bestRun=s.streak; if(s.streak>(S.bestStreak||0)){ S.bestStreak=s.streak; saveManual(); } }
@@ -1442,12 +1470,15 @@ function renderSettings(v){
   P.legends.forEach(function(L){ mainsG.appendChild(h("button",{type:"button","data-k":L,"aria-pressed":String((p.mains||[]).indexOf(L)>=0),onclick:function(){ var a=(S.profile.mains||[]).slice(), i=a.indexOf(L); if(i>=0) a.splice(i,1); else a.push(L); S.profile.mains=a; setPressed(mainsG,a); saveProfile(); }}, L)); });
   var npdG=h("div",{class:"seg"});
   [1,2,3].forEach(function(n){ npdG.appendChild(h("button",{type:"button","data-k":String(n),"aria-pressed":String((p.newPerDay||3)===n),onclick:function(){ S.profile.newPerDay=n; setPressed(npdG,String(n)); saveProfile(); }}, String(n))); });
+  var retG=h("div",{class:"seg small"});
+  [[0.85,"85%: fewer reviews"],[0.9,"90%: balanced"],[0.95,"95%: stronger memory"]].forEach(function(o){ retG.appendChild(h("button",{type:"button","data-k":String(o[0]),"aria-pressed":String((p.retention||0.9)===o[0]),onclick:function(){ S.profile.retention=o[0]; setPressed(retG,String(o[0])); saveProfile(); toast("Target set to "+Math.round(o[0]*100)+"%. Applies from your next answers."); }},o[1])); });
   var capG=h("div",{class:"seg"});
   [10,15,25].forEach(function(n){ capG.appendChild(h("button",{type:"button","data-k":String(n),"aria-pressed":String((p.sessionCap||15)===n),onclick:function(){ S.profile.sessionCap=n; setPressed(capG,String(n)); saveProfile(); }}, String(n))); });
   v.appendChild(h("section",{class:"panel"}, h("h2",{text:"Your profile"}),
     h("div",{class:"field"}, h("label",{class:"q",for:"set-rank"},"Rank"), rankSel),
     h("div",{class:"field"}, h("div",{class:"q",text:"Legends you play"}), mainsG),
     h("div",{class:"field"}, h("div",{class:"q",text:"New cards per day"}), npdG),
+    h("div",{class:"field"}, h("div",{class:"q"},"How much to remember",h("span",{class:"note",text:"Each card comes back when your chance of remembering it drops to this. Higher means more reviews and stronger memory."})), retG),
     h("div",{class:"field"}, h("div",{class:"q"},"Cards per session",h("span",{class:"note",text:"Most overdue first. Anything over waits for the next session."})), capG)));
   // ranked: system, goal, ban backups
   var sysG=h("div",{class:"seg small"});

@@ -26,8 +26,10 @@ The goal: help people learn whatever they want in a fun, efficient way, built on
 
 - [x] Learning-efficiency pass (2026-11-08): new cards read first and tested at the end (30-second break if nothing else is due); session cap (10/15/25, default 15), most overdue first, new cards pause during a backlog, "Keep going" option; Today's drill picked after each Manual session, shown in ranked sessions, "did you try it" logged, stats on Proof
 
+- [x] FSRS adaptive schedule (2026-11-08): FSRS-4.5 default weights; Missed/Shaky/Got it/Full answer = Again/Hard/Good/Easy; Shaky capped at 7 days; target retention 85/90/95% in Settings; ladder cards migrated (stability from step, difficulty from past slips). Simulation on Ted's 45 cards: roughly 55–65% fewer reviews over 180 days at the same answer pattern
+
 ## Up next
-- [ ] **FSRS adaptive schedule** (in progress): per-card stability/difficulty, target retention setting, Full answer = Easy.
+- [ ] **Personalize FSRS** once there are a few hundred typed reviews: fit the weights to the user's own history.
 - [ ] **More ways to practice without playing:** decision drills from paused clips or screenshots ("what do you do here?"), 5-minute firing range drills, guided mental rehearsal.
 - [ ] **Auto-send appeals (waiting on Ted's laptop).** Ted creates a Google Form "Clip Review appeals" with 6 optional questions (Card; Claimed points; Answer; Note; Result; App ID), email collection off, linked to a new Sheet, then sends the pre-filled link with "test" in every box. Then: app posts each appeal to the Form (queued if offline), Settings toggle "Send appeals to improve the grader" with a plain explanation for other users, random App ID per install, and a weekly scheduled review that reads the Sheet, tunes key points, pushes fixes and sends a summary.
 - [ ] **Tune the grader from appeals.** Every so often, copy the appeals list to Claude: add accepted phrasings where the grader was wrong, flag notes that stretch the truth.
