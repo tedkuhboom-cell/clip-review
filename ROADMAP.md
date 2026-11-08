@@ -25,6 +25,7 @@ The goal: help people learn whatever they want in a fun, efficient way, built on
 - [x] Full-answer streak: counter during a session, best streak on Proof
 
 ## Up next
+- [ ] **Auto-send appeals (waiting on Ted's laptop).** Ted creates a Google Form "Clip Review appeals" with 6 optional questions (Card; Claimed points; Answer; Note; Result; App ID), email collection off, linked to a new Sheet, then sends the pre-filled link with "test" in every box. Then: app posts each appeal to the Form (queued if offline), Settings toggle "Send appeals to improve the grader" with a plain explanation for other users, random App ID per install, and a weekly scheduled review that reads the Sheet, tunes key points, pushes fixes and sends a summary.
 - [ ] **Tune the grader from appeals.** Every so often, copy the appeals list to Claude: add accepted phrasings where the grader was wrong, flag notes that stretch the truth.
 - [ ] **Make answers more thorough.** Ideas: after a Got it, ask a quick "why does that work?" follow-up (explaining *why* is a strong memory booster). Track Full-answer rate per card. Surface cards that keep getting Got it without the depth.
 - [ ] **Session mode polish.** Optional per-game note, end-of-session "biggest leak this session" callout, compare one session against your average.
