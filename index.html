@@ -196,6 +196,18 @@ details.more p{font-size:14px;margin:6px 0}
 .applog .who{color:var(--faint);font-size:12px}
 .applog .said{color:var(--muted);margin-top:4px;overflow-wrap:anywhere}
 
+/* drill */
+.drillcard{border-left:3px solid var(--teal);padding:2px 0 2px 12px}
+.drillcard .label{font-size:11.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.5px}
+.drillcard .name{font-family:var(--display);font-size:19px;font-weight:600;line-height:1.25}
+.drillcard p{margin:4px 0 0;font-size:14px}
+.drillpick{display:grid;gap:6px;margin-top:8px}
+.drillpick button{text-align:left;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px;min-height:44px}
+.drillpick button[aria-pressed="true"]{border-color:var(--teal);background:var(--teal-bg)}
+.drillpick button small{display:block;color:var(--faint);font-size:12px;margin-bottom:2px}
+.breakbox{text-align:center;padding:12px 0}
+.breakbox .big{font-family:var(--display);font-size:56px;font-weight:700;color:var(--amber);font-variant-numeric:tabular-nums}
+
 /* proof */
 .proofcard{background:linear-gradient(160deg,#1d2530,#141a22);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:12px}
 .proofcard .ph{font-family:var(--display);font-size:13px;letter-spacing:1.5px;color:var(--amber);text-transform:uppercase}
@@ -513,13 +525,13 @@ function renderManual(v){
   v.appendChild(subTabs([["today","Today",due||null],["library","Library"]], S.ui.manualSub, function(k){ S.ui.manualSub=k; saveUI(); S.mSession=null; safeRender(); window.scrollTo(0,0); }));
   if(S.ui.manualSub==="library") return renderLibrary(v);
   if(S.mSession) return renderMSession(v);
-  var nNew=newAvailable(t), counts={new:0,learn:0,solid:0,own:0};
+  var pl=planToday(t), nNew=pl.news.length, counts={new:0,learn:0,solid:0,own:0};
   CARDS.forEach(function(c){ counts[stage(S.reviews[c.id])]++; });
-  var total=due+nNew, mins=Math.max(1,Math.round(total*0.75)), nq=newQueue(), nd=nextDue(t);
+  var total=pl.due.length+nNew, mins=Math.max(1,Math.round(total*0.75)), nq=newQueue(), nd=nextDue(t);
   var seg=function(n,col){ return n? h("span",{style:"width:"+(n/CARDS.length*100)+"%;background:"+col}) : null; };
   v.appendChild(h("div",{class:"band"},
     h("div",{class:"stat"},h("div",{class:"k",text:"Due to review"}),h("div",{class:"v",text:String(due)})),
-    h("div",{class:"stat"},h("div",{class:"k",text:"New today"}),h("div",{class:"v"},String(nNew),h("small",{text:"of "+(S.profile.newPerDay||3)}))),
+    h("div",{class:"stat"},h("div",{class:"k",text:"New today"}),h("div",{class:"v"},String(nNew),h("small",{text:pl.backlog?"paused":"of "+(S.profile.newPerDay||3)}))),
     h("div",{class:"stat"},h("div",{class:"k",text:"Owned"}),h("div",{class:"v"},String(counts.own),h("small",{text:"/ "+CARDS.length})))));
   v.appendChild(h("section",{class:"panel"},
     h("div",{class:"ladder"},
@@ -530,14 +542,19 @@ function renderManual(v){
         h("span",null,h("i",{style:"background:var(--amber)"}),"Learning "+counts.learn),
         h("span",null,h("i",{style:"background:var(--line)"}),"Not started "+counts.new))),
     h("div",{style:"margin-top:14px"}, h("button",{type:"button",class:"primary",disabled:total===0,onclick:startMSession}, total? "Start · "+total+" card"+(total>1?"s":"") : "All caught up")),
-    h("p",{class:"hint",text: total ? "About "+mins+" min. Type your answer, and the app grades it on the key points." : (nd? "Next review "+pretty(nd)+". Go play your focus." : "Go play your focus.")}),
+    h("p",{class:"hint",text: total ? "About "+mins+" min. New cards are read first and tested at the end. Answers are graded on the key points." : (nd? "Next review "+pretty(nd)+". Go play your focus." : "Go play your focus.")}),
+    pl.rest ? h("p",{class:"hint",style:"color:var(--amber-ink2)",text:pl.rest+" more card"+(pl.rest===1?" is":"s are")+" due. They'll wait for your next session; you're still on track. New cards pause until you catch up."}) : null,
     nq.length ? h("p",{class:"hint"},"Next new card: ",h("b",{text:nq[0].id+" "+nq[0].title}),".") : h("p",{class:"hint",text:"Every card is started."})));
+  if(S.profile.drill) v.appendChild(drillPanel());
   var f=S.profile.focus;
   v.appendChild(h("section",{class:"panel"}, h("div",{class:"focus"}, h("div",{class:"label",text:"Your ranked focus"}), h("div",{class:"name",text:focusName(f)||"Pick one in the Debrief"}),
       f&&FOCI[f]?h("p",{text:FOCI[f].what}):null),
     h("button",{type:"button",class:"linkbtn",onclick:function(){ goTab("debrief"); }},"Log a session in the Debrief")));
   v.appendChild(h("details",{class:"panel more"}, h("summary",{text:"How this works"}),
     h("p",null,h("b",{text:"Type it, then check."})," Pulling the answer out of memory is what builds it. Rereading only feels like learning."),
+    h("p",null,h("b",{text:"New cards: read now, test later."})," You read new cards first, do your reviews, then get tested on the new ones at the end. Testing right after reading only checks short-term memory; the gap makes it real recall."),
+    h("p",null,h("b",{text:"A daily cap."})," Sessions stop at your session size (Settings), most overdue cards first. Anything left waits for the next session, and new cards pause until you catch up, so missing a few days never buries you."),
+    h("p",null,h("b",{text:"Today's drill."})," At the end of a session, pick one drill to try in your next ranked games. A card isn't really yours until you've used it in a match."),
     h("p",null,h("b",{text:"Full answers."})," Each card also has \u201cgo deeper\u201d points. They don't change your grade, but hitting all of them earns a ★ Full answer, which counts on your Proof screen."),
     h("p",null,h("b",{text:"Graded on key points."})," Hit them all (or all but one on big cards) for Got it, half for Shaky, less for Missed. Wording doesn't matter. Got it moves a card up the ladder: 1 day, 3 days, 1 week, 2 weeks, then owned at a month. Shaky brings it back tomorrow. Missed sends it back to the start."),
     h("p",null,h("b",{text:"Grader wrong?"})," If you said it in different words, tap \u201cThe grader missed something\u201d, pick the point you covered, and say what you wrote. You move up one level and your note is saved so the grader can be tuned. Use it honestly. You're only fooling your future self."),
@@ -546,11 +563,21 @@ function renderManual(v){
     h("p",null,h("b",{text:"Mixed on purpose."})," Reviews are shuffled across modules so you practice choosing which idea applies."),
     h("p",null,h("b",{text:"Then stop."})," A session is a few minutes. A card isn't really yours until you've run its drill in a game.")));
 }
+function sessionCap(){ return S.profile.sessionCap||15; }
+function planToday(t){ var all=dueList(t), cap=sessionCap(); return {due:all.slice(0,cap), rest:Math.max(0,all.length-cap), news: all.length>cap ? [] : newQueue().slice(0,newAvailable(t)), backlog: all.length>cap}; }
+function drillPanel(compact){
+  var d=S.profile.drill; if(!d) return null;
+  var inner=h("div",{class:"drillcard"}, h("div",{class:"label",text:"Today's drill"+(d.date!==today()?" · from "+fmtDate(d.date):"")}), h("div",{class:"name",text:d.title}), h("p",{text:d.text}));
+  return compact ? inner : h("section",{class:"panel"}, inner);
+}
 function startMSession(){
-  var t=today(), due=interleave(dueList(t)), news=newQueue().slice(0,newAvailable(t));
-  var items=due.map(function(c){ return {card:c,kind:"due"}; }).concat(news.map(function(c){ return {card:c,kind:"new"}; }));
+  var t=today(), pl=planToday(t), due=interleave(pl.due), news=pl.news;
+  var items=news.map(function(c){ return {card:c,kind:"read"}; })
+    .concat(due.map(function(c){ return {card:c,kind:"due"}; }))
+    .concat(news.length && !due.length ? [{card:news[0],kind:"break"}] : [])
+    .concat(news.map(function(c){ return {card:c,kind:"new"}; }));
   if(!items.length) return;
-  S.mSession={items:items,i:0,phase:"front",done:{due:0,new:0},streak:0,bestRun:0}; safeRender(); window.scrollTo(0,0);
+  S.mSession={items:items,i:0,phase:"front",done:{due:0,new:0,read:0},streak:0,bestRun:0,seen:[]}; safeRender(); window.scrollTo(0,0);
 }
 function renderMSession(v){
   var s=S.mSession;
@@ -560,12 +587,19 @@ function renderMSession(v){
     h("div",{class:"prog"},h("span",{text:(s.i+1)+" of "+s.items.length}),h("div",{class:"track"},h("span",{style:"width:"+Math.round(s.i/s.items.length*100)+"%"})),
       s.streak>=2?h("span",{class:"streak",title:"Full answers in a row",text:"★ "+s.streak+" in a row"}):null,
       h("button",{type:"button",class:"ghost",style:"min-height:36px;padding:6px 12px;font-size:12.5px",onclick:function(){ S.mSession=null; safeRender(); }},"End")),
-    h("div",{class:"tagrow"},h("span",{class:"tag "+(it.kind==="new"?"new":"due"),text:it.kind==="new"?"New card":"Review"}),h("span",{class:"tag",text:c.id+" · "+MODS[c.mod]}), seasonTag(c)));
+    h("div",{class:"tagrow"},h("span",{class:"tag "+(it.kind==="due"?"due":"new"),text:it.kind==="read"?"New card · read":it.kind==="new"?"New card · test":it.kind==="break"?"Quick break":"Review"}),h("span",{class:"tag",text:c.id+" · "+MODS[c.mod]}), seasonTag(c)));
   function go(ph){ s.phase=ph; safeRender(); window.scrollTo(0,0); }
   function cardBody(){ return [h("h2",{class:"cardtitle",text:c.title}), h("p",{class:"concept",text:c.concept}), h("p",{class:"drill"},h("b",{text:"Drill · "}),c.drill)]; }
-  if(it.kind==="new" && s.phase==="front"){
+  if(it.kind==="read"){
+    panel.appendChild(h("p",{class:"faint",style:"margin:0 0 8px",text:"Read it now. You'll be tested on it at the end of this session, after a gap."}));
     panel.appendChild(h("div",null,cardBody()));
-    panel.appendChild(h("button",{type:"button",class:"primary",onclick:function(){ s.answer=""; go("test"); }},"Read it. Test me"));
+    panel.appendChild(h("button",{type:"button",class:"primary",onclick:function(){ s.done.read++; s.i++; s.phase="front"; safeRender(); window.scrollTo(0,0); }}, "Got it, next"));
+  } else if(it.kind==="break"){
+    var left=30, num=h("div",{class:"big",text:"30"});
+    var btn=h("button",{type:"button",class:"primary",disabled:true,onclick:function(){ clearInterval(tm); s.i++; s.phase="front"; safeRender(); window.scrollTo(0,0); }},"Test me");
+    var tm=setInterval(function(){ left--; if(!document.body.contains(num)){ clearInterval(tm); return; } num.textContent=String(Math.max(left,0)); if(left<=0){ clearInterval(tm); btn.disabled=false; num.textContent="Go"; } },1000);
+    panel.appendChild(h("div",{class:"breakbox"}, h("h2",{text:"Look away for 30 seconds"}), h("p",{class:"sub",style:"margin:6px 0 0",text:"Nothing else to review today, so take a short gap. It's what makes the test real recall instead of repeating what you just read."}), num));
+    panel.appendChild(btn);
   } else if(s.phase!=="result"){
     var ta=h("textarea",{class:"inp answerbox",id:"recall-input",rows:"4",placeholder:"Type the key ideas. Short is fine."});
     ta.value=s.answer||""; ta.addEventListener("input",function(){ s.answer=ta.value; });
@@ -665,14 +699,24 @@ function finishCard(c,g,r){
 }
 function renderMDone(v){
   var t=today(), d=S.mSession.done, nd=nextDue(t), again=dueList(t).length, parts=[];
-  if(d.due) parts.push(d.due+" reviewed"); if(d.new) parts.push(d.new+" learned");
+  if(d.due) parts.push(d.due+" reviewed"); if(d.new) parts.push(d.new+" new card"+(d.new===1?"":"s")+" learned");
   if(S.mSession.tot) parts.push(S.mSession.hit+" of "+S.mSession.tot+" must-have points hit ("+Math.round(100*S.mSession.hit/S.mSession.tot)+"%)");
   if(S.mSession.full) parts.push(S.mSession.full+" full answer"+(S.mSession.full===1?"":"s")+" ★");
   if((S.mSession.bestRun||0)>=2) parts.push("longest streak "+S.mSession.bestRun+(S.mSession.bestRun>=(S.bestStreak||0)?" (your best)":""));
   v.appendChild(h("section",{class:"panel"}, h("h2",{text:"Done for today"}), h("p",{text:parts.join(", ")+"."}),
-    h("p",{class:"sub",text: again ? again+" card"+(again>1?"s are":" is")+" still due from Missed or Shaky. They come back tomorrow." : nd ? "Next review: "+pretty(nd)+"." : ""}),
+    h("p",{class:"sub",text: again ? again+" more card"+(again>1?"s are":" is")+" due. They can wait for your next session, or keep going now if you have time." : nd ? "Next review: "+pretty(nd)+"." : ""}),
     h("p",{text:"Now stop and walk away. Take your focus into ranked: "+(focusName(S.profile.focus)||"pick one in the Debrief")+"."}),
-    h("button",{type:"button",class:"ghost",onclick:function(){ S.mSession=null; safeRender(); }},"Back to today")));
+    h("div",{class:"row"}, h("button",{type:"button",class:"ghost",onclick:function(){ S.mSession=null; safeRender(); }},"Back to today"),
+      again? h("button",{type:"button",class:"ghost",onclick:function(){ S.mSession=null; startMSession(); }},"Keep going · "+Math.min(again,sessionCap())+" more") : null)));
+  // pick today's drill from this session's cards
+  var seenIds=[], picks=[]; S.mSession.items.forEach(function(x){ if(x.kind!=="break" && seenIds.indexOf(x.card.id)<0){ seenIds.push(x.card.id); picks.push(x.card); } });
+  picks=picks.filter(function(c){ return c.drill; }).slice(0,6);
+  if(picks.length){
+    var cur=S.profile.drill&&S.profile.drill.id, box=h("div",{class:"drillpick"});
+    picks.forEach(function(c){ box.appendChild(h("button",{type:"button","data-k":c.id,"aria-pressed":String(cur===c.id),onclick:function(){ S.profile.drill={id:c.id,title:c.title,text:c.drill,date:today()}; saveProfile(); setPressed(box,c.id); toast("Today's drill set. It'll show when you start a ranked session."); }},
+      h("small",{text:c.id+" · "+c.title}), c.drill)); });
+    v.appendChild(h("section",{class:"panel"}, h("h3",{text:"Pick today's drill"}), h("p",{class:"sub",style:"margin:0",text:"One drill from this session to try in your next ranked games. Using it in a match is what turns a card into a skill."}), box));
+  }
 }
 function renderLibrary(v){
   var t=today();
@@ -739,7 +783,7 @@ function endLive(rp, note, endRp){
   var places=g.map(function(x){ return x.place; }).filter(function(x){ return x!=null; });
   var r=parseInt(rp,10);
   S.sessions.push({id:"s"+Date.now(), date:new Date(L.start).toISOString(), focusId:L.focusId, focus:L.focus, mod:L.mod, exec:score>=0.75?"nailed":score>=0.4?"some":"forgot",
-    causes:causes, place:places.length?Math.min.apply(null,places):null, rp:isNaN(r)?0:r, startRp:L.startRp, endRp:(L.startRp!=null&&!isNaN(er))?er:null, note:(note||"").trim(), games:g.map(function(x){ return {exec:x.exec,end:x.end,place:x.place,kills:x.kills==null?null:x.kills,lobby:x.lobby||null}; }), mins:Math.round((Date.now()-L.start)/60000)});
+    causes:causes, place:places.length?Math.min.apply(null,places):null, rp:isNaN(r)?0:r, startRp:L.startRp, endRp:(L.startRp!=null&&!isNaN(er))?er:null, note:(note||"").trim(), games:g.map(function(x){ return {exec:x.exec,end:x.end,place:x.place,kills:x.kills==null?null:x.kills,lobby:x.lobby||null}; }), mins:Math.round((Date.now()-L.start)/60000), drill:S.profile.drill?{id:S.profile.drill.id, tried:L.drillTried||null}:null});
   saveDebrief(); S.live=null; saveLive(); safeRender(); window.scrollTo(0,0);
   toast("Session saved: "+g.length+" game"+(g.length===1?"":"s")+".");
 }
@@ -747,7 +791,8 @@ function renderLive(v){
   var L=S.live, sum=liveSummary(L), mins=Math.round((Date.now()-L.start)/60000), C=P.debriefCauses, pend=L.pend||(L.pend={exec:null,end:null,place:""});
   var panel=h("section",{class:"panel live"},
     h("div",{class:"livehead"}, h("span",{class:"livetag",text:"Session live"}), h("span",{class:"faint",text:(mins<60?mins+" min":Math.floor(mins/60)+"h "+(mins%60)+"m")+" · "+sum.n+" game"+(sum.n===1?"":"s")})),
-    h("div",{class:"focus",style:"margin-top:10px"}, h("div",{class:"label",text:"Your focus"}), h("div",{class:"name",text:L.focus}), h("p",{text:"Say it out loud before every queue."+(L.startRp!=null?" Started at "+fmtRp(L.startRp)+" RP.":"")})));
+    h("div",{class:"focus",style:"margin-top:10px"}, h("div",{class:"label",text:"Your focus"}), h("div",{class:"name",text:L.focus}), h("p",{text:"Say it out loud before every queue."+(L.startRp!=null?" Started at "+fmtRp(L.startRp)+" RP.":"")})),
+    S.profile.drill?h("div",{style:"margin-top:10px"}, drillPanel(true)):null);
   // tilt check: three games in a row without the focus
   var last3=L.games.slice(-3);
   if(last3.length===3 && last3.every(function(x){ return x.exec==="forgot"; })) panel.appendChild(h("div",{class:"tilt",text:"Three games in a row without your focus. Take 5 minutes and reset before you queue again. Tilt costs more RP than any single death."}));
@@ -784,6 +829,8 @@ function renderLive(v){
   }
   // end session
   var hasStart=L.startRp!=null;
+  var drillG=h("div",{class:"seg small"});
+  [["yes","Yes"],["some","Sort of"],["no","No"]].forEach(function(o){ drillG.appendChild(h("button",{type:"button","data-k":o[0],"aria-pressed":String(L.drillTried===o[0]),onclick:function(){ L.drillTried=L.drillTried===o[0]?null:o[0]; setPressed(drillG,L.drillTried); saveLive(); }},o[1])); });
   var rp=h("input",{class:"inp",id:"live-rp",type:"number",inputmode:"numeric",placeholder:hasStart?"e.g. "+(L.startRp+35):"e.g. -35"});
   var delta=h("p",{class:"faint",style:"margin:6px 0 0;min-height:18px"});
   if(hasStart) rp.addEventListener("input",function(){ var e=parseInt(rp.value,10); if(isNaN(e)){ delta.textContent=""; return; } var d=e-L.startRp; delta.textContent=(d>0?"+":"")+fmtRp(d)+" RP this session"; delta.style.color=d>0?"var(--teal)":d<0?"var(--red)":""; });
@@ -792,6 +839,7 @@ function renderLive(v){
   disc.addEventListener("click",function(){ if(!armed){ armed=true; disc.textContent="Tap again to discard"; disc.classList.add("danger"); setTimeout(function(){ armed=false; disc.textContent="Discard"; disc.classList.remove("danger"); },3000); return; } S.live=null; saveLive(); safeRender(); toast("Session discarded."); });
   panel.appendChild(h("details",{class:"more",style:"margin-top:8px"}, h("summary",{text:"End session"}),
     h("div",{class:"field",style:"margin-top:8px"},h("label",{class:"q",for:"live-rp"},hasStart?"Your RP now":"RP change for the session",hasStart?h("span",{class:"note",text:"You started at "+fmtRp(L.startRp)+". The app works out the change."}):null),rp,delta),
+    S.profile.drill?h("div",{class:"field"}, h("div",{class:"q"},"Did you try today's drill?",h("span",{class:"note",text:S.profile.drill.title})), drillG):null,
     h("div",{class:"field"},h("label",{class:"q",for:"live-note"},"Note",h("span",{class:"opt"}," (optional)")),note),
     h("div",{class:"nav2"}, disc, h("button",{type:"button",class:"primary",disabled:!sum.n,onclick:function(){ if(hasStart){ endLive("", note.value, rp.value); } else endLive(rp.value, note.value); }},"Save session"))));
   v.appendChild(panel);
@@ -807,6 +855,7 @@ function renderLiveStart(v){
   if(prev!=null) srp.value=String(prev);
   v.appendChild(h("section",{class:"panel"}, h("h2",{text:"Playing ranked?"}), h("p",{class:"sub",text:"Start a session and log each game in two taps. Built for long sessions: 5 games or 25."}),
     h("div",{class:"field"}, h("label",{class:"q",for:"live-focus"},"Your one focus for this session"), fsel, custom),
+    S.profile.drill?h("div",{style:"margin:0 0 14px"}, drillPanel(true)):null,
     (S.profile.banBackups&&S.profile.banBackups.length)?h("p",{class:"faint",style:"margin:-6px 0 12px",text:"If your legend gets banned: "+S.profile.banBackups.join(", then ")+"."}):null,
     h("div",{class:"field"}, h("label",{class:"q",for:"live-start-rp"},"Your RP right now",h("span",{class:"note",text:prev!=null?"Filled in from where your last session ended. Fix it if it changed.":"Your total ranked points from the in-game rank screen."})), srp),
     h("button",{type:"button",class:"primary",onclick:function(){ startLive(fsel.value, custom.value, srp.value); }},"Start session")));
@@ -1296,6 +1345,8 @@ function renderProof(v){
   else {
     hp.appendChild(h("div",{class:"trend"}, h("span",{text:"Sessions logged"}), h("span",{class:"r",text:String(D.sessions.count)})));
     var gl=S.sessions.reduce(function(a,s){ return a+((s.games&&s.games.length)||0); },0), gr=S.sessions.reduce(function(a,s){ return a+((s.games||[]).filter(function(g){ return g.exec==="nailed"; }).length); },0);
+    var dr=S.sessions.filter(function(x){ return x.drill && x.drill.tried; });
+    if(dr.length) hp.appendChild(h("div",{class:"trend"}, h("span",{text:"Sessions where I tried my drill"}), h("span",{class:"r",text:dr.filter(function(x){ return x.drill.tried==="yes"; }).length+" of "+dr.length+(dr.filter(function(x){ return x.drill.tried==="some"; }).length?" (+"+dr.filter(function(x){ return x.drill.tried==="some"; }).length+" partly)":"")})));
     if(gl) hp.appendChild(h("div",{class:"trend"}, h("span",{text:"Games where I ran my focus"}), h("span",{class:"r",text:gr+" of "+gl+" ("+pct(gr,gl)+"%)"})));
     if(D.sessions.split) hp.appendChild(h("div",{class:"trend"}, h("span",{text:"Ran my focus (nailed it)"}), h("span",{class:"r "+(D.sessions.recent>=D.sessions.early?"up":"down"),text:D.sessions.early+"% → "+D.sessions.recent+"%"})));
     hp.appendChild(h("div",{class:"trend"}, h("span",{text:"Habits installed"}), h("span",{class:"r",text:D.habits.installed.length?D.habits.installed.join(", "):"none yet"})));
@@ -1391,10 +1442,13 @@ function renderSettings(v){
   P.legends.forEach(function(L){ mainsG.appendChild(h("button",{type:"button","data-k":L,"aria-pressed":String((p.mains||[]).indexOf(L)>=0),onclick:function(){ var a=(S.profile.mains||[]).slice(), i=a.indexOf(L); if(i>=0) a.splice(i,1); else a.push(L); S.profile.mains=a; setPressed(mainsG,a); saveProfile(); }}, L)); });
   var npdG=h("div",{class:"seg"});
   [1,2,3].forEach(function(n){ npdG.appendChild(h("button",{type:"button","data-k":String(n),"aria-pressed":String((p.newPerDay||3)===n),onclick:function(){ S.profile.newPerDay=n; setPressed(npdG,String(n)); saveProfile(); }}, String(n))); });
+  var capG=h("div",{class:"seg"});
+  [10,15,25].forEach(function(n){ capG.appendChild(h("button",{type:"button","data-k":String(n),"aria-pressed":String((p.sessionCap||15)===n),onclick:function(){ S.profile.sessionCap=n; setPressed(capG,String(n)); saveProfile(); }}, String(n))); });
   v.appendChild(h("section",{class:"panel"}, h("h2",{text:"Your profile"}),
     h("div",{class:"field"}, h("label",{class:"q",for:"set-rank"},"Rank"), rankSel),
     h("div",{class:"field"}, h("div",{class:"q",text:"Legends you play"}), mainsG),
-    h("div",{class:"field"}, h("div",{class:"q",text:"New cards per day"}), npdG)));
+    h("div",{class:"field"}, h("div",{class:"q",text:"New cards per day"}), npdG),
+    h("div",{class:"field"}, h("div",{class:"q"},"Cards per session",h("span",{class:"note",text:"Most overdue first. Anything over waits for the next session."})), capG)));
   // ranked: system, goal, ban backups
   var sysG=h("div",{class:"seg small"});
   [["s31","Season 31 ranks"],["s32","Season 32 ranks"]].forEach(function(o){ sysG.appendChild(h("button",{type:"button","data-k":o[0],"aria-pressed":String((p.rankSystem||"s31")===o[0]),onclick:function(){ S.profile.rankSystem=o[0]; saveProfile(); safeRender(); toast(o[0]==="s32"?"Using Season 32 ranks: Iron to Grandmaster.":"Using Season 31 ranks."); }},o[1])); });
