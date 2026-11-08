@@ -117,6 +117,7 @@ textarea.inp{min-height:72px}
 .tag.soon{border-color:var(--blue);color:#bcd3ec} .tag.live{border-color:var(--teal);color:var(--teal-ink)}
 .lcard .src{font-size:12px;color:var(--faint);margin-top:6px}
 .lcard .tagrow{margin:6px 0 0}
+.lcard .tested{margin:8px 0}
 .cardq{font-family:var(--display);font-size:24px;font-weight:600;line-height:1.25;margin:4px 0 8px}
 .say{color:var(--faint);font-size:13px;margin:0 0 16px}
 .cardtitle{font-size:21px;margin:6px 0 8px}
@@ -160,6 +161,14 @@ details.more p{font-size:14px;margin:6px 0}
 .kplist .no span{color:var(--muted)}
 @keyframes kpin{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.kplist li{animation:none;opacity:1}}
+.tested{border:1px solid var(--amber);border-radius:12px;padding:10px 12px;margin:0 0 14px;background:var(--panel-2)}
+.tested .th{font-size:12px;letter-spacing:.6px;text-transform:uppercase;color:var(--amber);font-weight:600}
+.tested ul{list-style:none;margin:6px 0 0;padding:0}
+.tested li{display:flex;gap:10px;align-items:flex-start;padding:5px 0;font-size:14.5px}
+.tested .mk{flex:none;width:22px;height:22px;border-radius:6px;display:grid;place-items:center;font-weight:700;font-size:12px;background:var(--amber);color:var(--amber-ink)}
+.tested .dh{font-size:12px;color:var(--faint);margin-top:8px}
+.tested li.deep{color:var(--muted)}
+.tested li.deep .mk{background:none;border:1px dashed var(--violet);color:#d9bbe8}
 .appeal{background:none;border:0;color:var(--faint);text-decoration:underline;font-size:12.5px;padding:10px 0 0;min-height:36px}
 
 .kplist .deep .mk{background:none;border:1px dashed var(--faint);color:var(--faint)}
@@ -629,10 +638,10 @@ function renderMSession(v){
       h("button",{type:"button",class:"ghost",style:"min-height:36px;padding:6px 12px;font-size:12.5px",onclick:function(){ S.mSession=null; safeRender(); }},"End")),
     h("div",{class:"tagrow"},h("span",{class:"tag "+(it.kind==="due"?"due":"new"),text:it.kind==="read"?"New card · read":it.kind==="new"?"New card · test":it.kind==="break"?"Quick break":"Review"}),h("span",{class:"tag",text:c.id+" · "+MODS[c.mod]}), seasonTag(c)));
   function go(ph){ s.phase=ph; safeRender(); window.scrollTo(0,0); }
-  function cardBody(){ return [h("h2",{class:"cardtitle",text:c.title}), h("p",{class:"concept",text:c.concept}), h("p",{class:"drill"},h("b",{text:"Drill · "}),c.drill)]; }
+  function cardBody(tb){ return [h("h2",{class:"cardtitle",text:c.title}), h("p",{class:"concept",text:c.concept}), tb?testedBox(c):null, h("p",{class:"drill"},h("b",{text:"Drill · "}),c.drill)]; }
   if(it.kind==="read"){
     panel.appendChild(h("p",{class:"faint",style:"margin:0 0 8px",text:"Read it now. You'll be tested on it at the end of this session, after a gap."}));
-    panel.appendChild(h("div",null,cardBody()));
+    panel.appendChild(h("div",null,cardBody(true)));
     panel.appendChild(h("button",{type:"button",class:"primary",onclick:function(){ s.done.read++; s.i++; s.phase="front"; safeRender(); window.scrollTo(0,0); }}, "Got it, next"));
   } else if(it.kind==="break"){
     var left=30, num=h("div",{class:"big",text:"30"});
@@ -759,6 +768,14 @@ function renderMDone(v){
     v.appendChild(h("section",{class:"panel"}, h("h3",{text:"Pick today's drill"}), h("p",{class:"sub",style:"margin:0",text:"One drill from this session to try in your next ranked games. Using it in a match is what turns a card into a skill."}), box));
   }
 }
+function testedBox(c){
+  if(!c.kp || !c.kp.length) return null;
+  var box=h("div",{class:"tested"}, h("div",{class:"th",text:"You'll be tested on"}),
+    h("ul",null, c.kp.map(function(kp,i){ return h("li",null, h("span",{class:"mk",text:String(i+1)}), h("span",{text:kp[0]})); })));
+  if(c.dp && c.dp.length){ box.appendChild(h("div",{class:"dh",text:"For a ★ Full answer, also:"}));
+    box.appendChild(h("ul",null, c.dp.map(function(kp){ return h("li",{class:"deep"}, h("span",{class:"mk",text:"+"}), h("span",{text:kp[0]})); }))); }
+  return box;
+}
 function renderLibrary(v){
   var t=today();
   var chips=h("div",{class:"mapchips"});
@@ -778,6 +795,7 @@ function renderLibrary(v){
         seasonTag(c)?h("div",{class:"tagrow"},seasonTag(c)):null,
         h("p",{text:c.concept}),
         h("div",{class:"kv"},h("b",{text:"Recall: "}),c.recall),
+        testedBox(c),
         h("div",{class:"kv"},h("b",{text:"Drill: "}),c.drill),
         c.roles && c.roles[0]!=="All" ? h("div",{class:"kv",text:"Best on: "+c.roles.join(", ")}) : null,
         c.src ? h("div",{class:"src",text:"Source: "+c.src+(c.soon?". Announced, subject to change.":"")}) : null));
