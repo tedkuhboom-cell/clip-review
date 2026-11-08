@@ -25,6 +25,7 @@ The goal: help people learn whatever they want in a fun, efficient way, built on
 - [x] Full-answer streak: counter during a session, best streak on Proof
 
 - [x] Learning-efficiency pass (2026-11-08): new cards read first and tested at the end (30-second break if nothing else is due); session cap (10/15/25, default 15), most overdue first, new cards pause during a backlog, "Keep going" option; Today's drill picked after each Manual session, shown in ranked sessions, "did you try it" logged, stats on Proof
+- [x] Drill list and drill rotation (2026-11-08): Debrief keeps a drill list with your most-missed cards first ("Start here" on any of them). During a ranked session the drill switches every 2, 3 or 5 games (or never), with a per-game "I tried the drill" tick. Proof shows games where you tried a drill.
 
 - [x] FSRS adaptive schedule (2026-11-08): FSRS-4.5 default weights; Missed/Shaky/Got it/Full answer = Again/Hard/Good/Easy; Shaky capped at 7 days; target retention 85/90/95% in Settings; ladder cards migrated (stability from step, difficulty from past slips). Simulation on Ted's 45 cards: roughly 55–65% fewer reviews over 180 days at the same answer pattern
 

@@ -1,5 +1,5 @@
 // Clip Review offline support. Bump VERSION whenever any file changes.
-const VERSION = "clip-review-v11";
+const VERSION = "clip-review-v12";
 const SHELL = ["./", "index.html", "pack-apex.js", "manifest.webmanifest", "icon-192.png", "icon-512.png", "icon-maskable-512.png"];
 
 self.addEventListener("install", (e) => {
