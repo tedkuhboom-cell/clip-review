@@ -230,6 +230,15 @@ details.more p{font-size:14px;margin:6px 0}
 .dlist .why{display:block;font-size:12px;color:var(--faint)}
 .dlist button{margin-left:auto;flex:none;background:none;border:1px solid var(--line);border-radius:8px;color:var(--muted);font-size:12px;padding:6px 9px;min-height:36px}
 
+/* pre-game + bedtime */
+.pregame ol{margin:8px 0 0;padding-left:20px}
+.pregame li{margin:6px 0;font-size:14.5px}
+.pgclip{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:8px 0;font-size:14px}
+.pgclip .lbl{font-family:var(--display);font-size:17px;font-weight:600}
+.pgclip .meta{font-size:12px;color:var(--faint)}
+.bedtime{border-color:var(--violet)}
+.bedtime .label{color:#d9bbe8}
+
 /* proof */
 .proofcard{background:linear-gradient(160deg,#1d2530,#141a22);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:12px}
 .proofcard .ph{font-family:var(--display);font-size:13px;letter-spacing:1.5px;color:var(--amber);text-transform:uppercase}
@@ -594,6 +603,7 @@ function renderManual(v){
     pl.rest ? h("p",{class:"hint",style:"color:var(--amber-ink2)",text:pl.rest+" more card"+(pl.rest===1?" is":"s are")+" due. They'll wait for your next session; you're still on track. New cards pause until you catch up."}) : null,
     nq.length ? h("p",{class:"hint"},"Next new card: ",h("b",{text:nq[0].id+" "+nq[0].title}),".") : h("p",{class:"hint",text:"Every card is started."})));
   if(S.profile.drill) v.appendChild(drillPanel());
+  var bt=bedtimePanel(); if(bt) v.appendChild(bt);
   var f=S.profile.focus;
   v.appendChild(h("section",{class:"panel"}, h("div",{class:"focus"}, h("div",{class:"label",text:"Your ranked focus"}), h("div",{class:"name",text:focusName(f)||"Pick one in the Debrief"}),
       f&&FOCI[f]?h("p",{text:FOCI[f].what}):null),
@@ -758,6 +768,7 @@ function renderMDone(v){
     h("p",{text:"Now stop and walk away. Take your focus into ranked: "+(focusName(S.profile.focus)||"pick one in the Debrief")+"."}),
     h("div",{class:"row"}, h("button",{type:"button",class:"ghost",onclick:function(){ S.mSession=null; safeRender(); }},"Back to today"),
       again? h("button",{type:"button",class:"ghost",onclick:function(){ S.mSession=null; startMSession(); }},"Keep going · "+Math.min(again,sessionCap())+" more") : null)));
+  var bt=bedtimePanel(); if(bt) v.appendChild(bt);
   // pick today's drill from this session's cards
   var seenIds=[], picks=[]; S.mSession.items.forEach(function(x){ if(x.kind!=="break" && seenIds.indexOf(x.card.id)<0){ seenIds.push(x.card.id); picks.push(x.card); } });
   picks=picks.filter(function(c){ return c.drill; }).slice(0,6);
@@ -852,7 +863,7 @@ function startLive(fid, custom, startRp){
   var sr=parseInt(startRp,10);
   var rot=S.profile.rotate==null?3:S.profile.rotate, dl=drillList().slice(0,15).map(function(x){ return x.c.id; });
   S.live={start:Date.now(), focusId:fid!=="custom"?fid:null, focus:name, mod:fid&&fid!=="custom"&&FOCI[fid].mod!=null?FOCI[fid].mod:"", startRp:isNaN(sr)?null:sr, games:[], pend:{exec:null,end:null,place:""},
-    drills:dl, drillIdx:0, drillStart:0, rotate:rot};
+    drills:dl, drillIdx:0, drillStart:0, rotate:rot, pregame:S.dform.pregame===today()}; S.dform.pregame=null;
   if(fid && fid!=="custom"){ S.profile.focus=fid; saveProfile(); }
   saveLive(); safeRender(); window.scrollTo(0,0); toast("Session started. Say your focus out loud, then queue.");
 }
@@ -865,7 +876,7 @@ function endLive(rp, note, endRp){
   var r=parseInt(rp,10);
   S.sessions.push({id:"s"+Date.now(), date:new Date(L.start).toISOString(), focusId:L.focusId, focus:L.focus, mod:L.mod, exec:score>=0.75?"nailed":score>=0.4?"some":"forgot",
     causes:causes, place:places.length?Math.min.apply(null,places):null, rp:isNaN(r)?0:r, startRp:L.startRp, endRp:(L.startRp!=null&&!isNaN(er))?er:null, note:(note||"").trim(), games:g.map(function(x){ return {exec:x.exec,end:x.end,place:x.place,kills:x.kills==null?null:x.kills,lobby:x.lobby||null,drill:x.drill||null,drillTried:!!x.drillTried}; }), mins:Math.round((Date.now()-L.start)/60000),
-    drill:{ids:g.map(function(x){ return x.drill; }).filter(function(d,i,a){ return d && a.indexOf(d)===i; }), games:g.filter(function(x){ return x.drill; }).length, tried:g.filter(function(x){ return x.drillTried; }).length}});
+    pregame:!!L.pregame, drill:{ids:g.map(function(x){ return x.drill; }).filter(function(d,i,a){ return d && a.indexOf(d)===i; }), games:g.filter(function(x){ return x.drill; }).length, tried:g.filter(function(x){ return x.drillTried; }).length}});
   saveDebrief(); S.live=null; saveLive(); safeRender(); window.scrollTo(0,0);
   toast("Session saved: "+g.length+" game"+(g.length===1?"":"s")+".");
 }
@@ -940,19 +951,65 @@ function renderLive(v){
     h("div",{class:"nav2"}, disc, h("button",{type:"button",class:"primary",disabled:!sum.n,onclick:function(){ if(hasStart){ endLive("", note.value, rp.value); } else endLive(rp.value, note.value); }},"Save session"))));
   v.appendChild(panel);
 }
+var CHECK_F={}; Object.keys(P.clips.groups||{}).forEach(function(g){ (P.clips.groups[g].checks||[]).forEach(function(ch){ CHECK_F[ch.k]=ch.f; }); });
+function typeLabel(t){ var x=(P.clips.types||[]).filter(function(y){ return y[0]===t; })[0]; return x?x[1]:t; }
+function pregameClip(fid){
+  fid=fid==null?null:String(fid);
+  var list=S.clips.slice().sort(function(a,b){ return (b.created||0)-(a.created||0); });
+  if(!list.length) return null;
+  function hitsFocus(c,val){ return Object.keys(c.checks||{}).some(function(k){ return String(CHECK_F[k])===fid && c.checks[k]===val; }); }
+  var good=fid?list.filter(function(c){ return (c.type==="win"||c.type==="knock") && hitsFocus(c,"y"); })[0]:null;
+  if(good) return {c:good, why:"You did it right here. Watch what you did so you can repeat it."};
+  var miss=fid?list.filter(function(c){ return String(c.habit)===fid || hitsFocus(c,"n"); })[0]:null;
+  if(miss) return {c:miss, why:"This is the mistake your focus fixes. Watch the 5 to 30 seconds before it went wrong and picture doing it right."};
+  return {c:list[0], why:"No clip matches this focus yet, so here's your latest. Watch it only for your focus."};
+}
+function pregamePanel(fid){
+  var f=FOCI[fid], pick=pregameClip(fid), done=S.dform.pregame===today();
+  var box=h("div",{class:"pregame"});
+  var steps=h("ol",null);
+  if(pick){ var c=pick.c;
+    steps.appendChild(h("li",null,"Open this clip in your recordings and watch it once.",
+      h("div",{class:"pgclip"}, h("div",{class:"lbl",text:(c.label||"Unnamed clip")+" · "+typeLabel(c.type)}),
+        h("div",{class:"meta",text:[c.map,c.legend,c.date?pretty(c.date):""].filter(Boolean).join(" · ")}),
+        c.gut?h("div",{style:"margin-top:4px"},h("b",{text:"What went wrong: "}),c.gut):null,
+        c.lastGood?h("div",null,h("b",{text:"Last good decision: "}),c.lastGood):null,
+        h("div",{class:"faint",style:"margin-top:4px",text:pick.why}))));
+  } else steps.appendChild(h("li",{text:"Pick any recent fight in your recordings and watch it once, looking only for your focus. (Reviewed clips will show up here.)"}));
+  steps.appendChild(h("li",null,h("b",{text:"Read your focus: "}),f?f.what:"Say what you'll do differently this session."));
+  if(f && f.cards && f.cards.length) steps.appendChild(h("li",{text:"Quick refresher: cards "+f.cards.join(", ")+" in the Manual Library."}));
+  steps.appendChild(h("li",{text:"Say it out loud once. Then start the session."}));
+  box.appendChild(steps);
+  box.appendChild(h("button",{type:"button",class:"ghost",style:"margin-top:10px"+(done?";border-color:var(--teal)":""),onclick:function(){ S.dform.pregame=today(); toast("Primed. Now start your session."); safeRender(); }}, done?"✓ Pre-game done":"Done, I'm ready"));
+  return box;
+}
+function lastClipDay(){ var d=null; S.clips.forEach(function(c){ if(c.date && (!d || c.date>d)) d=c.date; }); return d; }
+function bedtimePanel(){
+  var every=S.profile.bedClip==null?3:S.profile.bedClip; if(!every) return null;
+  var last=lastClipDay(), t=today(), gap=last?daysBetween(last,t):null;
+  if(gap!=null && gap<every) return null;
+  return h("section",{class:"panel bedtime"}, h("div",{class:"focus"}, h("div",{class:"label",text:"Before bed"}), h("div",{class:"name",text:"Review one clip tonight"}),
+      h("p",{text:(gap==null?"You haven't reviewed a clip yet. ":"Your last clip review was "+gap+" day"+(gap===1?"":"s")+" ago. ")+"After your cards, pick one fight from today and run a review, about 10 minutes. Sleep helps lock in what you study right before it. Skip it if you're tilted; a calm review finds your real mistake."})),
+    h("button",{type:"button",class:"ghost",onclick:function(){ S.ui.clipSub="review"; goTab("clips"); }},"Review a clip"));
+}
 function renderLiveStart(v){
   var f=S.dform.liveFocus||S.profile.focus||P.habits[0].id;
   var fsel=h("select",{class:"inp",id:"live-focus"});
   FOCUS_ORDER.forEach(function(k){ var o=h("option",{value:k,text:focusName(k)}); if(f===k) o.selected=true; fsel.appendChild(o); });
   var oc=h("option",{value:"custom",text:"Something else…"}); if(f==="custom") oc.selected=true; fsel.appendChild(oc);
   var custom=h("input",{class:"inp",id:"live-custom",placeholder:"Your focus, in a few words",style:"margin-top:8px",hidden:f!=="custom"});
-  fsel.addEventListener("change",function(){ S.dform.liveFocus=fsel.value; custom.hidden=fsel.value!=="custom"; });
+  var pgWrap=h("div");
+  var pgDet=h("details",{class:"more",style:"margin:-6px 0 12px"}, h("summary",{text:S.dform.pregame===today()?"Pre-game 5 ✓":"Pre-game 5: one clip, your focus, out loud"}), pgWrap);
+  function pgFill(){ pgWrap.innerHTML=""; pgWrap.appendChild(pregamePanel(fsel.value==="custom"?null:fsel.value)); }
+  fsel.addEventListener("change",function(){ S.dform.liveFocus=fsel.value; custom.hidden=fsel.value!=="custom"; pgFill(); });
   var rotG=h("div",{class:"seg small"}), rotCur=S.profile.rotate==null?3:S.profile.rotate;
   [[2,"2 games"],[3,"3 games"],[5,"5 games"],[0,"Off"]].forEach(function(o){ rotG.appendChild(h("button",{type:"button","data-k":String(o[0]),"aria-pressed":String(rotCur===o[0]),onclick:function(){ S.profile.rotate=o[0]; saveProfile(); setPressed(rotG,String(o[0])); }},o[1])); });
   var prev=lastEndRp(), srp=h("input",{class:"inp",id:"live-start-rp",type:"number",inputmode:"numeric",placeholder:"e.g. 4250"});
   if(prev!=null) srp.value=String(prev);
+  pgFill();
   v.appendChild(h("section",{class:"panel"}, h("h2",{text:"Playing ranked?"}), h("p",{class:"sub",text:"Start a session and log each game in two taps. Built for long sessions: 5 games or 25."}),
     h("div",{class:"field"}, h("label",{class:"q",for:"live-focus"},"Your one focus for this session"), fsel, custom),
+    pgDet,
     h("div",{class:"field"}, h("div",{class:"q"},"Switch drills every",h("span",{class:"note",text:"Your drills, most-missed cards first. A fresh one every few games keeps practice going even on days you can't train."})), rotG),
     h("details",{class:"more",style:"margin:-6px 0 12px"}, h("summary",{text:"See your drill list"}), drillListEl(10, function(c){ S.profile.drill={id:c.id,title:c.title,text:c.drill,date:today()}; saveProfile(); safeRender(); toast("Starting with "+c.title+"."); })),
     (S.profile.banBackups&&S.profile.banBackups.length)?h("p",{class:"faint",style:"margin:-6px 0 12px",text:"If your legend gets banned: "+S.profile.banBackups.join(", then ")+"."}):null,
@@ -1444,6 +1501,8 @@ function renderProof(v){
   else {
     hp.appendChild(h("div",{class:"trend"}, h("span",{text:"Sessions logged"}), h("span",{class:"r",text:String(D.sessions.count)})));
     var gl=S.sessions.reduce(function(a,s){ return a+((s.games&&s.games.length)||0); },0), gr=S.sessions.reduce(function(a,s){ return a+((s.games||[]).filter(function(g){ return g.exec==="nailed"; }).length); },0);
+    var pgs=S.sessions.filter(function(x){ return x.pregame; }).length;
+    if(pgs) hp.appendChild(h("div",{class:"trend"}, h("span",{text:"Sessions started with a pre-game review"}), h("span",{class:"r",text:pgs+" of "+S.sessions.length})));
     var dg=0, dtr=0; S.sessions.forEach(function(x){ (x.games||[]).forEach(function(g){ if(g.drill){ dg++; if(g.drillTried) dtr++; } }); });
     if(dg) hp.appendChild(h("div",{class:"trend"}, h("span",{text:"Games where I tried a drill"}), h("span",{class:"r",text:dtr+" of "+dg+" ("+pct(dtr,dg)+"%)"})));
     var dr=S.sessions.filter(function(x){ return x.drill && typeof x.drill.tried==="string"; });
@@ -1545,6 +1604,8 @@ function renderSettings(v){
   [1,2,3].forEach(function(n){ npdG.appendChild(h("button",{type:"button","data-k":String(n),"aria-pressed":String((p.newPerDay||3)===n),onclick:function(){ S.profile.newPerDay=n; setPressed(npdG,String(n)); saveProfile(); }}, String(n))); });
   var retG=h("div",{class:"seg small"});
   [[0.85,"85%: fewer reviews"],[0.9,"90%: balanced"],[0.95,"95%: stronger memory"]].forEach(function(o){ retG.appendChild(h("button",{type:"button","data-k":String(o[0]),"aria-pressed":String((p.retention||0.9)===o[0]),onclick:function(){ S.profile.retention=o[0]; setPressed(retG,String(o[0])); saveProfile(); toast("Target set to "+Math.round(o[0]*100)+"%. Applies from your next answers."); }},o[1])); });
+  var bedG=h("div",{class:"seg small"});
+  [[2,"2 days"],[3,"3 days"],[7,"Weekly"],[0,"Off"]].forEach(function(o){ bedG.appendChild(h("button",{type:"button","data-k":String(o[0]),"aria-pressed":String((p.bedClip==null?3:p.bedClip)===o[0]),onclick:function(){ S.profile.bedClip=o[0]; setPressed(bedG,String(o[0])); saveProfile(); }},o[1])); });
   var capG=h("div",{class:"seg"});
   [10,15,25].forEach(function(n){ capG.appendChild(h("button",{type:"button","data-k":String(n),"aria-pressed":String((p.sessionCap||15)===n),onclick:function(){ S.profile.sessionCap=n; setPressed(capG,String(n)); saveProfile(); }}, String(n))); });
   v.appendChild(h("section",{class:"panel"}, h("h2",{text:"Your profile"}),
@@ -1552,7 +1613,8 @@ function renderSettings(v){
     h("div",{class:"field"}, h("div",{class:"q",text:"Legends you play"}), mainsG),
     h("div",{class:"field"}, h("div",{class:"q",text:"New cards per day"}), npdG),
     h("div",{class:"field"}, h("div",{class:"q"},"How much to remember",h("span",{class:"note",text:"Each card comes back when your chance of remembering it drops to this. Higher means more reviews and stronger memory."})), retG),
-    h("div",{class:"field"}, h("div",{class:"q"},"Cards per session",h("span",{class:"note",text:"Most overdue first. Anything over waits for the next session."})), capG)));
+    h("div",{class:"field"}, h("div",{class:"q"},"Cards per session",h("span",{class:"note",text:"Most overdue first. Anything over waits for the next session."})), capG),
+    h("div",{class:"field"}, h("div",{class:"q"},"Bedtime clip reminder",h("span",{class:"note",text:"Shows on the Manual tab when it's been this long since your last clip review."})), bedG)));
   // ranked: system, goal, ban backups
   var sysG=h("div",{class:"seg small"});
   [["s31","Season 31 ranks"],["s32","Season 32 ranks"]].forEach(function(o){ sysG.appendChild(h("button",{type:"button","data-k":o[0],"aria-pressed":String((p.rankSystem||"s31")===o[0]),onclick:function(){ S.profile.rankSystem=o[0]; saveProfile(); safeRender(); toast(o[0]==="s32"?"Using Season 32 ranks: Iron to Grandmaster.":"Using Season 31 ranks."); }},o[1])); });
