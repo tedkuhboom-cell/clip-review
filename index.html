@@ -245,6 +245,15 @@ details.more p{font-size:14px;margin:6px 0}
 .rankrow .num{width:78px;text-align:center}
 .rankrow .of{color:var(--faint);font-size:15px}
 
+/* death reasons */
+.rpick select{margin-top:8px}
+.rpick .otherbox{margin-top:8px;display:grid;gap:8px}
+.rpick .sug{font-size:13px;color:var(--muted)}
+.rpick .sug button{margin-left:6px}
+.writein{border-color:var(--rose)}
+.writein q{display:block;color:var(--muted);font-size:14px;margin:2px 0}
+.writein q:before,.writein q:after{content:""}
+
 /* proof */
 .proofcard{background:linear-gradient(160deg,#1d2530,#141a22);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:12px}
 .proofcard .ph{font-family:var(--display);font-size:13px;letter-spacing:1.5px;color:var(--amber);text-transform:uppercase}
@@ -440,7 +449,66 @@ function focusName(k){ k=k==null?null:String(k); return k&&FOCI[k]?((isHabit(k)?
 var CL = P.clips;
 var GROUP_ORDER = ["drop","position","comms","fight","kit"];
 var ALLCHECKS = []; GROUP_ORDER.forEach(function(g){ if(CL.groups[g]) CL.groups[g].checks.forEach(function(c){ c.group=CL.groups[g].title; ALLCHECKS.push(c); }); });
-function causeOf(k){ for(var i=0;i<CL.causes.length;i++) if(CL.causes[i].k===k) return CL.causes[i]; return null; }
+function causeOf(k){ if(k==="win") return CL.causes[0]; return reasonMap()[k]||null; }
+// ----- why a game or clip ended: one shared list (pack reasons + the user's own) -----
+function reasonList(){ return P.reasons.concat((S.profile.customReasons||[]).map(function(r){ return {k:r.k,label:r.label,group:"yours",mod:r.mod||null,f:null,color:"var(--rose)",custom:true}; })); }
+function reasonMap(){ var m={}; reasonList().forEach(function(r){ m[r.k]=r; }); return m; }
+function reasonUse(src){ var n={};
+  if(src!=="clips") S.sessions.forEach(function(x){ (x.games&&x.games.length?x.games.map(function(g){ return g.end; }):(x.causes||[])).forEach(function(k){ if(k) n[k]=(n[k]||0)+1; }); });
+  if(src!=="debrief") S.clips.forEach(function(c){ if(c.cause) n[c.cause]=(n[c.cause]||0)+1; });
+  return n; }
+function topReasons(src,k){ var n=reasonUse(src), M=reasonMap();
+  var ks=Object.keys(n).filter(function(x){ return M[x] && !M[x].hidden && x!=="other"; }).sort(function(a,b){ return n[b]-n[a]; });
+  P.reasonDefaults.forEach(function(d){ if(ks.indexOf(d)<0) ks.push(d); }); return ks.slice(0,k); }
+var STOPW=" i im ive my me we our us the a an to of and was were got get it its in on at for by with from that this then so just they them he she his her be been had have did do when while out up ";
+function stems(t){ var o=[]; (t||"").toLowerCase().replace(/[^a-z0-9 ]+/g," ").split(/\s+/).forEach(function(w){ if(w && STOPW.indexOf(" "+w+" ")<0){ w=w.slice(0,5); if(o.indexOf(w)<0) o.push(w); } }); return o; }
+function simScore(a,b){ var A=stems(a), B=stems(b); if(!A.length||!B.length) return 0; var i=A.filter(function(x){ return B.indexOf(x)>=0; }).length, u=A.length+B.length-i, m=Math.min(A.length,B.length);
+  return (i>=2 && i===m) ? Math.max(0.6,i/u) : i/u; }
+function closestReason(t){ var best=null, bs=0; reasonList().forEach(function(r){ if(r.hidden||r.k==="other") return; var x=simScore(t,r.label); if(x>bs){ bs=x; best=r; } }); return bs>=0.5?best:null; }
+function logWriteIn(t,src){ t=(t||"").trim(); if(!t) return; (S.profile.writeIns=S.profile.writeIns||[]).push({t:t,ts:Date.now(),src:src,st:"open"}); saveProfile(); }
+function writeInClusters(){ var open=(S.profile.writeIns||[]).filter(function(w){ return w.st==="open"; }), cl=[];
+  open.forEach(function(w){ var c=cl.filter(function(c){ return c.items.some(function(x){ return simScore(x.t,w.t)>=0.5; }); })[0]; if(c) c.items.push(w); else cl.push({items:[w]}); });
+  return cl.filter(function(c){ return c.items.length>=2; }).sort(function(a,b){ return b.items.length-a.items.length; }); }
+function promoteWriteIn(c,label,mod){ label=(label||"").trim(); if(!label) return;
+  var k="u"+Date.now(), texts=c.items.map(function(x){ return x.t; });
+  (S.profile.customReasons=S.profile.customReasons||[]).push({k:k,label:label,mod:mod||null,added:today()});
+  c.items.forEach(function(x){ x.st="added"; x.k=k; });
+  S.sessions.forEach(function(x){ (x.games||[]).forEach(function(g){ if(g.end==="other" && g.why && texts.indexOf(g.why)>=0) g.end=k; }); x.causes=(x.games&&x.games.length)?x.games.map(function(g){ return g.end; }).filter(function(e,i,a){ return e && e!=="won" && a.indexOf(e)===i; }):x.causes; });
+  S.clips.forEach(function(x){ if(x.cause==="other" && x.why && texts.indexOf(x.why)>=0) x.cause=k; });
+  saveProfile(); saveDebrief(); saveClips(); }
+function writeInPanel(){
+  var cl=writeInClusters(); if(!cl.length) return null;
+  var c=cl[0], short=c.items.map(function(x){ return x.t; }).sort(function(a,b){ return a.length-b.length; })[0];
+  var lab=h("input",{class:"inp",value:short.charAt(0).toUpperCase()+short.slice(1),"aria-label":"Name for the new reason"});
+  var ms=h("select",{class:"inp","aria-label":"Module that helps"}, h("option",{value:"",text:"Which module helps with it? (optional)"}), Object.keys(MODS).map(function(m){ return h("option",{value:m,text:"Module "+m+" · "+MODS[m]}); }));
+  var seen={}; var ex=c.items.filter(function(x){ var y=x.t.toLowerCase(); if(seen[y]) return false; seen[y]=1; return true; }).slice(0,3);
+  return h("section",{class:"panel writein"}, h("h3",{text:"New reason? You've written this "+c.items.length+" times"}),
+    ex.map(function(x){ return h("q",{text:"“"+x.t+"”"}); }),
+    h("p",{class:"faint",style:"margin:8px 0",text:"Add it to your list and it becomes a one-tap option in ranked sessions and clip reviews. Your past write-ins move under it."}),
+    h("div",{class:"field"}, lab), h("div",{class:"field"}, ms),
+    h("div",{class:"nav2"}, h("button",{type:"button",class:"ghost",onclick:function(){ c.items.forEach(function(x){ x.st="dismissed"; }); saveProfile(); safeRender(); }},"Not now"),
+      h("button",{type:"button",class:"primary",onclick:function(){ promoteWriteIn(c, lab.value, ms.value); safeRender(); toast("Added to your reasons."); }},"Add as a reason")));
+}
+/* o: {cur, why, src, lead:[[k,label]], onPick(k), onOther(text), otherBtn} */
+function reasonPicker(o){
+  var M=reasonMap(), wrap=h("div",{class:"rpick"}), btns=h("div",{class:"seg small"});
+  var quick=(o.lead||[]).concat(topReasons(o.src,4).map(function(k){ return [k,M[k].label]; }));
+  if(o.cur && o.cur!=="other" && M[o.cur] && !quick.some(function(q){ return q[0]===o.cur; })) quick.push([o.cur,M[o.cur].label]);
+  quick.forEach(function(q){ btns.appendChild(h("button",{type:"button","data-k":q[0],"aria-pressed":String(o.cur===q[0]),onclick:function(){ o.onPick(o.cur===q[0]?null:q[0]); }},q[1])); });
+  if(o.cur==="other") btns.appendChild(h("button",{type:"button","aria-pressed":"true",onclick:function(){ o.onPick(null); }},"Other: "+(o.why||"…")));
+  wrap.appendChild(btns);
+  var sel=h("select",{class:"inp","aria-label":"More reasons"}, h("option",{value:"",text:"More reasons…"}));
+  P.reasonGroups.concat([{k:"yours",label:"Your reasons"}]).forEach(function(g){ var rs=reasonList().filter(function(r){ return r.group===g.k && !r.hidden; }); if(!rs.length) return;
+    sel.appendChild(h("optgroup",{label:g.label}, rs.map(function(r){ return h("option",{value:r.k,text:r.label}); }))); });
+  sel.appendChild(h("option",{value:"__other",text:"Other: write it in"}));
+  var ob=h("div",{class:"otherbox",hidden:true}), oi=h("input",{class:"inp",placeholder:"What happened, in a few words","aria-label":"Write in the reason"}), sug=h("div",{class:"sug"});
+  oi.value=o.why||"";
+  oi.addEventListener("input",function(){ sug.innerHTML=""; var r=closestReason(oi.value); if(r) sug.appendChild(h("span",null,"Sounds like “"+r.label+"”.",h("button",{type:"button",class:"linkbtn",onclick:function(){ o.onPick(r.k); }},"Use that"))); });
+  ob.appendChild(oi); ob.appendChild(sug); ob.appendChild(h("button",{type:"button",class:"ghost",onclick:function(){ var t=oi.value.trim(); if(!t){ toast("Write a few words first."); return; } o.onOther(t); }},o.otherBtn||"Use this"));
+  sel.addEventListener("change",function(){ var v=sel.value; if(!v) return; if(v==="__other"){ ob.hidden=false; oi.focus(); sel.value=""; } else o.onPick(v); });
+  wrap.appendChild(sel); wrap.appendChild(ob);
+  return wrap;
+}
 var STEPS = ["Clip","Gut pass","Rewind","Before the fight","Comms","The fight","Verdict"], LAST = STEPS.length-1;
 
 // ===================== key-point grader =====================
@@ -467,7 +535,7 @@ var GRADE_NAME={got:"Got it",shaky:"Shaky",miss:"Missed"};
 function depthHits(answer, dp){ var toks=gnorm(answer).split(" ").filter(Boolean); return (dp||[]).map(function(kp){ return kp[1].some(function(a){ return altHit(a,toks); }); }); }
 
 // ===================== state =====================
-function blankDraft(){ return {type:null,map:"",legend:"",label:"",situation:[],starter:null,plan:null,gut:"",when:null,lastGood:"",checks:{},cause:null,kind:null,habit:null,fix:"",rehearsed:false,question:""}; }
+function blankDraft(){ return {type:null,map:"",legend:"",label:"",situation:[],starter:null,plan:null,gut:"",when:null,lastGood:"",checks:{},cause:null,why:"",kind:null,habit:null,fix:"",rehearsed:false,question:""}; }
 function normDraft(d){ var b=blankDraft(); d=d||{}; for(var k in b) if(d[k]===undefined) d[k]=b[k]; if(!Array.isArray(d.situation)) d.situation=[]; if(!d.checks||typeof d.checks!=="object") d.checks={}; return d; }
 var S = {
   profile: Object.assign({setup:false, rank:"", mains:[], newPerDay:3, focus:P.habits[0].id}, lget(K.profile)||{}),
@@ -837,7 +905,7 @@ function dotsEl(seq){ return h("div",{class:"dots"}, seq.map(function(e){ return
 
 // ----- Session mode: two taps per game during a long ranked session -----
 var GAME_ENDS=[["won","Won / top 3"]];
-function gameEnds(){ var C=P.debriefCauses; return GAME_ENDS.concat(Object.keys(C).map(function(k){ return [k,C[k].label]; })); }
+function gameEnds(){ return GAME_ENDS.concat(topReasons("debrief",4).map(function(k){ return [k,reasonMap()[k].label]; })); }
 function liveSummary(L){
   var g=L.games, ran=g.filter(function(x){ return x.exec==="nailed"; }).length, ends={};
   g.forEach(function(x){ if(x.end && x.end!=="won") ends[x.end]=(ends[x.end]||0)+1; });
@@ -875,11 +943,14 @@ function rpClimb(){
 }
 function lastEndRp(){ var ss=sortedSessions(); for(var i=ss.length-1;i>=0;i--){ if(ss[i].endRp!=null) return ss[i].endRp; } return null; }
 function fmtRp(n){ return Number(n).toLocaleString(); }
+function clipMods(){ var m={}, cut=addDays(today(),-30), M=reasonMap(); S.clips.forEach(function(c){ var r=M[c.cause]; if(r && r.mod!=null && c.date>=cut) m[String(r.mod)]=(m[String(r.mod)]||0)+1; }); return m; }
+function topClipReason(){ var n={}, cut=addDays(today(),-30), M=reasonMap(); S.clips.forEach(function(c){ if(c.cause && c.cause!=="win" && c.cause!=="other" && M[c.cause] && c.date>=cut) n[c.cause]=(n[c.cause]||0)+1; });
+  var k=Object.keys(n).sort(function(a,b){ return n[b]-n[a]; })[0]; return k&&n[k]>=2?{r:M[k],n:n[k]}:null; }
 function drillScore(id){
-  var sc=0, cutoff=addDays(today(),-60), miss=0, shaky=0;
+  var sc=0, cutoff=addDays(today(),-60), miss=0, shaky=0, cm=clipMods(), card=byId[id], seen=card?Math.min(3,cm[String(card.mod)]||0):0; sc+=seen;
   S.recall.forEach(function(r){ if(r.id===id && r.d>=cutoff){ if(r.g==="miss"){ sc+=2; miss++; } else if(r.g==="shaky"){ sc+=1; shaky++; } } });
   var rv=S.reviews[id], st=stage(rv), slips=rv&&rv.box?Math.max(0,(rv.n||0)-rv.box):0; if(!miss&&!shaky&&slips){ sc+=slips; } sc += st==="learn"?1.5 : st==="solid"?0.5 : 0; if(rv && rv.d!=null) sc += (rv.d-5)/5;
-  return {score:sc, miss:miss, shaky:shaky, slips:(!miss&&!shaky)?slips:0, stage:st};
+  return {score:sc, miss:miss, shaky:shaky, slips:(!miss&&!shaky)?slips:0, stage:st, clips:seen};
 }
 function drillList(){
   var list=CARDS.filter(function(c){ return c.drill && S.reviews[c.id] && !c.soon; }).map(function(c){ var d=drillScore(c.id); return {c:c, d:d, s:cardS(S.reviews[c.id])}; });
@@ -887,7 +958,7 @@ function drillList(){
   if(S.profile.drill){ var i=-1; list.forEach(function(x,j){ if(x.c.id===S.profile.drill.id) i=j; }); if(i>0) list.unshift(list.splice(i,1)[0]); }
   return list;
 }
-function drillWhy(x){ var bits=[]; if(x.d.miss) bits.push("missed "+x.d.miss+"×"); if(x.d.shaky) bits.push("shaky "+x.d.shaky+"×"); if(x.d.slips) bits.push("slipped "+x.d.slips+"× before"); bits.push(x.d.stage==="learn"?"still learning":x.d.stage==="solid"?"solid":"owned"); if(S.profile.drill && S.profile.drill.id===x.c.id) bits.unshift("today's drill"); return bits.join(" · "); }
+function drillWhy(x){ var bits=[]; if(x.d.miss) bits.push("missed "+x.d.miss+"×"); if(x.d.shaky) bits.push("shaky "+x.d.shaky+"×"); if(x.d.slips) bits.push("slipped "+x.d.slips+"× before"); if(x.d.clips) bits.push("seen in your clips"); bits.push(x.d.stage==="learn"?"still learning":x.d.stage==="solid"?"solid":"owned"); if(S.profile.drill && S.profile.drill.id===x.c.id) bits.unshift("today's drill"); return bits.join(" · "); }
 function drillListEl(limit, onPick){
   var L=drillList().slice(0,limit||10), ul=h("ol",{class:"dlist"});
   if(!L.length) return h("p",{class:"empty",text:"Your drill list fills up as you study cards in the Manual."});
@@ -915,7 +986,7 @@ function endLive(rp, note, en){
   var places=g.map(function(x){ return x.place; }).filter(function(x){ return x!=null; });
   var r=parseInt(rp,10);
   S.sessions.push({id:"s"+Date.now(), date:new Date(L.start).toISOString(), focusId:L.focusId, focus:L.focus, mod:L.mod, exec:score>=0.75?"nailed":score>=0.4?"some":"forgot",
-    causes:causes, place:places.length?Math.min.apply(null,places):null, rp:isNaN(r)?0:r, startRp:L.startRp, endRp:(L.startRp!=null&&!isNaN(er))?er:null, startRank:L.startRank||null, startSize:L.startSize==null?null:L.startSize, endRank:en.rank||L.startRank||null, endSize:en.size==null?null:en.size, rpKnown:rpKnown, note:(note||"").trim(), games:g.map(function(x){ return {exec:x.exec,end:x.end,place:x.place,kills:x.kills==null?null:x.kills,lobby:x.lobby||null,drill:x.drill||null,drillTried:!!x.drillTried}; }), mins:Math.round((Date.now()-L.start)/60000),
+    causes:causes, place:places.length?Math.min.apply(null,places):null, rp:isNaN(r)?0:r, startRp:L.startRp, endRp:(L.startRp!=null&&!isNaN(er))?er:null, startRank:L.startRank||null, startSize:L.startSize==null?null:L.startSize, endRank:en.rank||L.startRank||null, endSize:en.size==null?null:en.size, rpKnown:rpKnown, note:(note||"").trim(), games:g.map(function(x){ return {exec:x.exec,end:x.end,place:x.place,kills:x.kills==null?null:x.kills,lobby:x.lobby||null,drill:x.drill||null,drillTried:!!x.drillTried, why:x.why||null}; }), mins:Math.round((Date.now()-L.start)/60000),
     pregame:!!L.pregame, drill:{ids:g.map(function(x){ return x.drill; }).filter(function(d,i,a){ return d && a.indexOf(d)===i; }), games:g.filter(function(x){ return x.drill; }).length, tried:g.filter(function(x){ return x.drillTried; }).length}});
   saveDebrief(); S.live=null; saveLive(); safeRender(); window.scrollTo(0,0);
   toast("Session saved: "+g.length+" game"+(g.length===1?"":"s")+".");
@@ -934,7 +1005,7 @@ function liveDrill(L){
   return box;
 }
 function renderLive(v){
-  var L=S.live, sum=liveSummary(L), mins=Math.round((Date.now()-L.start)/60000), C=P.debriefCauses, pend=L.pend||(L.pend={exec:null,end:null,place:""});
+  var L=S.live, sum=liveSummary(L), mins=Math.round((Date.now()-L.start)/60000), C=reasonMap(), pend=L.pend||(L.pend={exec:null,end:null,place:""});
   var panel=h("section",{class:"panel live"},
     h("div",{class:"livehead"}, h("span",{class:"livetag",text:"Session live"}), h("span",{class:"faint",text:(mins<60?mins+" min":Math.floor(mins/60)+"h "+(mins%60)+"m")+" · "+sum.n+" game"+(sum.n===1?"":"s")})),
     h("div",{class:"focus",style:"margin-top:10px"}, h("div",{class:"label",text:"Your focus"}), h("div",{class:"name",text:L.focus}), h("p",{text:"Say it out loud before every queue."+(L.startRp!=null?" Started at "+(L.startRank?L.startRank+", ":"")+fmtRp(L.startRp)+(L.startSize?" / "+fmtRp(L.startSize):"")+" RP.":"")})),
@@ -946,7 +1017,10 @@ function renderLive(v){
   var box=h("div",{class:"gamebox"}, h("h3",{text:"Game "+(sum.n+1)}));
   var execG=h("div",{class:"seg exec"}), endG=h("div",{class:"seg small"});
   [["nailed","Yes"],["some","Some"],["forgot","No"]].forEach(function(o){ execG.appendChild(h("button",{type:"button","data-k":o[0],"aria-pressed":String(pend.exec===o[0]),onclick:function(){ pend.exec=pend.exec===o[0]?null:o[0]; setPressed(execG,pend.exec); saveLive(); maybeLog(); }},o[1])); });
-  gameEnds().forEach(function(o){ endG.appendChild(h("button",{type:"button","data-k":o[0],"aria-pressed":String(pend.end===o[0]),onclick:function(){ pend.end=pend.end===o[0]?null:o[0]; setPressed(endG,pend.end); saveLive(); maybeLog(); }},o[1])); });
+  function rerender(){ var y=window.scrollY; safeRender(); window.scrollTo(0,y); }
+  endG=reasonPicker({cur:pend.end, why:pend.why, src:"debrief", lead:GAME_ENDS, otherBtn:"Log it",
+    onPick:function(k){ pend.end=k; pend.why=null; saveLive(); if(k && pend.exec) maybeLog(); else rerender(); },
+    onOther:function(t){ pend.end="other"; pend.why=t; saveLive(); if(pend.exec) maybeLog(); else { toast("Now pick whether you ran your focus."); rerender(); } }});
   var place=h("input",{class:"inp",id:"live-place",type:"number",inputmode:"numeric",min:"1",max:"20",placeholder:"Place"}); place.value=pend.place||"";
   place.addEventListener("input",function(){ pend.place=place.value; saveLive(); });
   var kills=h("input",{class:"inp",id:"live-kills",type:"number",inputmode:"numeric",min:"0",max:"60",placeholder:"Squad kills"}); kills.value=pend.kills||"";
@@ -958,8 +1032,9 @@ function renderLive(v){
     var pl=parseInt(pend.place,10);
     var kl=parseInt(pend.kills,10);
     var cd=curDrill(L);
-    L.games.push({exec:pend.exec, end:pend.end, place:isNaN(pl)?null:pl, kills:isNaN(kl)?null:kl, lobby:pend.lobby||null, drill:cd?cd.id:null, drillTried:!!pend.drillTried, ts:Date.now()});
-    L.pend={exec:null,end:null,place:"",kills:"",lobby:null,drillTried:false}; saveLive(); var y=window.scrollY; safeRender(); window.scrollTo(0,y); toast("Game "+L.games.length+" logged.");
+    if(pend.end==="other" && pend.why) logWriteIn(pend.why,"debrief");
+    L.games.push({exec:pend.exec, end:pend.end, why:pend.end==="other"?(pend.why||null):null, place:isNaN(pl)?null:pl, kills:isNaN(kl)?null:kl, lobby:pend.lobby||null, drill:cd?cd.id:null, drillTried:!!pend.drillTried, ts:Date.now()});
+    L.pend={exec:null,end:null,why:null,place:"",kills:"",lobby:null,drillTried:false}; saveLive(); var y=window.scrollY; safeRender(); window.scrollTo(0,y); toast("Game "+L.games.length+" logged.");
   }
   box.appendChild(h("div",{class:"field"}, h("div",{class:"q",text:"Did you run your focus?"}), execG));
   if(curDrill(L)){ var dt=h("button",{type:"button",class:"toggle","aria-pressed":String(!!pend.drillTried),onclick:function(){ pend.drillTried=!pend.drillTried; dt.setAttribute("aria-pressed",String(pend.drillTried)); dt.firstChild.textContent=pend.drillTried?"✓":""; saveLive(); }},
@@ -968,7 +1043,7 @@ function renderLive(v){
   box.appendChild(h("details",{class:"more"}, h("summary",{text:"Extras (optional): lobby, place, kills"}),
     h("div",{class:"field",style:"margin-top:6px"}, h("div",{class:"q"},"Lobby type",h("span",{class:"note",text:"Shown at load-in from Season 31. Explains big RP swings."})), lobbyG),
     h("div",{class:"two"}, place, kills)));
-  box.appendChild(h("div",{class:"field",style:"margin-top:10px;margin-bottom:0"}, h("div",{class:"q"},"How did it end?",h("span",{class:"note",text:"Logs the game as soon as both are picked. Fill in extras first if you want them."})), endG));
+  box.appendChild(h("div",{class:"field",style:"margin-top:10px;margin-bottom:0"}, h("div",{class:"q"},"How did it end?",h("span",{class:"note",text:"Pick the first mistake, not the last thing that happened. Logs the game as soon as both are picked."})), endG));
   panel.appendChild(box);
   if(sum.n){
     panel.appendChild(h("div",{class:"gdots"}, L.games.map(function(x,i){ return h("span",{class:"gdot "+x.exec,title:"Game "+(i+1),text:x.end==="won"?"★":""}); })));
@@ -1056,6 +1131,7 @@ function renderLiveStart(v){
   v.appendChild(h("section",{class:"panel"}, h("h2",{text:"Playing ranked?"}), h("p",{class:"sub",text:"Start a session and log each game in two taps. Built for long sessions: 5 games or 25."}),
     h("div",{class:"field"}, h("label",{class:"q",for:"live-focus"},"Your one focus for this session"), fsel, custom),
     pgDet,
+    (function(){ var t=topClipReason(); if(!t) return null; var m=t.r.mod; return h("p",{class:"faint",style:"margin:-6px 0 12px",text:"Your clips keep showing “"+t.r.label+"” ("+t.n+"× this month)."+(m==null?"":drillList().some(function(x){ return String(x.c.mod)===String(m); })?" Drills from Module "+m+" · "+MODS[m]+" are moved up your list.":" You haven't started Module "+m+" · "+MODS[m]+" yet. Its cards cover this.")}); })(),
     h("div",{class:"field"}, h("div",{class:"q"},"Switch drills every",h("span",{class:"note",text:"Your drills, most-missed cards first. A fresh one every few games keeps practice going even on days you can't train."})), rotG),
     h("details",{class:"more",style:"margin:-6px 0 12px"}, h("summary",{text:"See your drill list"}), drillListEl(10, function(c){ S.profile.drill={id:c.id,title:c.title,text:c.drill,date:today()}; saveProfile(); safeRender(); toast("Starting with "+c.title+"."); })),
     (S.profile.banBackups&&S.profile.banBackups.length)?h("p",{class:"faint",style:"margin:-6px 0 12px",text:"If your legend gets banned: "+S.profile.banBackups.join(", then ")+"."}):null,
@@ -1064,7 +1140,7 @@ function renderLiveStart(v){
 }
 
 function renderDebrief(v){
-  var list=sortedSessions(), C=P.debriefCauses;
+  var list=sortedSessions(), C=reasonMap();
   var net=list.reduce(function(a,s){ return a+(s.rp||0); },0), placed=list.filter(function(s){ return s.place!=null; });
   v.appendChild(h("div",{class:"band"},
     h("div",{class:"stat"},h("div",{class:"k",text:"Sessions"}),h("div",{class:"v",text:String(list.length)})),
@@ -1072,6 +1148,7 @@ function renderDebrief(v){
     h("div",{class:"stat"},h("div",{class:"k",text:S.profile.rank||"Rank"}),h("div",{class:"v",text:placed.length?"#"+(placed.reduce(function(a,s){ return a+s.place; },0)/placed.length).toFixed(1):"—"}),h("div",{class:"k",text:"avg place"}))));
 
   if(S.live) renderLive(v); else renderLiveStart(v);
+  var wi=writeInPanel(); if(wi) v.appendChild(wi);
   // log form
   var F=S.dform; if(!F.focus) F.focus=S.profile.focus||P.habits[0].id;
   var fsel=h("select",{class:"inp",id:"d-focus"});
@@ -1083,8 +1160,14 @@ function renderDebrief(v){
   fsel.addEventListener("change",function(){ F.focus=fsel.value; custom.hidden=F.focus!=="custom"; ready(); });
   var execG=h("div",{class:"seg exec"});
   [["nailed","Nailed it"],["some","Some of it"],["forgot","Forgot"]].forEach(function(o){ execG.appendChild(h("button",{type:"button","data-k":o[0],"aria-pressed":String(F.exec===o[0]),onclick:function(){ F.exec=F.exec===o[0]?null:o[0]; setPressed(execG,F.exec); ready(); }},o[1])); });
-  var causeG=h("div",{class:"seg small"});
-  Object.keys(C).forEach(function(k){ causeG.appendChild(h("button",{type:"button","data-k":k,"aria-pressed":String(F.causes.indexOf(k)>=0),onclick:function(){ var i=F.causes.indexOf(k); if(i>=0) F.causes.splice(i,1); else F.causes.push(k); setPressed(causeG,F.causes); ready(); }},C[k].label)); });
+  var causeG=h("div");
+  function fillCauses(){ causeG.innerHTML=""; var seg=h("div",{class:"seg small"}), ks=topReasons("debrief",5); F.causes.forEach(function(k){ if(ks.indexOf(k)<0 && C[k]) ks.push(k); });
+    ks.forEach(function(k){ seg.appendChild(h("button",{type:"button","data-k":k,"aria-pressed":String(F.causes.indexOf(k)>=0),onclick:function(){ var i=F.causes.indexOf(k); if(i>=0) F.causes.splice(i,1); else F.causes.push(k); setPressed(seg,F.causes); ready(); }},C[k].label)); });
+    var more=h("select",{class:"inp",style:"margin-top:8px","aria-label":"Add another reason"}, h("option",{value:"",text:"Add another reason…"}));
+    P.reasonGroups.concat([{k:"yours",label:"Your reasons"}]).forEach(function(g){ var rs=reasonList().filter(function(r){ return r.group===g.k && !r.hidden; }); if(rs.length) more.appendChild(h("optgroup",{label:g.label}, rs.map(function(r){ return h("option",{value:r.k,text:r.label}); }))); });
+    more.addEventListener("change",function(){ if(more.value && F.causes.indexOf(more.value)<0){ F.causes.push(more.value); fillCauses(); ready(); } });
+    causeG.appendChild(seg); causeG.appendChild(more); }
+  fillCauses();
   var place=h("input",{class:"inp",id:"d-place",type:"number",inputmode:"numeric",min:"1",max:"20",placeholder:"e.g. 6"});
   var rp=h("input",{class:"inp",id:"d-rp",type:"number",inputmode:"numeric",placeholder:"e.g. -35"});
   var note=h("input",{class:"inp",id:"d-note",placeholder:"One line you want to remember"});
@@ -1126,14 +1209,17 @@ function renderDebrief(v){
   var lp=h("section",{class:"panel"}, h("h3",{text:"How your runs end"}));
   if(!list.length) lp.appendChild(h("p",{class:"empty",text:"Empty until your first log."}));
   else {
-    var cnt={}; Object.keys(C).forEach(function(k){ cnt[k]=0; });
-    list.forEach(function(s){ if(s.games&&s.games.length) s.games.forEach(function(g){ if(g.end in cnt) cnt[g.end]++; }); else (s.causes||[]).forEach(function(k){ if(k in cnt) cnt[k]++; }); });
-    bars(lp, Object.keys(C).sort(function(a,b){ return cnt[b]-cnt[a]; }).map(function(k){ return {label:C[k].label,n:cnt[k],color:C[k].color}; }));
+    var cnt={};
+    list.forEach(function(s){ (s.games&&s.games.length?s.games.map(function(g){ return g.end; }):(s.causes||[])).forEach(function(k){ if(k && C[k]) cnt[k]=(cnt[k]||0)+1; }); });
+    var ck=Object.keys(cnt).sort(function(a,b){ return cnt[b]-cnt[a]; });
+    if(!ck.length) lp.appendChild(h("p",{class:"empty",text:"No deaths logged yet."}));
+    bars(lp, ck.slice(0,8).map(function(k){ return {label:C[k].label,n:cnt[k],color:C[k].color}; }));
+    if(ck.length>8) lp.appendChild(h("p",{class:"faint",text:"+ "+(ck.length-8)+" more reasons, logged less often."}));
     var recent=list.slice(-10);
     if(recent.length>=3){
       var rc={}; recent.forEach(function(s){ var ks=s.games&&s.games.length?s.games.map(function(g){ return g.end; }):(s.causes||[]); ks.forEach(function(k){ if(k && k!=="other" && k!=="won" && C[k]) rc[k]=(rc[k]||0)+1; }); });
-      var top=Object.keys(rc).sort(function(a,b){ return rc[b]-rc[a]; })[0];
-      if(top && C[top].mod!=null){ var m=C[top].mod;
+      var top=Object.keys(rc).sort(function(a,b){ return rc[b]-rc[a]; }).filter(function(k){ return C[k].mod!=null; })[0];
+      if(top){ var m=C[top].mod;
         lp.appendChild(h("div",{class:"focus",style:"margin-top:14px"}, h("div",{class:"label",text:"Study next"}), h("div",{class:"name",text:"Module "+m+" · "+MODS[m]}), h("p",{text:(P.moduleWhy[m]||"")+" Based on your last "+recent.length+" sessions."}),
           h("button",{type:"button",class:"linkbtn",onclick:function(){ S.ui.tab="manual"; S.ui.manualSub="library"; S.ui.libMod=m; saveUI(); safeRender(); window.scrollTo(0,0); }},"Open Module "+m+" in the Manual"))); }
     }
@@ -1265,7 +1351,10 @@ function clipStep(n){
   }
   if(n===6){
     box.appendChild(h("p",{class:"how",text:"Name it, pick the fix, then picture yourself doing the fix once at normal speed. Spotting the mistake isn't enough. Rehearsing the better play is what carries into your games."}));
-    box.appendChild(cField(win?"What was this clip about?":"What mainly ended this clip?", cSeg(CL.causes.map(function(c){ return [c.k,c.label]; }),"cause",false,function(){ S.draft.habit=null; var y=window.scrollY; safeRender(); window.scrollTo(0,y); })));
+    box.appendChild(cField(win?"What was this clip about?":"What mainly ended this clip?", reasonPicker({cur:d.cause, why:d.why, src:"clips", lead:[["win","Clean play to repeat"]],
+      onPick:function(k){ S.draft.cause=k; S.draft.why=""; S.draft.habit=null; saveDraft(); var y=window.scrollY; safeRender(); window.scrollTo(0,y); },
+      onOther:function(t){ S.draft.cause="other"; S.draft.why=t; S.draft.habit=null; saveDraft(); var y=window.scrollY; safeRender(); window.scrollTo(0,y); }}),
+      "Same list as your ranked sessions, so what you find here shapes what you practice there."));
     box.appendChild(cField(win?"What made it work?":"Was it the decision or the execution?", cSeg(CL.kinds,"kind",true), "Decision: wrong fight, timing or spot. Execution: right idea, but the shots, peeks or movement let you down."));
     if(d.cause!=="win"){
       var sug=suggestFocus(d), hb=h("div",{class:"habits"});
@@ -1290,8 +1379,9 @@ function goStep(n){ S.step=n; saveDraft(); safeRender(); window.scrollTo(0,0); }
 function saveReview(){
   var d=S.draft, now=Date.now();
   S.clips.push({ id:"c"+now, created:now, date:today(), type:d.type, map:d.map||"", legend:d.legend||"", label:(d.label||"").trim(), situation:d.situation||[], starter:d.starter||null, plan:d.plan||null,
-    gut:(d.gut||"").trim(), when:d.when||null, lastGood:(d.lastGood||"").trim(), checks:d.checks||{}, cause:d.cause, kind:d.kind||null,
+    gut:(d.gut||"").trim(), when:d.when||null, lastGood:(d.lastGood||"").trim(), checks:d.checks||{}, cause:d.cause, why:d.cause==="other"?(d.why||"").trim():"", kind:d.kind||null,
     habit:d.cause==="win"?null:suggestFocus(d), fix:(d.fix||"").trim(), rehearsed:!!d.rehearsed, question:(d.question||"").trim(), answer:"", qDone:false });
+  if(d.cause==="other" && d.why) logWriteIn(d.why,"clips");
   saveClips(); S.draft=blankDraft(); S.step=-1; lset(K.draft,null); safeRender(); window.scrollTo(0,0);
   toast("Saved. "+S.clips.length+" clip"+(S.clips.length===1?"":"s")+" reviewed.");
 }
@@ -1355,7 +1445,7 @@ function renderPatterns(v){
   v.appendChild(kp);
   var cp=h("section",{class:"panel"}, h("h3",{text:"What ends your clips"}));
   if(!leaks.length) cp.appendChild(h("p",{class:"empty",text:"Only wins so far. Add a death clip to see what's costing you."}));
-  else { var counts={}; leaks.forEach(function(c){ counts[c.cause]=(counts[c.cause]||0)+1; }); bars(cp, CL.causes.filter(function(c){ return counts[c.k]; }).sort(function(a,b){ return counts[b.k]-counts[a.k]; }).map(function(c){ return {label:c.label,n:counts[c.k],color:c.color}; })); }
+  else { var counts={}; leaks.forEach(function(c){ counts[c.cause]=(counts[c.cause]||0)+1; }); bars(cp, Object.keys(counts).map(causeOf).filter(Boolean).sort(function(a,b){ return counts[b.k]-counts[a.k]; }).map(function(c){ return {label:c.label,n:counts[c.k],color:c.color}; })); }
   v.appendChild(cp);
   var mp=h("section",{class:"panel"}, h("h3",{text:"Checks you miss most"}));
   var rows=ALLCHECKS.map(function(ch){ var y=0,nn=0; clips.forEach(function(c){ var a=c.checks&&c.checks[ch.k]; if(a==="y") y++; if(a==="n") nn++; }); return {ch:ch,y:y,n:nn}; }).filter(function(r){ return r.n>0; }).sort(function(a,b){ return (b.n/(b.n+b.y))-(a.n/(a.n+a.y)) || b.n-a.n; }).slice(0,8);
