@@ -254,6 +254,12 @@ details.more p{font-size:14px;margin:6px 0}
 .writein q{display:block;color:var(--muted);font-size:14px;margin:2px 0}
 .writein q:before,.writein q:after{content:""}
 
+/* quick start */
+.qs{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:4px 0 14px;font-size:15px}
+.qs .k{color:var(--faint);font-size:12px;text-transform:uppercase;letter-spacing:.5px;padding-top:3px}
+.qs .v{font-weight:600}
+.drillnow.asfocus{border-color:var(--amber);margin-top:10px}
+
 /* proof */
 .proofcard{background:linear-gradient(160deg,#1d2530,#141a22);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:12px}
 .proofcard .ph{font-family:var(--display);font-size:13px;letter-spacing:1.5px;color:var(--amber);text-transform:uppercase}
@@ -967,13 +973,15 @@ function drillListEl(limit, onPick){
   return ul;
 }
 function startLive(fid, custom, st){
-  var name=fid&&fid!=="custom"?FOCI[fid].name:(custom||"").trim(); if(!name){ toast("Type your focus first."); return; }
+  var rotating=fid==="rotate";
+  if(rotating && !drillList().length){ toast("No drills yet. Study a few cards first, or pick one focus."); return; }
+  var name=rotating?"Rotating drills":fid&&fid!=="custom"?FOCI[fid].name:(custom||"").trim(); if(!name){ toast("Type your focus first."); return; }
   st=st||{}; var sr=st.rp==null?NaN:st.rp;
   if(st.rank){ setDivSize(st.rank, st.size); S.profile.rank=st.rank; saveProfile(); }
-  var rot=S.profile.rotate==null?3:S.profile.rotate, dl=drillList().slice(0,15).map(function(x){ return x.c.id; });
-  S.live={start:Date.now(), focusId:fid!=="custom"?fid:null, focus:name, mod:fid&&fid!=="custom"&&FOCI[fid].mod!=null?FOCI[fid].mod:"", startRp:isNaN(sr)?null:sr, startRank:st.rank||null, startSize:st.size==null?null:st.size, games:[], pend:{exec:null,end:null,place:""},
-    drills:dl, drillIdx:0, drillStart:0, rotate:rot, pregame:S.dform.pregame===today()}; S.dform.pregame=null;
-  if(fid && fid!=="custom"){ S.profile.focus=fid; saveProfile(); }
+  var rot=rotating?(S.profile.rotate>0?S.profile.rotate:3):0, dl=rotating?drillList().slice(0,15).map(function(x){ return x.c.id; }):[];
+  S.live={start:Date.now(), mode:rotating?"rotate":"one", focusId:(rotating||fid==="custom")?null:fid, focus:name, mod:!rotating&&fid&&fid!=="custom"&&FOCI[fid].mod!=null?FOCI[fid].mod:"", startRp:isNaN(sr)?null:sr, startRank:st.rank||null, startSize:st.size==null?null:st.size, games:[], pend:{exec:null,end:null,place:""},
+    drills:dl, drillIdx:0, drillStart:0, rotate:rot, pregame:S.dform.pregame===today()}; S.dform.pregame=null; S.dform.opts=false;
+  if(!rotating && fid && fid!=="custom"){ S.profile.focus=fid; saveProfile(); }
   saveLive(); safeRender(); window.scrollTo(0,0); toast("Session started. Say your focus out loud, then queue.");
 }
 function endLive(rp, note, en){
@@ -991,13 +999,13 @@ function endLive(rp, note, en){
   saveDebrief(); S.live=null; saveLive(); safeRender(); window.scrollTo(0,0);
   toast("Session saved: "+g.length+" game"+(g.length===1?"":"s")+".");
 }
-function curDrill(L){ return L.drills&&L.drills.length ? byId[L.drills[L.drillIdx % L.drills.length]] : null; }
+function curDrill(L){ return L.mode==="rotate" && L.drills&&L.drills.length ? byId[L.drills[L.drillIdx % L.drills.length]] : null; }
 function nextDrill(L){ L.drillIdx=(L.drillIdx+1)%L.drills.length; L.drillStart=L.games.length; saveLive(); var y=window.scrollY; safeRender(); window.scrollTo(0,y); toast("New drill: "+curDrill(L).title); }
 function liveDrill(L){
   var c=curDrill(L); if(!c) return null;
   var on=L.games.length-(L.drillStart||0), due=L.rotate && on>=L.rotate;
-  var box=h("div",{class:"drillnow"},
-    h("div",{class:"top"}, h("span",{text:"Drill "+((L.drillIdx%L.drills.length)+1)+" of "+L.drills.length}), h("span",{text:L.rotate?(due?"time to switch":"switch in "+(L.rotate-on)+" game"+(L.rotate-on===1?"":"s")):"no auto-switch"})),
+  var box=h("div",{class:"drillnow asfocus"},
+    h("div",{class:"top"}, h("span",{text:"Your focus · drill "+((L.drillIdx%L.drills.length)+1)+" of "+L.drills.length}), h("span",{text:L.rotate?(due?"time to switch":"switch in "+(L.rotate-on)+" game"+(L.rotate-on===1?"":"s")):"no auto-switch"})),
     h("div",{class:"name",text:c.id+" "+c.title}), h("p",{text:c.drill}));
   if(due) box.appendChild(h("div",{class:"rotate"}, h("div",{text:on+" games on this drill. Ready for the next one?"}),
     h("div",{class:"row",style:"margin-top:8px"}, h("button",{type:"button",class:"ghost",onclick:function(){ L.drillStart=L.games.length; saveLive(); safeRender(); }},"Keep it"), h("button",{type:"button",class:"ghost",style:"border-color:var(--teal)",onclick:function(){ nextDrill(L); }},"Next drill"))));
@@ -1008,7 +1016,7 @@ function renderLive(v){
   var L=S.live, sum=liveSummary(L), mins=Math.round((Date.now()-L.start)/60000), C=reasonMap(), pend=L.pend||(L.pend={exec:null,end:null,place:""});
   var panel=h("section",{class:"panel live"},
     h("div",{class:"livehead"}, h("span",{class:"livetag",text:"Session live"}), h("span",{class:"faint",text:(mins<60?mins+" min":Math.floor(mins/60)+"h "+(mins%60)+"m")+" · "+sum.n+" game"+(sum.n===1?"":"s")})),
-    h("div",{class:"focus",style:"margin-top:10px"}, h("div",{class:"label",text:"Your focus"}), h("div",{class:"name",text:L.focus}), h("p",{text:"Say it out loud before every queue."+(L.startRp!=null?" Started at "+(L.startRank?L.startRank+", ":"")+fmtRp(L.startRp)+(L.startSize?" / "+fmtRp(L.startSize):"")+" RP.":"")})),
+    L.mode==="rotate" ? null :     h("div",{class:"focus",style:"margin-top:10px"}, h("div",{class:"label",text:"Your focus"}), h("div",{class:"name",text:L.focus}), h("p",{text:"Say it out loud before every queue."+(L.startRp!=null?" Started at "+(L.startRank?L.startRank+", ":"")+fmtRp(L.startRp)+(L.startSize?" / "+fmtRp(L.startSize):"")+" RP.":"")})),
     liveDrill(L));
   // tilt check: three games in a row without the focus
   var last3=L.games.slice(-3);
@@ -1033,11 +1041,11 @@ function renderLive(v){
     var kl=parseInt(pend.kills,10);
     var cd=curDrill(L);
     if(pend.end==="other" && pend.why) logWriteIn(pend.why,"debrief");
-    L.games.push({exec:pend.exec, end:pend.end, why:pend.end==="other"?(pend.why||null):null, place:isNaN(pl)?null:pl, kills:isNaN(kl)?null:kl, lobby:pend.lobby||null, drill:cd?cd.id:null, drillTried:!!pend.drillTried, ts:Date.now()});
+    L.games.push({exec:pend.exec, end:pend.end, why:pend.end==="other"?(pend.why||null):null, place:isNaN(pl)?null:pl, kills:isNaN(kl)?null:kl, lobby:pend.lobby||null, drill:cd?cd.id:null, drillTried:!!cd && pend.exec!=="forgot", ts:Date.now()});
     L.pend={exec:null,end:null,why:null,place:"",kills:"",lobby:null,drillTried:false}; saveLive(); var y=window.scrollY; safeRender(); window.scrollTo(0,y); toast("Game "+L.games.length+" logged.");
   }
-  box.appendChild(h("div",{class:"field"}, h("div",{class:"q",text:"Did you run your focus?"}), execG));
-  if(curDrill(L)){ var dt=h("button",{type:"button",class:"toggle","aria-pressed":String(!!pend.drillTried),onclick:function(){ pend.drillTried=!pend.drillTried; dt.setAttribute("aria-pressed",String(pend.drillTried)); dt.firstChild.textContent=pend.drillTried?"✓":""; saveLive(); }},
+  box.appendChild(h("div",{class:"field"}, h("div",{class:"q",text:curDrill(L)?"Did you run the drill?":"Did you run your focus?"}), execG));
+  if(false){ var dt=h("button",{type:"button",class:"toggle","aria-pressed":String(!!pend.drillTried),onclick:function(){ pend.drillTried=!pend.drillTried; dt.setAttribute("aria-pressed",String(pend.drillTried)); dt.firstChild.textContent=pend.drillTried?"✓":""; saveLive(); }},
       h("span",{class:"box",text:pend.drillTried?"✓":""}), h("span",{text:"I tried the drill this game"}));
     box.appendChild(h("div",{class:"field"}, dt)); }
   box.appendChild(h("details",{class:"more"}, h("summary",{text:"Extras (optional): lobby, place, kills"}),
@@ -1049,7 +1057,7 @@ function renderLive(v){
     panel.appendChild(h("div",{class:"gdots"}, L.games.map(function(x,i){ return h("span",{class:"gdot "+x.exec,title:"Game "+(i+1),text:x.end==="won"?"★":""}); })));
     var endTxt=Object.keys(sum.ends).sort(function(a,b){ return sum.ends[b]-sum.ends[a]; }).map(function(k){ return (C[k]?C[k].label.toLowerCase():k)+" "+sum.ends[k]; }).join(", ");
     var kg=L.games.filter(function(x){ return x.kills!=null; }), kt=kg.reduce(function(a,x){ return a+x.kills; },0);
-    panel.appendChild(h("p",{class:"faint",style:"margin:4px 0 0",text:"Ran your focus "+sum.ran+" of "+sum.n+(endTxt?" · Ended by: "+endTxt:"")+(kg.length?" · Squad kills "+kt+" in "+kg.length+" game"+(kg.length===1?"":"s"):"")+(L.games.some(function(x){ return x.drillTried; })?" · Drill tried in "+L.games.filter(function(x){ return x.drillTried; }).length+" of "+sum.n:"")}));
+    panel.appendChild(h("p",{class:"faint",style:"margin:4px 0 0",text:"Ran your focus "+sum.ran+" of "+sum.n+(endTxt?" · Ended by: "+endTxt:"")+(kg.length?" · Squad kills "+kt+" in "+kg.length+" game"+(kg.length===1?"":"s"):"")+(L.mode!=="rotate" && L.games.some(function(x){ return x.drillTried; })?" · Drill tried in "+L.games.filter(function(x){ return x.drillTried; }).length+" of "+sum.n:"")}));
     panel.appendChild(h("button",{type:"button",class:"linkbtn",onclick:function(){ L.games.pop(); saveLive(); safeRender(); toast("Last game removed."); }},"Undo last game"));
   }
   // end session
@@ -1075,10 +1083,12 @@ function renderLive(v){
 }
 var CHECK_F={}; Object.keys(P.clips.groups||{}).forEach(function(g){ (P.clips.groups[g].checks||[]).forEach(function(ch){ CHECK_F[ch.k]=ch.f; }); });
 function typeLabel(t){ var x=(P.clips.types||[]).filter(function(y){ return y[0]===t; })[0]; return x?x[1]:t; }
-function pregameClip(fid){
+function pregameClip(fid, card){
   fid=fid==null?null:String(fid);
   var list=S.clips.slice().sort(function(a,b){ return (b.created||0)-(a.created||0); });
   if(!list.length) return null;
+  if(card){ var M=reasonMap(), hit=list.filter(function(c){ var r=M[c.cause]; return r && r.mod!=null && String(r.mod)===String(card.mod); })[0];
+    if(hit) return {c:hit, why:"Your first drill is about this kind of mistake. Watch the 5 to 30 seconds before it went wrong and picture the drill instead."}; }
   function hitsFocus(c,val){ return Object.keys(c.checks||{}).some(function(k){ return String(CHECK_F[k])===fid && c.checks[k]===val; }); }
   var good=fid?list.filter(function(c){ return (c.type==="win"||c.type==="knock") && hitsFocus(c,"y"); })[0]:null;
   if(good) return {c:good, why:"You did it right here. Watch what you did so you can repeat it."};
@@ -1086,8 +1096,8 @@ function pregameClip(fid){
   if(miss) return {c:miss, why:"This is the mistake your focus fixes. Watch the 5 to 30 seconds before it went wrong and picture doing it right."};
   return {c:list[0], why:"No clip matches this focus yet, so here's your latest. Watch it only for your focus."};
 }
-function pregamePanel(fid){
-  var f=FOCI[fid], pick=pregameClip(fid), done=S.dform.pregame===today();
+function pregamePanel(fid, card){
+  var f=card?{what:card.drill, cards:[card.id]}:FOCI[fid], pick=pregameClip(fid, card), done=S.dform.pregame===today();
   var box=h("div",{class:"pregame"});
   var steps=h("ol",null);
   if(pick){ var c=pick.c;
@@ -1098,7 +1108,7 @@ function pregamePanel(fid){
         c.lastGood?h("div",null,h("b",{text:"Last good decision: "}),c.lastGood):null,
         h("div",{class:"faint",style:"margin-top:4px",text:pick.why}))));
   } else steps.appendChild(h("li",{text:"Pick any recent fight in your recordings and watch it once, looking only for your focus. (Reviewed clips will show up here.)"}));
-  steps.appendChild(h("li",null,h("b",{text:"Read your focus: "}),f?f.what:"Say what you'll do differently this session."));
+  steps.appendChild(h("li",null,h("b",{text:card?"Read your first drill ("+card.title+"): ":"Read your focus: "}),f?f.what:"Say what you'll do differently this session."));
   if(f && f.cards && f.cards.length) steps.appendChild(h("li",{text:"Quick refresher: cards "+f.cards.join(", ")+" in the Manual Library."}));
   steps.appendChild(h("li",{text:"Say it out loud once. Then start the session."}));
   box.appendChild(steps);
@@ -1115,28 +1125,54 @@ function bedtimePanel(){
     h("button",{type:"button",class:"ghost",onclick:function(){ S.ui.clipSub="review"; goTab("clips"); }},"Review a clip"));
 }
 function renderLiveStart(v){
+  var mode=S.profile.sessMode==="rotate"?"rotate":"one";
   var f=S.dform.liveFocus||S.profile.focus||P.habits[0].id;
   var fsel=h("select",{class:"inp",id:"live-focus"});
   FOCUS_ORDER.forEach(function(k){ var o=h("option",{value:k,text:focusName(k)}); if(f===k) o.selected=true; fsel.appendChild(o); });
   var oc=h("option",{value:"custom",text:"Something else…"}); if(f==="custom") oc.selected=true; fsel.appendChild(oc);
   var custom=h("input",{class:"inp",id:"live-custom",placeholder:"Your focus, in a few words",style:"margin-top:8px",hidden:f!=="custom"});
+  custom.value=S.dform.liveCustom||"";
+  custom.addEventListener("input",function(){ S.dform.liveCustom=custom.value; });
+  var dl=drillList(), first=dl.length?dl[0].c:null, rotN=S.profile.rotate>0?S.profile.rotate:3;
   var pgWrap=h("div");
-  var pgDet=h("details",{class:"more",style:"margin:-6px 0 12px"}, h("summary",{text:S.dform.pregame===today()?"Pre-game 5 ✓":"Pre-game 5: one clip, your focus, out loud"}), pgWrap);
-  function pgFill(){ pgWrap.innerHTML=""; pgWrap.appendChild(pregamePanel(fsel.value==="custom"?null:fsel.value)); }
+  var pgDet=h("details",{class:"more",style:"margin:0 0 12px"}, h("summary",{text:S.dform.pregame===today()?"Pre-game 5 ✓":"Pre-game 5: one clip, your focus, out loud"}), pgWrap);
+  function pgFill(){ pgWrap.innerHTML=""; pgWrap.appendChild(mode==="rotate"?pregamePanel(null, first):pregamePanel(fsel.value==="custom"?null:fsel.value)); }
   fsel.addEventListener("change",function(){ S.dform.liveFocus=fsel.value; custom.hidden=fsel.value!=="custom"; pgFill(); });
-  var rotG=h("div",{class:"seg small"}), rotCur=S.profile.rotate==null?3:S.profile.rotate;
-  [[2,"2 games"],[3,"3 games"],[5,"5 games"],[0,"Off"]].forEach(function(o){ rotG.appendChild(h("button",{type:"button","data-k":String(o[0]),"aria-pressed":String(rotCur===o[0]),onclick:function(){ S.profile.rotate=o[0]; saveProfile(); setPressed(rotG,String(o[0])); }},o[1])); });
   var lr=lastRank(), rb=rankBox("live-start", lr||{rank:S.profile.rank||""});
   pgFill();
-  v.appendChild(h("section",{class:"panel"}, h("h2",{text:"Playing ranked?"}), h("p",{class:"sub",text:"Start a session and log each game in two taps. Built for long sessions: 5 games or 25."}),
-    h("div",{class:"field"}, h("label",{class:"q",for:"live-focus"},"Your one focus for this session"), fsel, custom),
-    pgDet,
-    (function(){ var t=topClipReason(); if(!t) return null; var m=t.r.mod; return h("p",{class:"faint",style:"margin:-6px 0 12px",text:"Your clips keep showing “"+t.r.label+"” ("+t.n+"× this month)."+(m==null?"":drillList().some(function(x){ return String(x.c.mod)===String(m); })?" Drills from Module "+m+" · "+MODS[m]+" are moved up your list.":" You haven't started Module "+m+" · "+MODS[m]+" yet. Its cards cover this.")}); })(),
-    h("div",{class:"field"}, h("div",{class:"q"},"Switch drills every",h("span",{class:"note",text:"Your drills, most-missed cards first. A fresh one every few games keeps practice going even on days you can't train."})), rotG),
-    h("details",{class:"more",style:"margin:-6px 0 12px"}, h("summary",{text:"See your drill list"}), drillListEl(10, function(c){ S.profile.drill={id:c.id,title:c.title,text:c.drill,date:today()}; saveProfile(); safeRender(); toast("Starting with "+c.title+"."); })),
-    (S.profile.banBackups&&S.profile.banBackups.length)?h("p",{class:"faint",style:"margin:-6px 0 12px",text:"If your legend gets banned: "+S.profile.banBackups.join(", then ")+"."}):null,
-    h("div",{class:"field"}, h("label",{class:"q",for:"live-start-rank"},"Your rank and RP right now",h("span",{class:"note",text:(lr?"Filled in from where your last session ended. Fix it if it changed. ":"")+"Copy it from the rank screen, e.g. Silver I, 394 / 750. Each division starts its own count."})), rb.el),
-    h("button",{type:"button",class:"primary",onclick:function(){ startLive(fsel.value, custom.value, rb.get()); }},"Start session")));
+  function keepScroll(){ var y=window.scrollY; safeRender(); window.scrollTo(0,y); }
+  var clipLine=(function(){ var t=topClipReason(); if(!t) return null; var m=t.r.mod; return h("p",{class:"faint",style:"margin:0 0 12px",text:"Your clips keep showing “"+t.r.label+"” ("+t.n+"× this month)."+(m==null?"":dl.some(function(x){ return String(x.c.mod)===String(m); })?" Drills from Module "+m+" · "+MODS[m]+" are moved up your list.":" You haven't started Module "+m+" · "+MODS[m]+" yet. Its cards cover this.")}); })();
+  var banLine=(S.profile.banBackups&&S.profile.banBackups.length)?h("p",{class:"faint",style:"margin:0 0 12px",text:"If your legend gets banned: "+S.profile.banBackups.join(", then ")+"."}):null;
+  var go=h("button",{type:"button",class:"primary",onclick:function(){ startLive(mode==="rotate"?"rotate":fsel.value, custom.value, rb.get()); }},"Start session");
+  var known=!!(lr || S.sessions.length), compact=known && !S.dform.opts && (mode==="rotate"?!!first:fsel.value!=="custom"||!!custom.value.trim());
+  var panel=h("section",{class:"panel"}, h("h2",{text:"Playing ranked?"}));
+  if(compact){
+    var cur=rb.get();
+    panel.appendChild(h("div",{class:"qs"},
+      h("span",{class:"k",text:"Focus"}), h("span",{class:"v",text:mode==="rotate"?"Rotate drills every "+rotN+" games":(fsel.value==="custom"?custom.value:focusName(fsel.value))}),
+      h("span",{class:"k",text:"Rank"}), h("span",{class:"v",text:cur.rank?cur.rank+(cur.rp!=null?" · "+fmtRp(cur.rp)+(cur.size?" / "+fmtRp(cur.size):"")+" RP":""):"Not set"})));
+    panel.appendChild(pgDet); if(clipLine) panel.appendChild(clipLine); if(banLine) panel.appendChild(banLine);
+    panel.appendChild(go);
+    panel.appendChild(h("button",{type:"button",class:"linkbtn",style:"margin-top:10px",onclick:function(){ S.dform.opts=true; keepScroll(); }},"Change focus, rank or options"));
+    v.appendChild(panel); return;
+  }
+  panel.appendChild(h("p",{class:"sub",text:"Pick how you'll practice, then log each game in two taps. Built for long sessions: 5 games or 25."}));
+  var modeG=h("div",{class:"seg small"});
+  [["one","One focus all session"],["rotate","Rotate drills"]].forEach(function(o){ modeG.appendChild(h("button",{type:"button","data-k":o[0],"aria-pressed":String(mode===o[0]),onclick:function(){ S.profile.sessMode=o[0]; saveProfile(); keepScroll(); }},o[1])); });
+  panel.appendChild(h("div",{class:"field"}, h("div",{class:"q"},"How do you want to practice?",h("span",{class:"note",text:mode==="rotate"?"A new drill from your most-missed cards every few games. Good when you couldn't practice beforehand. Still one thing at a time.":"The same focus every game. Best for turning one fix into a habit."})), modeG));
+  if(mode==="one") panel.appendChild(h("div",{class:"field"}, h("label",{class:"q",for:"live-focus"},"Your one focus"), fsel, custom));
+  else {
+    var rotG=h("div",{class:"seg small"});
+    [[2,"2 games"],[3,"3 games"],[5,"5 games"]].forEach(function(o){ rotG.appendChild(h("button",{type:"button","data-k":String(o[0]),"aria-pressed":String(rotN===o[0]),onclick:function(){ S.profile.rotate=o[0]; saveProfile(); setPressed(rotG,String(o[0])); }},o[1])); });
+    panel.appendChild(h("div",{class:"field"}, h("div",{class:"q"},"New drill every"), rotG));
+    if(!first) panel.appendChild(h("p",{class:"empty",text:"Your drill list fills up as you study cards in the Manual. Use one focus for now."}));
+    else panel.appendChild(h("details",{class:"more",style:"margin:-6px 0 12px"}, h("summary",{text:"Starts with "+first.title+". See the list"}), drillListEl(10, function(c){ S.profile.drill={id:c.id,title:c.title,text:c.drill,date:today()}; saveProfile(); keepScroll(); toast("Starting with "+c.title+"."); })));
+  }
+  panel.appendChild(pgDet); if(clipLine) panel.appendChild(clipLine); if(banLine) panel.appendChild(banLine);
+  panel.appendChild(h("div",{class:"field"}, h("label",{class:"q",for:"live-start-rank"},"Your rank and RP right now",h("span",{class:"note",text:(lr?"Filled in from where your last session ended. Fix it if it changed. ":"")+"Copy it from the rank screen, e.g. Silver I, 394 / 750. Each division starts its own count."})), rb.el));
+  panel.appendChild(go);
+  if(known) panel.appendChild(h("button",{type:"button",class:"linkbtn",style:"margin-top:10px",onclick:function(){ S.dform.opts=false; keepScroll(); }},"Done, show the short version"));
+  v.appendChild(panel);
 }
 
 function renderDebrief(v){
@@ -1573,20 +1609,21 @@ function proofData(){
   out.habits={installed:inst};
   var ss=sortedSessions();
   if(ss.length){ var hf=Math.floor(ss.length/2), a=ss.slice(0,hf), b=ss.slice(hf);
-    out.sessions={count:ss.length, rp:ss.reduce(function(x,s){ return x+(s.rp||0); },0),
+    out.sessions={count:ss.length, few:ss.length<6, rp:ss.reduce(function(x,s){ return x+(s.rp||0); },0),
       early:a.length?pct(a.filter(function(s){ return s.exec==="nailed"; }).length,a.length):null, recent:pct(b.filter(function(s){ return s.exec==="nailed"; }).length,b.length), split:ss.length>=4}; }
   return out;
 }
 function proofBlocks(D){
   var B=[];
-  D.clipUps.slice(0,2).forEach(function(u){ B.push({big:pct(u.e.y,u.e.t)+"% → "+pct(u.r.y,u.r.t)+"%", lab:u.ch.t+" (my clips, before → now)"}); });
+  // only headline a then-vs-now when both halves have at least 5 answers
+  D.clipUps.filter(function(u){ return u.e.t>=5 && u.r.t>=5; }).slice(0,2).forEach(function(u){ B.push({big:pct(u.e.y,u.e.t)+"% → "+pct(u.r.y,u.r.t)+"%", lab:u.ch.t.replace(/\s*\([^)]*\)\s*$/,"")+" · my clips, then vs now ("+u.e.t+" and "+u.r.t+" clips)"}); });
   if(D.recall.cur.full) B.push({big:"★ "+D.recall.cur.full, lab:"Full answers from memory this week, every detail"});
-  if(D.recall.cur.t) B.push({big:pct(D.recall.cur.h,D.recall.cur.t)+"%", lab:"Key points hit from memory, last 7 days"+(D.recall.prev.t?" (was "+pct(D.recall.prev.h,D.recall.prev.t)+"%)":"")});
+  if(D.recall.cur.n>=5) B.push({big:pct(D.recall.cur.h,D.recall.cur.t)+"%", lab:"Key points hit from memory, last 7 days"+(D.recall.prev.t?" (was "+pct(D.recall.prev.h,D.recall.prev.t)+"%)":"")});
   B.push({big:D.cards.now.own+" / "+D.cards.total, lab:"Concepts owned"+(D.cards.first?" (was "+D.cards.first.own+" on "+fmtDate(D.cards.firstDay)+")":"")+" · "+D.cards.now.started+" started"});
   if(D.habits.installed.length) B.push({big:String(D.habits.installed.length), lab:"Habit"+(D.habits.installed.length===1?"":"s")+" installed in ranked"});
   var rc=rpClimb();
   if(rc && rc.net>0) B.push({big:"+"+fmtRp(rc.net)+" RP", lab:rc.from&&rc.to&&rc.from!==rc.to?"Climbed from "+rc.from+" to "+rc.to:"Net RP across "+rc.n+" logged session"+(rc.n===1?"":"s")});
-  if(D.sessions && D.sessions.split) B.push({big:D.sessions.recent+"%", lab:"Sessions where I ran my focus (was "+D.sessions.early+"%)"});
+  if(D.sessions && D.sessions.split && !D.sessions.few) B.push({big:D.sessions.recent+"%", lab:"Sessions where I ran my focus (was "+D.sessions.early+"%)"});
   if(B.length<4 && S.clips.length) B.push({big:String(S.clips.length), lab:"Clips reviewed like a coach"});
   if(B.length<4 && D.recall.all.n) B.push({big:String(D.recall.all.h), lab:"Key points recalled, all time"});
   return B.slice(0,4);
@@ -1605,7 +1642,8 @@ function renderProof(v){
   else {
     cp.appendChild(h("p",{class:"sub",text:"Your first "+D.clipSplit.early+" reviews vs. your latest "+D.clipSplit.recent+"."}));
     if(!D.clipUps.length) cp.appendChild(h("p",{class:"empty",text:"No check has improved yet. That's normal early on. Keep your one focus and it will."}));
-    D.clipUps.slice(0,6).forEach(function(u){ cp.appendChild(h("div",{class:"trend"}, h("span",{text:u.ch.t}), h("span",{class:"r up",text:u.e.y+"/"+u.e.t+" → "+u.r.y+"/"+u.r.t}))); });
+    D.clipUps.slice(0,6).forEach(function(u){ cp.appendChild(h("div",{class:"trend"}, h("span",{text:u.ch.t}), h("span",{class:"r up",text:u.e.y+" of "+u.e.t+" → "+u.r.y+" of "+u.r.t}))); });
+    if(D.clipUps.some(function(u){ return u.e.t<5 || u.r.t<5; })) cp.appendChild(h("p",{class:"faint",style:"margin-top:8px",text:"Small samples so far. A check goes on your share card once each side has 5 clips."}));
     if(D.clipWork.length){ cp.appendChild(h("div",{class:"modhead",text:"Still working on"}));
       D.clipWork.slice(0,4).forEach(function(u){ cp.appendChild(h("div",{class:"trend"}, h("span",{text:u.ch.t}), h("span",{class:"r down",text:u.r.y+"/"+u.r.t+" lately"}))); }); }
   }
