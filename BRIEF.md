@@ -51,7 +51,7 @@ This is the heart of the project, and where opinions are most welcome.
 | **Avoid cramming and overload** | New cards per day capped (default 3). Reviews per session capped (default 15). Backlog doesn't flood new cards. | `planToday`, `sessionCap` |
 | **Know what you'll be tested on (signaling)** | While reading a new card, a "You'll be tested on" box lists the graded points. Hidden during the test. | `testedBox` |
 | **One focus at a time** | A ranked session has exactly one focus. Before each game: say it out loud. Per game: did you run it? (yes / sort of / forgot) | `startLive`, `renderLive` |
-| **Practice in context / interleaving** | Each card has a drill. During a ranked session the app rotates drills (most-missed cards first) every 2, 3 or 5 games. | `drillList`, `liveDrill` |
+| **Practice in context / interleaving** | Each card has a drill. A ranked session is either *one focus all session* or *rotate drills*: the drill becomes the focus and changes every 2, 3 or 5 games (most-missed cards first). Either way, only one thing is on screen at a time. | `drillList`, `liveDrill` |
 | **Illusion of competence / honesty** | Proof uses only logged data. Appeals exist when the grader is wrong, but they are logged, not silently accepted. | `renderProof`, appeals |
 | **Emotional state matters** | Tilt check: three games in a row without the focus → "take 5 minutes." Mindset module covers choking and resets. | `renderLive` |
 | **Feedback loop from mistakes** | Each logged death has a cause; causes map to modules, and the Debrief recommends "Study next: Module X". | `debriefCauses`, `moduleWhy` |
