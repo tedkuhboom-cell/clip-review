@@ -108,7 +108,7 @@ Keyword matching, not AI:
 
 ### The scheduler (FSRS-4.5)
 
-Default FSRS-4.5 weights. Missed / Shaky / Got it / ★ Full answer map to grades 1 / 2 / 3 / 4. Shaky intervals are capped at 7 days (uncapped FSRS gave Shaky answers 40+ day gaps). Cards from the earlier fixed-interval system were migrated by estimating stability from their old box. In a simulation over Ted's real 45 cards, FSRS cut reviews by ~55–65% over 180 days versus the old ladder.
+Default FSRS-4.5 weights. Missed / Shaky / Got it / ★ Full answer map to grades 1 / 2 / 3 / 4. Shaky answers come back within 3 days and do not raise the card's memory strength (uncapped FSRS gave Shaky answers 40+ day gaps; a 7-day cap still sent most mature cards a full week out). Cards from the earlier fixed-interval system were migrated by estimating stability from their old box. In a simulation over Ted's real 45 cards, FSRS cut reviews by ~55–65% over 180 days versus the old ladder.
 
 ## 6. Key decisions and why
 
