@@ -189,7 +189,6 @@ details.more p{font-size:14px;margin:6px 0}
 .gdot{width:18px;height:18px;border-radius:5px;font-size:10px;display:grid;place-items:center;color:var(--amber-ink);font-weight:700}
 .gdot.nailed{background:var(--teal)} .gdot.some{background:var(--amber)} .gdot.forgot{background:var(--red)}
 .tilt{background:var(--red-bg);border:1px solid var(--red);border-radius:10px;padding:10px 12px;font-size:13.5px;margin:10px 0}
-.seg.exec button[data-k="nailed"][aria-pressed="true"]{background:var(--teal-bg);border-color:var(--teal);color:var(--teal-ink)}
 
 /* appeals + streak */
 .appealbox{background:var(--panel-2);border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:12px}
@@ -456,7 +455,6 @@ window.addEventListener("unhandledrejection",function(e){ var r=e&&e.reason; sho
 // ===================== content =====================
 var MODS = P.modules;
 var CARDS = P.cards, byId = {}; CARDS.forEach(function(c){ byId[c.id]=c; });
-var INTERVAL = {1:1,2:3,3:7,4:14,5:30};
 var FOCI = {}, FOCUS_ORDER = [];
 P.habits.forEach(function(hb){ FOCI[hb.id]={name:hb.name, what:hb.what, mod:hb.mod, note:"Cards "+hb.cards.join(", "), cards:hb.cards}; FOCUS_ORDER.push(hb.id); });
 Object.keys(P.extraFoci||{}).forEach(function(k){ var x=P.extraFoci[k]; FOCI[k]={name:x.name, what:x.what, mod:null, note:x.what, cards:[]}; FOCUS_ORDER.push(k); });
@@ -1688,6 +1686,7 @@ function renderProof(v){
     if(pgs) hp.appendChild(h("div",{class:"trend"}, h("span",{text:"Sessions started with a pre-game review"}), h("span",{class:"r",text:pgs+" of "+S.sessions.length})));
     var dg=0, dtr=0; S.sessions.forEach(function(x){ (x.games||[]).forEach(function(g){ if(g.drill){ dg++; if(g.drillTried) dtr++; } }); });
     if(dg) hp.appendChild(h("div",{class:"trend"}, h("span",{text:"Games where I tried a drill"}), h("span",{class:"r",text:dtr+" of "+dg+" ("+pct(dtr,dg)+"%)"})));
+    // Sessions logged around 2026-11-08 stored "did you try your drill" as text ("yes"/"some"); newer ones count games instead.
     var dr=S.sessions.filter(function(x){ return x.drill && typeof x.drill.tried==="string"; });
     if(dr.length) hp.appendChild(h("div",{class:"trend"}, h("span",{text:"Sessions where I tried my drill"}), h("span",{class:"r",text:dr.filter(function(x){ return x.drill.tried==="yes"; }).length+" of "+dr.length+(dr.filter(function(x){ return x.drill.tried==="some"; }).length?" (+"+dr.filter(function(x){ return x.drill.tried==="some"; }).length+" partly)":"")})));
     if(gl) hp.appendChild(h("div",{class:"trend"}, h("span",{text:"Games where I ran my focus"}), h("span",{class:"r",text:gr+" of "+gl+" ("+pct(gr,gl)+"%)"})));
@@ -1847,7 +1846,7 @@ function renderSettings(v){
   v.appendChild(h("details",{class:"panel more"}, h("summary",{text:"The method behind this app"}),
     h("p",{text:"Built on the ideas in Learning How to Learn (Oakley and Sejnowski)."}),
     h("p",null,h("b",{text:"Recall beats rereading. "}),"The Manual makes you answer before it shows you."),
-    h("p",null,h("b",{text:"Spacing. "}),"Cards come back after 1, 3, 7, 14 and 30 days, right before you'd forget."),
+    h("p",null,h("b",{text:"Spacing. "}),"Each card comes back right before you'd forget it: after a day or two at first, then weeks and months as it sticks."),
     h("p",null,h("b",{text:"Interleaving. "}),"Reviews mix topics, so you practice picking the right idea."),
     h("p",null,h("b",{text:"Chunking. "}),"One habit at a time in ranked until it runs on its own."),
     h("p",null,h("b",{text:"Honest feedback. "}),"The Debrief and clip reviews show what's really happening, not what it felt like."),

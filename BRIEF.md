@@ -68,7 +68,7 @@ This is the heart of the project, and where opinions are most welcome.
 Deliberately minimal: no build step, no framework, no backend.
 
 ```
-index.html            ~1,600 lines: HTML + CSS + the whole engine (vanilla JS, one IIFE)
+index.html            ~1,900 lines: HTML + CSS + the whole engine (vanilla JS, one IIFE)
 pack-apex.js          content pack: window.PACK = {...} (77 cards, modules, ranks, legends, clip config)
 sw.js                 service worker: network-first with cache fallback, VERSION string bumped each release
 manifest.webmanifest  PWA manifest (installable)
@@ -114,7 +114,7 @@ Default FSRS-4.5 weights. Missed / Shaky / Got it / ★ Full answer map to grade
 
 | Decision | Why | Trade-off |
 |---|---|---|
-| Single HTML file, vanilla JS | Built and deployed from a phone; zero tooling; easy for an agent to read whole | Getting big (1,600 lines); no modules or tests |
+| Single HTML file, vanilla JS | Built and deployed from a phone; zero tooling; easy for an agent to read whole | Getting big (~1,900 lines); no modules or tests |
 | No backend, localStorage only | Privacy, zero cost, offline, no accounts | Data can be lost; no sync; no usage insight |
 | Keyword grader instead of an LLM | Free, instant, offline, predictable, explainable ("you missed point 2") | Can't judge meaning; wording sensitivity; appeals needed |
 | Typed recall only, paste blocked | Retrieval effort is the point; multiple choice is recognition, not recall | Slower on a phone; voice typing is the escape hatch |
@@ -125,7 +125,7 @@ Default FSRS-4.5 weights. Missed / Shaky / Got it / ★ Full answer map to grade
 
 ## 7. Known weak spots (please poke at these)
 
-1. **`index.html` is one 1,600-line file** with global state and string-built UI. When should it be split, and into what?
+1. **`index.html` is one ~1,900-line file** with global state and string-built UI. When should it be split, and into what?
 2. **No automated tests in the repo.** Testing so far is ad-hoc Playwright scripts run by the agent (phone emulation plus a real backup file), not committed and not in CI.
 3. **`pack-apex.js` is one giant JSON line,** so GitHub diffs of content changes are unreadable. Content is edited through throwaway Node scripts.
 4. **The grader is lexical.** It can be fooled by keyword-stuffing and can miss correct answers phrased in unexpected ways. Appeals are logged locally but don't reach the developer yet (a Google Form auto-send is planned).
