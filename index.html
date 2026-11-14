@@ -1747,7 +1747,7 @@ function restoreFrom(file){
   r.onload=function(){
     try{
       var o=JSON.parse(r.result); if(!o || (o.pack && o.pack!==P.id)) throw new Error("pack");
-      var added={clips:0,sessions:0,cards:0}, gotDraft=false;
+      var added={clips:0,sessions:0,cards:0,reasons:0}, gotDraft=false;
       (o.clips||[]).forEach(function(c){ if(c&&c.id&&!S.clips.some(function(x){ return x.id===c.id; })){ S.clips.push(c); added.clips++; } });
       (o.sessions||[]).forEach(function(s){ if(s&&s.id&&!S.sessions.some(function(x){ return x.id===s.id; })){ S.sessions.push(s); added.sessions++; } });
       var aseen={}; S.appeals.forEach(function(x){ aseen[x.ts+"|"+x.id]=1; });
@@ -1760,9 +1760,19 @@ function restoreFrom(file){
       var rv=(o.manual&&o.manual.reviews)||{}; Object.keys(rv).forEach(function(id){ var mine=S.reviews[id], theirs=rv[id]; if(theirs && (!mine || (theirs.last||"")>(mine.last||""))){ S.reviews[id]=theirs; added.cards++; } });
       if(o.draft && o.draft.type && !S.draft.type){ S.draft=normDraft(o.draft); S.step=(typeof o.draft._step==="number"&&o.draft._step>=0)?Math.min(o.draft._step,LAST):-1; lset(K.draft,S.draft); gotDraft=true; }
       if(o.live && !S.live){ S.live=o.live; saveLive(); }
-      if(o.profile && o.profile.setup && !S.profile.setup){ S.profile=Object.assign(S.profile,o.profile); }
+      var op=o.profile;
+      if(op && op.setup && !S.profile.setup){ S.profile=Object.assign(S.profile,op); }
+      else if(op){
+        // Already set up: keep this phone's choices, add what only the backup has.
+        var rk={}; (S.profile.customReasons||[]).forEach(function(r){ rk[r.k]=1; });
+        (op.customReasons||[]).forEach(function(r){ if(r&&r.k&&!rk[r.k]){ (S.profile.customReasons=S.profile.customReasons||[]).push(r); rk[r.k]=1; added.reasons++; } });
+        var wk={}; (S.profile.writeIns||[]).forEach(function(w){ wk[w.ts+"|"+w.t]=1; });
+        (op.writeIns||[]).forEach(function(w){ if(w&&w.t&&!wk[w.ts+"|"+w.t]){ (S.profile.writeIns=S.profile.writeIns||[]).push(w); wk[w.ts+"|"+w.t]=1; } });
+        Object.keys(op.divSize||{}).forEach(function(r){ S.profile.divSize=S.profile.divSize||{}; if(S.profile.divSize[r]==null) S.profile.divSize[r]=op.divSize[r]; });
+        ["retention","sessionCap","bedClip","rankSystem","goalRank","banBackups","rotate","sessMode","drill"].forEach(function(k){ if(S.profile[k]==null && op[k]!=null) S.profile[k]=op[k]; });
+      }
       saveClips(); saveDebrief(); saveManual(); saveProfile(); S.settings=false; safeRender(); window.scrollTo(0,0);
-      var parts=[]; if(added.cards) parts.push(added.cards+" card"+(added.cards===1?"":"s")); if(added.sessions) parts.push(added.sessions+" session"+(added.sessions===1?"":"s")); if(added.clips) parts.push(added.clips+" clip review"+(added.clips===1?"":"s")); if(gotDraft) parts.push("your unfinished review");
+      var parts=[]; if(added.cards) parts.push(added.cards+" card"+(added.cards===1?"":"s")); if(added.sessions) parts.push(added.sessions+" session"+(added.sessions===1?"":"s")); if(added.clips) parts.push(added.clips+" clip review"+(added.clips===1?"":"s")); if(added.reasons) parts.push(added.reasons+" custom reason"+(added.reasons===1?"":"s")); if(gotDraft) parts.push("your unfinished review");
       toast(parts.length?"Restored "+parts.join(", ")+".":"Nothing new in that file.");
     }catch(e){ toast(e&&e.message==="pack"?"That backup is for a different game.":"That file isn't a Clip Review backup."); }
   };
