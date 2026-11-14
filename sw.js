@@ -1,5 +1,5 @@
 // Clip Review offline support. Bump VERSION whenever any file changes.
-const VERSION = "clip-review-v20";
+const VERSION = "clip-review-v21";
 const SHELL = ["./", "index.html", "pack-apex.js", "manifest.webmanifest", "icon-192.png", "icon-512.png", "icon-maskable-512.png"];
 
 self.addEventListener("install", (e) => {
@@ -12,7 +12,11 @@ self.addEventListener("fetch", (e) => {
   const req = e.request;
   if (req.method !== "GET" || new URL(req.url).origin !== self.location.origin) return;
   // Newest version when online, saved copy when offline.
-  e.respondWith(fetch(req).then((res) => {
+  // cache:"no-cache" makes the browser check with the server instead of reusing its own HTTP cache
+  // (GitHub Pages allows 10 minutes), so index.html and pack-apex.js always come from the same release.
+  // A navigation request can't be copied with options, so it's rebuilt from its URL.
+  const fresh = req.mode === "navigate" ? new Request(req.url, { cache: "no-cache" }) : new Request(req, { cache: "no-cache" });
+  e.respondWith(fetch(fresh).then((res) => {
     if (res.ok) { const copy = res.clone(); caches.open(VERSION).then((c) => c.put(req.mode === "navigate" ? "index.html" : req, copy)); }
     return res;
   }).catch(() => caches.match(req.mode === "navigate" ? "index.html" : req)));
