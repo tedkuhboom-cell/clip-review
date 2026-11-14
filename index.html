@@ -987,6 +987,7 @@ function startLive(fid, custom, st){
 function endLive(rp, note, en){
   var L=S.live, g=L.games; if(!g.length) return;
   en=en||{}; var er=en.rp==null?NaN:en.rp, rpKnown=true;
+  if(L.startRp==null && (rp===""||rp==null)) rpKnown=false;
   if(L.startRp!=null && !isNaN(er)){ var ch=rpChange(L.startRank,L.startRp,L.startSize,en.rank||L.startRank,er,en.size); if(ch==null){ rpKnown=false; rp="0"; } else rp=String(ch); }
   if(en.rank){ setDivSize(en.rank, en.size); S.profile.rank=en.rank; saveProfile(); }
   var score=g.reduce(function(a,x){ return a+(x.exec==="nailed"?1:x.exec==="some"?0.5:0); },0)/g.length;
@@ -994,7 +995,7 @@ function endLive(rp, note, en){
   var places=g.map(function(x){ return x.place; }).filter(function(x){ return x!=null; });
   var r=parseInt(rp,10);
   S.sessions.push({id:"s"+Date.now(), date:new Date(L.start).toISOString(), focusId:L.focusId, focus:L.focus, mod:L.mod, exec:score>=0.75?"nailed":score>=0.4?"some":"forgot",
-    causes:causes, place:places.length?Math.min.apply(null,places):null, rp:isNaN(r)?0:r, startRp:L.startRp, endRp:(L.startRp!=null&&!isNaN(er))?er:null, startRank:L.startRank||null, startSize:L.startSize==null?null:L.startSize, endRank:en.rank||L.startRank||null, endSize:en.size==null?null:en.size, rpKnown:rpKnown, note:(note||"").trim(), games:g.map(function(x){ return {exec:x.exec,end:x.end,place:x.place,kills:x.kills==null?null:x.kills,lobby:x.lobby||null,drill:x.drill||null,drillTried:!!x.drillTried, why:x.why||null}; }), mins:Math.round((Date.now()-L.start)/60000),
+    causes:causes, place:places.length?Math.min.apply(null,places):null, rp:isNaN(r)?0:r, startRp:L.startRp, endRp:!isNaN(er)?er:null, startRank:L.startRank||null, startSize:L.startSize==null?null:L.startSize, endRank:en.rank||L.startRank||null, endSize:en.size==null?null:en.size, rpKnown:rpKnown, note:(note||"").trim(), games:g.map(function(x){ return {exec:x.exec,end:x.end,place:x.place,kills:x.kills==null?null:x.kills,lobby:x.lobby||null,drill:x.drill||null,drillTried:!!x.drillTried, why:x.why||null}; }), mins:Math.round((Date.now()-L.start)/60000),
     pregame:!!L.pregame, drill:{ids:g.map(function(x){ return x.drill; }).filter(function(d,i,a){ return d && a.indexOf(d)===i; }), games:g.filter(function(x){ return x.drill; }).length, tried:g.filter(function(x){ return x.drillTried; }).length}});
   saveDebrief(); S.live=null; saveLive(); safeRender(); window.scrollTo(0,0);
   toast("Session saved: "+g.length+" game"+(g.length===1?"":"s")+".");
@@ -1065,7 +1066,7 @@ function renderLive(v){
   var rp=h("input",{class:"inp",id:"live-rp",type:"number",inputmode:"numeric",placeholder:"e.g. -35"});
   var eb=rankBox("live-end",{rank:L.startRank||S.profile.rank||"", size:L.startSize});
   var delta=h("p",{class:"faint",style:"margin:6px 0 0;min-height:18px"});
-  function showDelta(){ var e=eb.get(); if(e.rp==null){ delta.textContent=""; return; }
+  function showDelta(){ var e=eb.get(); if(!hasStart || e.rp==null){ delta.textContent=""; return; }
     var d=rpChange(L.startRank,L.startRp,L.startSize,e.rank,e.rp,e.size), L2=rankList(), up=L2.indexOf(e.rank)-L2.indexOf(L.startRank);
     var moved=L.startRank&&e.rank&&e.rank!==L.startRank ? (up>0?"Promoted to "+e.rank+". ":"Down to "+e.rank+". ") : "";
     if(d==null){ delta.textContent=moved+(up<0?"Add the RP size of "+e.rank+" (the number after the slash) to work out the change.":"You jumped more than one division, and the app doesn't know the RP size of the ones in between, so it can't work out the change. Your new rank still saves."); delta.style.color=""; return; }
@@ -1075,10 +1076,10 @@ function renderLive(v){
   var disc=h("button",{type:"button",class:"ghost",text:"Discard"}), armed=false;
   disc.addEventListener("click",function(){ if(!armed){ armed=true; disc.textContent="Tap again to discard"; disc.classList.add("danger"); setTimeout(function(){ armed=false; disc.textContent="Discard"; disc.classList.remove("danger"); },3000); return; } S.live=null; saveLive(); safeRender(); toast("Session discarded."); });
   panel.appendChild(h("details",{class:"more",style:"margin-top:8px"}, h("summary",{text:"End session"}),
-    hasStart ? h("div",{class:"field",style:"margin-top:8px"},h("label",{class:"q",for:"live-end-rank"},"Your rank and RP now",h("span",{class:"note",text:"You started at "+(L.startRank?L.startRank+", ":"")+fmtRp(L.startRp)+(L.startSize?" / "+fmtRp(L.startSize):"")+". Change the rank if you moved up or down; the app works out the change across divisions."})),eb.el,delta)
-      : h("div",{class:"field",style:"margin-top:8px"},h("label",{class:"q",for:"live-rp"},"RP change for the session"),rp),
+    h("div",{class:"field",style:"margin-top:8px"},h("label",{class:"q",for:"live-end-rank"},"Your rank and RP now",h("span",{class:"note",text:hasStart?"You started at "+(L.startRank?L.startRank+", ":"")+fmtRp(L.startRp)+(L.startSize?" / "+fmtRp(L.startSize):"")+". Change the rank if you moved up or down; the app works out the change across divisions.":"Copy it from the rank screen, e.g. Silver I, 394 / 750. Your next session starts from here."})),eb.el,delta),
+    hasStart ? null : h("div",{class:"field"},h("label",{class:"q",for:"live-rp"},"RP change for the session",h("span",{class:"opt"}," (optional)"),h("span",{class:"note",text:"No starting RP was entered, so the app can't work it out. Add it here if you know it."})),rp),
     h("div",{class:"field"},h("label",{class:"q",for:"live-note"},"Note",h("span",{class:"opt"}," (optional)")),note),
-    h("div",{class:"nav2"}, disc, h("button",{type:"button",class:"primary",disabled:!sum.n,onclick:function(){ if(hasStart){ endLive("", note.value, eb.get()); } else endLive(rp.value, note.value); }},"Save session"))));
+    h("div",{class:"nav2"}, disc, h("button",{type:"button",class:"primary",disabled:!sum.n,onclick:function(){ endLive(hasStart?"":rp.value, note.value, eb.get()); }},"Save session"))));
   v.appendChild(panel);
 }
 var CHECK_F={}; Object.keys(P.clips.groups||{}).forEach(function(g){ (P.clips.groups[g].checks||[]).forEach(function(ch){ CHECK_F[ch.k]=ch.f; }); });
@@ -1144,7 +1145,7 @@ function renderLiveStart(v){
   var clipLine=(function(){ var t=topClipReason(); if(!t) return null; var m=t.r.mod; return h("p",{class:"faint",style:"margin:0 0 12px",text:"Your clips keep showing “"+t.r.label+"” ("+t.n+"× this month)."+(m==null?"":dl.some(function(x){ return String(x.c.mod)===String(m); })?" Drills from Module "+m+" · "+MODS[m]+" are moved up your list.":" You haven't started Module "+m+" · "+MODS[m]+" yet. Its cards cover this.")}); })();
   var banLine=(S.profile.banBackups&&S.profile.banBackups.length)?h("p",{class:"faint",style:"margin:0 0 12px",text:"If your legend gets banned: "+S.profile.banBackups.join(", then ")+"."}):null;
   var go=h("button",{type:"button",class:"primary",onclick:function(){ startLive(mode==="rotate"?"rotate":fsel.value, custom.value, rb.get()); }},"Start session");
-  var known=!!(lr || S.sessions.length), compact=known && !S.dform.opts && (mode==="rotate"?!!first:fsel.value!=="custom"||!!custom.value.trim());
+  var known=!!(lr || S.sessions.length), haveRank=!!(lr && lr.rank && lr.rp!=null), compact=known && haveRank && !S.dform.opts && (mode==="rotate"?!!first:fsel.value!=="custom"||!!custom.value.trim());
   var panel=h("section",{class:"panel"}, h("h2",{text:"Playing ranked?"}));
   if(compact){
     var cur=rb.get();
