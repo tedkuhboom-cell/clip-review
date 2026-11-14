@@ -1055,13 +1055,11 @@ function renderLive(v){
     L.games.push({exec:pend.exec, end:pend.end, why:pend.end==="other"?(pend.why||null):null, place:isNaN(pl)?null:pl, kills:isNaN(kl)?null:kl, lobby:pend.lobby||null, drill:cd?cd.id:null, drillTried:!!cd && pend.exec!=="forgot", ts:Date.now()});
     L.pend={exec:null,end:null,why:null,place:"",kills:"",lobby:null,drillTried:false}; saveLive(); var y=window.scrollY; safeRender(); window.scrollTo(0,y); toast("Game "+L.games.length+" logged.");
   }
+  // Extras come first: the game logs itself as soon as both taps below are picked, so anything after them would be too late.
+  function lab(id,t,el){ return h("div",null, h("label",{class:"faint",for:id,style:"display:block;margin-bottom:4px"},t), el); }
+  box.appendChild(h("div",{class:"field"}, h("div",{class:"q"},"Extras",h("span",{class:"opt"}," (optional)"),h("span",{class:"note",text:"Fill in first: the game logs as soon as you answer the two questions below."})),
+    lobbyG, h("div",{class:"two",style:"margin-top:8px"}, lab("live-place","Place",place), lab("live-kills","Squad kills",kills))));
   box.appendChild(h("div",{class:"field"}, h("div",{class:"q",text:curDrill(L)?"Did you run the drill?":"Did you run your focus?"}), execG));
-  if(false){ var dt=h("button",{type:"button",class:"toggle","aria-pressed":String(!!pend.drillTried),onclick:function(){ pend.drillTried=!pend.drillTried; dt.setAttribute("aria-pressed",String(pend.drillTried)); dt.firstChild.textContent=pend.drillTried?"✓":""; saveLive(); }},
-      h("span",{class:"box",text:pend.drillTried?"✓":""}), h("span",{text:"I tried the drill this game"}));
-    box.appendChild(h("div",{class:"field"}, dt)); }
-  box.appendChild(h("details",{class:"more"}, h("summary",{text:"Extras (optional): lobby, place, kills"}),
-    h("div",{class:"field",style:"margin-top:6px"}, h("div",{class:"q"},"Lobby type",h("span",{class:"note",text:"Shown at load-in from Season 31. Explains big RP swings."})), lobbyG),
-    h("div",{class:"two"}, place, kills)));
   box.appendChild(h("div",{class:"field",style:"margin-top:10px;margin-bottom:0"}, h("div",{class:"q"},"How did it end?",h("span",{class:"note",text:"Pick the first mistake, not the last thing that happened. Logs the game as soon as both are picked."})), endG));
   panel.appendChild(box);
   if(sum.n){
