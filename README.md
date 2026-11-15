@@ -3,7 +3,8 @@
 A learning loop for competitive games, built on the Learning How to Learn method: spaced recall, one focus per session, honest logging, and clip review.
 
 - **Manual**: spaced-repetition cards. Answer out loud, then grade yourself.
-- **Debrief**: log each ranked session against your one focus.
+- **Debrief**: log each ranked session against your theme.
+- **One theme across every tab**: the app picks your biggest leak (e.g. "Stay connected to your team") from your games, clips and cards, and every tab works on it until it sticks.
 - **Clips**: a 7-step guided review of your own clips.
 - **Maps**: how each map is built, and how to rotate on it.
 

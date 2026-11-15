@@ -54,7 +54,8 @@ This is the heart of the project, and where opinions are most welcome.
 | **Practice in context / interleaving** | Each card has a drill. A ranked session is either *one focus all session* or *rotate drills*: the drill becomes the focus and changes every 2, 3 or 5 games (most-missed cards first). Either way, only one thing is on screen at a time. | `drillList`, `liveDrill` |
 | **Illusion of competence / honesty** | Proof uses only logged data. Appeals exist when the grader is wrong, but they are logged, not silently accepted. | `renderProof`, appeals |
 | **Emotional state matters** | Tilt check: three games in a row without the focus → "take 5 minutes." Mindset module covers choking and resets. | `renderLive` |
-| **Feedback loop from mistakes** | Each logged death has a cause; causes map to modules, and the Debrief recommends "Study next: Module X". | `debriefCauses`, `moduleWhy` |
+| **Feedback loop from mistakes** | Each logged death and clip verdict has a cause; causes belong to a theme, and the biggest leak becomes the theme. | `leakScores`, `ensureTheme` |
+| **Chunking: understand, practice, context** | One theme at a time runs through every tab: its cards (understanding) come first in the Manual, it is the focus in ranked (practice), and clip reviews check it first and ask whether it would have saved the play (context: *when* to use it). Each theme has a "when not to" line against Einstellung. Reviews stay interleaved so the theme doesn't become the only tool. | `P.themes`, `themePanel` |
 | **Review your own recordings deliberately** | Clips walks one pass at a time (minimap only, then the fight only, then...), asks *when* the mistake happened (often 5–30s earlier than the death) and whether it was a decision or an execution error. | `renderClips` |
 
 **Design principles we wrote down** (see ROADMAP.md):
@@ -78,6 +79,7 @@ ROADMAP.md            shipped list, up next, notes
 
 - **Hosting:** GitHub Pages straight from `main`. Every push redeploys in about a minute.
 - **Rendering:** a tiny `h(tag, attrs, ...children)` helper builds DOM; each tab has a `renderX(v)` function that redraws its panel from state (`S`). No virtual DOM.
+- **Themes:** `P.themes` is the one source of truth linking cards, death reasons and clip checks to a subject. `ensureTheme()` runs on each render and picks/rotates the current theme (`S.profile.theme`, history in `S.profile.themeLog`). Older sessions and clips are mapped through `P.focusTheme`.
 - **State:** a global `S` object, saved to `localStorage` under keys prefixed by the pack's `storagePrefix` (`apex_profile_v1`, `apex_manual_v1`, `apex_debrief_v1`, `apex_live_v1`, `apex_clip_review_v1`, ...).
 - **Data never leaves the phone.** Backup/restore is a JSON file the user saves manually.
 - **Offline:** works offline after the first load.

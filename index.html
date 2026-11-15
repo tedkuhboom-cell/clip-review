@@ -316,6 +316,13 @@ svg.spark{width:100%;height:60px;display:block}
 .tri button[data-k="y"][aria-pressed="true"]{background:var(--teal-bg);border-color:var(--teal);color:var(--teal-ink)}
 .tri button[data-k="n"][aria-pressed="true"]{background:var(--red-bg);border-color:var(--red);color:var(--red-ink)}
 .tri button[data-k="?"][aria-pressed="true"]{background:var(--line);border-color:var(--faint)}
+.check.mine{border-left:3px solid var(--amber);padding-left:10px;margin-left:-13px}
+.check .mytag{font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:var(--amber);font-weight:600}
+.tcards{list-style:none;margin:12px 0 0;padding:0}
+.tcards li{display:flex;gap:10px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--line);font-size:14px}
+.tcards li:last-child{border-bottom:0}
+.tcards .st{flex:none;width:68px;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--faint)}
+.tcards .st.learn{color:var(--amber)} .tcards .st.solid{color:var(--violet)} .tcards .st.own{color:var(--teal)}
 .habits{display:grid;grid-template-columns:1fr;gap:6px}
 .habits button{display:flex;gap:10px;align-items:baseline;text-align:left;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:9px 12px;min-height:44px}
 .habits button .n{font-family:var(--display);font-weight:700;color:var(--amber);font-size:17px;width:16px;flex:none}
@@ -495,17 +502,30 @@ function reportError(msg, stack){
 // ===================== content =====================
 var MODS = P.modules;
 var CARDS = P.cards, byId = {}; CARDS.forEach(function(c){ byId[c.id]=c; });
-var FOCI = {}, FOCUS_ORDER = [];
-P.habits.forEach(function(hb){ FOCI[hb.id]={name:hb.name, what:hb.what, mod:hb.mod, note:"Cards "+hb.cards.join(", "), cards:hb.cards}; FOCUS_ORDER.push(hb.id); });
-Object.keys(P.extraFoci||{}).forEach(function(k){ var x=P.extraFoci[k]; FOCI[k]={name:x.name, what:x.what, mod:null, note:x.what, cards:[]}; FOCUS_ORDER.push(k); });
+// Old per-habit foci: kept only to name sessions and clips saved before themes.
+var FOCI = {};
+(P.habits||[]).forEach(function(hb){ FOCI[hb.id]={name:hb.name}; });
+Object.keys(P.extraFoci||{}).forEach(function(k){ FOCI[k]={name:P.extraFoci[k].name}; });
 function isHabit(k){ return /^\d+$/.test(String(k)); }
 function focusName(k){ k=k==null?null:String(k); return k&&FOCI[k]?((isHabit(k)?"#"+k+" ":"")+FOCI[k].name):""; }
+// ----- themes: one subject at a time, shared by every tab -----
+// A theme owns its sub-lesson cards, the death reasons and clip checks that count against it, and a "when not to" line.
+var THEMES={}, THEME_ORDER=[], THEME_OF_REASON={}, THEME_OF_CHECK={}, THEMES_OF_CARD={};
+(P.themes||[]).forEach(function(t){ THEMES[t.id]=t; THEME_ORDER.push(t.id);
+  t.reasons.forEach(function(k){ THEME_OF_REASON[k]=t.id; }); t.checks.forEach(function(k){ THEME_OF_CHECK[k]=t.id; });
+  t.cards.forEach(function(id){ (THEMES_OF_CARD[id]=THEMES_OF_CARD[id]||[]).push(t.id); }); });
+function themeName(id){ return id&&THEMES[id]?THEMES[id].name:""; }
+function inTheme(tid, cardId){ return !!(tid && THEMES[tid] && THEMES[tid].cards.indexOf(cardId)>=0); }
+function legacyTheme(fid){ return fid!=null && P.focusTheme ? P.focusTheme[String(fid)]||null : null; }
+function sessionTheme(s){ return s.theme || legacyTheme(s.focusId); }
+function clipTheme(c){ return c.theme || (c.cause && THEME_OF_REASON[c.cause]) || legacyTheme(c.habit); }
+function clipLabelTheme(c){ return themeName(clipTheme(c)) || focusName(c.habit); }
 var CL = P.clips;
 var GROUP_ORDER = ["drop","position","comms","fight","kit"];
 var ALLCHECKS = []; GROUP_ORDER.forEach(function(g){ if(CL.groups[g]) CL.groups[g].checks.forEach(function(c){ c.group=CL.groups[g].title; ALLCHECKS.push(c); }); });
 function causeOf(k){ if(k==="win") return CL.causes[0]; return reasonMap()[k]||null; }
 // ----- why a game or clip ended: one shared list (pack reasons + the user's own) -----
-function reasonList(){ return P.reasons.concat((S.profile.customReasons||[]).map(function(r){ return {k:r.k,label:r.label,group:"yours",mod:r.mod||null,f:null,color:"var(--rose)",custom:true}; })); }
+function reasonList(){ return P.reasons.concat((S.profile.customReasons||[]).map(function(r){ return {k:r.k,label:r.label,group:"yours",mod:r.mod||null,color:"var(--rose)",custom:true}; })); }
 function reasonMap(){ var m={}; reasonList().forEach(function(r){ m[r.k]=r; }); return m; }
 function reasonUse(src){ var n={};
   if(src!=="clips") S.sessions.forEach(function(x){ (x.games&&x.games.length?x.games.map(function(g){ return g.end; }):(x.causes||[])).forEach(function(k){ if(k) n[k]=(n[k]||0)+1; }); });
@@ -589,10 +609,10 @@ var GRADE_NAME={got:"Got it",shaky:"Shaky",miss:"Missed"};
 function depthHits(answer, dp){ var toks=gnorm(answer).split(" ").filter(Boolean); return (dp||[]).map(function(kp){ return kp[1].some(function(a){ return altHit(a,toks); }); }); }
 
 // ===================== state =====================
-function blankDraft(){ return {type:null,map:"",legend:"",label:"",situation:[],starter:null,plan:null,gut:"",when:null,lastGood:"",checks:{},cause:null,why:"",kind:null,habit:null,fix:"",rehearsed:false,question:""}; }
+function blankDraft(){ return {type:null,map:"",legend:"",label:"",situation:[],starter:null,plan:null,gut:"",when:null,lastGood:"",checks:{},cause:null,why:"",kind:null,habit:null,themeHit:null,fix:"",rehearsed:false,question:""}; }
 function normDraft(d){ var b=blankDraft(); d=d||{}; for(var k in b) if(d[k]===undefined) d[k]=b[k]; if(!Array.isArray(d.situation)) d.situation=[]; if(!d.checks||typeof d.checks!=="object") d.checks={}; return d; }
 var S = {
-  profile: Object.assign({setup:false, rank:"", mains:[], newPerDay:3, focus:P.habits[0].id}, lget(K.profile)||{}),
+  profile: Object.assign({setup:false, rank:"", mains:[], newPerDay:3}, lget(K.profile)||{}),
   reviews: ((lget(K.manual)||{}).reviews)||{},
   recall: ((lget(K.manual)||{}).recall)||[],
   appeals: ((lget(K.manual)||{}).appeals)||[],
@@ -604,7 +624,7 @@ var S = {
   draft: normDraft(lget(K.draft)), step:-1,
   live: lget(PFX+"_live_v1"),
   ui: Object.assign({tab:"manual", manualSub:"today", clipSub:"review", map:0, libMod:"all"}, lget(K.ui)||{}),
-  settings:false, mSession:null, open:{}, delArm:null, ans:{}, clipTimer:lget(K.clipTimer), dform:{exec:null,causes:[],focus:null}
+  settings:false, mSession:null, open:{}, delArm:null, ans:{}, clipTimer:lget(K.clipTimer), dform:{exec:null,causes:[]}
 };
 if(typeof S.draft._step==="number" && S.draft._step>=0) S.step=Math.min(S.draft._step,LAST);
 function saveProfile(){ lset(K.profile,S.profile); }
@@ -699,12 +719,82 @@ function previewGap(rev, grade, full){ return daysBetween(today(), schedule(rev,
 function fmtGap(n){ return n<=1?"tomorrow" : n<14?"in "+n+" days" : n<60?"in about "+Math.round(n/7)+" weeks" : "in about "+Math.round(n/30)+" months"; }
 function stage(rev){ if(!rev) return "new"; var x=cardS(rev); if(x>=30) return "own"; if(x>=7) return "solid"; return "learn"; }
 function dueList(t){ return CARDS.filter(function(c){ var r=S.reviews[c.id]; return r && r.due<=t; }).sort(function(a,b){ return S.reviews[a.id].due.localeCompare(S.reviews[b.id].due) || a.mod-b.mod; }); }
-function newQueue(){ var seen={}, q=[]; (P.newOrder||[]).forEach(function(id){ if(byId[id] && !S.reviews[id] && !seen[id]){ seen[id]=1; q.push(byId[id]); } }); CARDS.forEach(function(c){ if(!S.reviews[c.id] && !seen[c.id]) q.push(c); }); return q; }
+function newQueue(){ var seen={}, q=[], t=curTheme(); (t?t.cards:[]).concat(P.newOrder||[]).forEach(function(id){ if(byId[id] && !S.reviews[id] && !seen[id]){ seen[id]=1; q.push(byId[id]); } }); CARDS.forEach(function(c){ if(!S.reviews[c.id] && !seen[c.id]) q.push(c); }); return q; }
 function learnedToday(t){ var n=0; for(var k in S.reviews){ if(S.reviews[k].learned===t && S.reviews[k].n===1) n++; } return n; }
 function newAvailable(t){ return Math.max(0, Math.min((S.profile.newPerDay||3) - learnedToday(t), newQueue().length)); }
 function nextDue(t){ var best=null; for(var k in S.reviews){ var d=S.reviews[k].due; if(d>t && (!best||d<best)) best=d; } return best; }
 function interleave(list){ var b={}; list.forEach(function(c){ (b[c.mod]=b[c.mod]||[]).push(c); }); var keys=Object.keys(b), out=[], more=true; while(more){ more=false; keys.forEach(function(k){ if(b[k].length){ out.push(b[k].shift()); more=true; } }); } return out; }
 function inDays(n){ return n===1?"tomorrow":"in "+n+" days"; }
+
+// ===================== THEME =====================
+// One subject at a time. Picked automatically from the last 30 days (game deaths, clip verdicts, missed clip checks,
+// missed cards). It stays until it sticks: at least 7 days, nailed two sessions in a row, and fewer games lost to it.
+var THEME_MIN_DAYS=7, THEME_EVIDENCE=3;
+function sessDay(s){ return ymd(new Date(s.date)); }
+function sessEnds(s){ return s.games&&s.games.length ? s.games.map(function(g){ return g.end; }) : (s.causes||[]); }
+function sessGameCount(s){ return s.games&&s.games.length ? s.games.length : Math.max(1,(s.causes||[]).length); }
+function leakScores(since){
+  var sc={}; THEME_ORDER.forEach(function(id){ sc[id]={id:id,n:0,deaths:0,clips:0,checks:0,cards:0}; });
+  function add(id,k,w){ if(id && sc[id]){ sc[id].n+=w; sc[id][k]++; } }
+  S.sessions.forEach(function(s){ if(sessDay(s)<since) return; sessEnds(s).forEach(function(k){ add(THEME_OF_REASON[k],"deaths",1); }); });
+  S.clips.forEach(function(c){ if((c.date||"")<since) return; if(c.cause && c.cause!=="win") add(THEME_OF_REASON[c.cause],"clips",2);
+    Object.keys(c.checks||{}).forEach(function(k){ if(c.checks[k]==="n") add(THEME_OF_CHECK[k],"checks",1); }); });
+  S.recall.forEach(function(r){ if(r.d<since) return; var w=r.g==="miss"?0.5:r.g==="shaky"?0.25:0; if(w) (THEMES_OF_CARD[r.id]||[]).forEach(function(id){ add(id,"cards",w); }); });
+  return THEME_ORDER.map(function(id){ return sc[id]; }).sort(function(a,b){ return b.n-a.n; });
+}
+function leakWhy(x){ var b=[]; if(x.deaths) b.push(x.deaths+" game"+(x.deaths===1?"":"s")+" lost to it"); if(x.clips) b.push(x.clips+" clip"+(x.clips===1?"":"s")+" ended by it"); if(x.checks) b.push(x.checks+" missed clip check"+(x.checks===1?"":"s")); if(x.cards) b.push(x.cards+" missed or shaky card answer"+(x.cards===1?"":"s")); return b.join(" · "); }
+function themeRate(id, from, to){ var g=0, d=0; S.sessions.forEach(function(s){ var day=sessDay(s); if(day<from || (to && day>=to)) return; g+=sessGameCount(s); sessEnds(s).forEach(function(k){ if(THEME_OF_REASON[k]===id) d++; }); }); return {games:g, deaths:d, rate:g?d/g:null}; }
+function setTheme(id, why, src, done){
+  var t=today(), old=S.profile.theme;
+  if(old && old.id && THEMES[old.id]){ var a=themeRate(old.id, old.start); S.profile.themeLog=(S.profile.themeLog||[]).concat([{id:old.id, start:old.start, end:t, base:old.base, after:a.rate, games:a.games, done:!!done}]).slice(-40); }
+  var b=themeRate(id, addDays(t,-30), t);
+  S.profile.theme={id:id, start:t, base:b.games>=5?b.rate:null, why:why||"", src:src};
+  saveProfile();
+}
+function themeStatus(){
+  var th=S.profile.theme; if(!th || !THEMES[th.id]) return null;
+  var ss=sortedSessions().filter(function(s){ return sessDay(s)>=th.start && sessionTheme(s)===th.id; }), seq=ss.map(function(s){ return s.exec; });
+  var r=themeRate(th.id, th.start), days=daysBetween(th.start, today()), nailed=installing(seq);
+  var dropped=r.games>=5 && (th.base ? r.rate<th.base : r.rate<=0.15);
+  return {t:THEMES[th.id], th:th, days:days, seq:seq, nailed:nailed, rate:r, dropped:dropped, ready:days>=THEME_MIN_DAYS && nailed && dropped};
+}
+function ensureTheme(){
+  if(!THEME_ORDER.length || S.live) return null;
+  var th=S.profile.theme, L=leakScores(addDays(today(),-30)), top=L[0], hasData=!!(top && top.n>=THEME_EVIDENCE);
+  if(!th || !THEMES[th.id]){
+    if(hasData) setTheme(top.id, leakWhy(top), "data"); else setTheme(legacyTheme(S.profile.focus)||THEME_ORDER[0], "", "default");
+    return null;
+  }
+  if(th.src==="default" && hasData){
+    if(top.id===th.id){ th.src="data"; th.why=leakWhy(top); saveProfile(); return null; }
+    setTheme(top.id, leakWhy(top), "data"); return "Your data points to a new theme: "+THEMES[top.id].name+".";
+  }
+  var st=themeStatus();
+  if(st && st.ready){
+    var nx=L.filter(function(x){ return x.id!==th.id; })[0], nd=!!(nx && nx.n>=THEME_EVIDENCE);
+    var nid=nd ? nx.id : THEME_ORDER[(THEME_ORDER.indexOf(th.id)+1)%THEME_ORDER.length];
+    setTheme(nid, nd?leakWhy(nx):"", nd?"data":"default", true);
+    return "Theme complete: "+st.t.name+". Next up: "+THEMES[nid].name+".";
+  }
+  return null;
+}
+function curTheme(){ var th=S.profile.theme; return th && THEMES[th.id] ? THEMES[th.id] : null; }
+function cardChip(id){ var c=byId[id], st=stage(S.reviews[id]); return h("li",null, h("span",{class:"st "+st,text:st==="new"?"new":st==="learn"?"learning":st}), h("span",null, h("b",{text:id+" "}), c?c.title:"")); }
+function themePanel(where){
+  var st=themeStatus(); if(!st) return null; var t=st.t, th=st.th;
+  var box=h("div",{class:"focus theme"}, h("div",{class:"label",text:"Your theme · day "+(st.days+1)}), h("div",{class:"name",text:t.name}),
+    h("p",{class:"faint",style:"margin:4px 0 0",text:th.src==="data"&&th.why ? "Picked from your last 30 days: "+th.why+"." : "No pattern in your data yet, so this is a starting theme. It changes on its own once your games and clips show a leak."}));
+  var sec=h("section",{class:"panel"}, box);
+  if(where!=="debrief") sec.appendChild(h("ul",{class:"tcards"}, t.cards.map(cardChip)));
+  if(where==="manual") sec.appendChild(h("p",{class:"hint",text:"Its unstarted cards come first in your new cards. Reviews stay mixed across modules."}));
+  var r=st.rate, need=[];
+  need.push((st.days>=THEME_MIN_DAYS?"✓ ":"")+"7 days on it"+(st.days<THEME_MIN_DAYS?" ("+(THEME_MIN_DAYS-st.days)+" to go)":""));
+  need.push((st.nailed?"✓ ":"")+"nailed 2 sessions in a row");
+  need.push((st.dropped?"✓ ":"")+"fewer games lost to it"+(r.games ? " ("+Math.round(100*r.rate)+"% of "+r.games+" games"+(th.base!=null?", was "+Math.round(100*th.base)+"%":"")+")" : ""));
+  sec.appendChild(h("p",{class:"hint",style:"margin-top:10px"}, h("b",{text:"Moves on when: "}), need.join(" · ")));
+  if(where==="debrief" && t.not) sec.appendChild(h("p",{class:"hint"}, h("b",{text:"When not to: "}), t.not));
+  return sec;
+}
 
 function renderManual(v){
   var t=today(), due=dueList(t).length;
@@ -730,13 +820,10 @@ function renderManual(v){
     h("div",{style:"margin-top:14px"}, h("button",{type:"button",class:"primary",disabled:total===0,onclick:startMSession}, total? "Start · "+total+" card"+(total>1?"s":"") : "All caught up")),
     h("p",{class:"hint",text: total ? "About "+mins+" min. New cards are read first and tested at the end. Answers are graded on the key points." : (nd? "Next review "+pretty(nd)+". Go play your focus." : "Go play your focus.")}),
     pl.rest ? h("p",{class:"hint",style:"color:var(--amber-ink2)",text:pl.rest+" more card"+(pl.rest===1?" is":"s are")+" due. They'll wait for your next session; you're still on track. New cards pause until you catch up."}) : null,
-    nq.length ? h("p",{class:"hint"},"Next new card: ",h("b",{text:nq[0].id+" "+nq[0].title}),".") : h("p",{class:"hint",text:"Every card is started."})));
+    nq.length ? h("p",{class:"hint"},"Next new card: ",h("b",{text:nq[0].id+" "+nq[0].title}),inTheme(S.profile.theme&&S.profile.theme.id,nq[0].id)?" (your theme).":".") : h("p",{class:"hint",text:"Every card is started."})));
   if(S.profile.drill) v.appendChild(drillPanel());
   var bt=bedtimePanel(); if(bt) v.appendChild(bt);
-  var f=S.profile.focus;
-  v.appendChild(h("section",{class:"panel"}, h("div",{class:"focus"}, h("div",{class:"label",text:"Your ranked focus"}), h("div",{class:"name",text:focusName(f)||"Pick one in the Debrief"}),
-      f&&FOCI[f]?h("p",{text:FOCI[f].what}):null),
-    h("button",{type:"button",class:"linkbtn",onclick:function(){ goTab("debrief"); }},"Log a session in the Debrief")));
+  var tp=themePanel("manual"); if(tp){ tp.appendChild(h("button",{type:"button",class:"linkbtn",onclick:function(){ goTab("debrief"); }},"Play it in a ranked session")); v.appendChild(tp); }
   v.appendChild(h("details",{class:"panel more"}, h("summary",{text:"How this works"}),
     h("p",null,h("b",{text:"Type it, then check."})," Pulling the answer out of memory is what builds it. Rereading only feels like learning."),
     h("p",null,h("b",{text:"New cards: read now, test later."})," You read new cards first, do your reviews, then get tested on the new ones at the end. Testing right after reading only checks short-term memory; the gap makes it real recall."),
@@ -749,6 +836,7 @@ function renderManual(v){
     h("p",null,h("b",{text:"Streaks."})," Full answers in a row build a streak. Your best streak shows on the Proof screen."),
     h("p",null,h("b",{text:"No pasting."})," The answer box doesn't accept pasted text. Type it, or use your keyboard's mic."),
     h("p",null,h("b",{text:"Mixed on purpose."})," Reviews are shuffled across modules so you practice choosing which idea applies."),
+    h("p",null,h("b",{text:"One theme across the app."})," Your theme (picked from your games, clips and cards) is the subject every tab works on: its new cards come first here, it’s your focus in ranked, and clip reviews check it first. Your scheduled reviews stay mixed, because practicing only one idea is like learning carpentry with only a hammer."),
     h("p",null,h("b",{text:"Then stop."})," A session is a few minutes. A card isn't really yours until you've run its drill in a game.")));
 }
 function sessionCap(){ return S.profile.sessionCap||15; }
@@ -903,17 +991,17 @@ function renderMDone(v){
   if((S.mSession.bestRun||0)>=2) parts.push("longest streak "+S.mSession.bestRun+(S.mSession.bestRun>=(S.bestStreak||0)?" (your best)":""));
   v.appendChild(h("section",{class:"panel"}, h("h2",{text:"Done for today"}), h("p",{text:parts.join(", ")+"."}),
     h("p",{class:"sub",text: again ? again+" more card"+(again>1?"s are":" is")+" due. They can wait for your next session, or keep going now if you have time." : nd ? "Next review: "+pretty(nd)+"." : ""}),
-    h("p",{text:"Now stop and walk away. Take your focus into ranked: "+(focusName(S.profile.focus)||"pick one in the Debrief")+"."}),
+    h("p",{text:"Now stop and walk away. Take your theme into ranked: "+(curTheme()?curTheme().name:"start a session in the Debrief")+"."}),
     h("div",{class:"row"}, h("button",{type:"button",class:"ghost",onclick:function(){ S.mSession=null; safeRender(); }},"Back to today"),
       again? h("button",{type:"button",class:"ghost",onclick:function(){ S.mSession=null; startMSession(); }},"Keep going · "+Math.min(again,sessionCap())+" more") : null)));
   var bt=bedtimePanel(); if(bt) v.appendChild(bt);
   // pick today's drill from this session's cards
   var seenIds=[], picks=[]; S.mSession.items.forEach(function(x){ if(x.kind!=="break" && seenIds.indexOf(x.card.id)<0){ seenIds.push(x.card.id); picks.push(x.card); } });
-  picks=picks.filter(function(c){ return c.drill; }).slice(0,6);
+  var tid=S.profile.theme&&S.profile.theme.id; picks=picks.filter(function(c){ return c.drill; }).sort(function(a,b){ return inTheme(tid,b.id)-inTheme(tid,a.id); }).slice(0,6);
   if(picks.length){
     var cur=S.profile.drill&&S.profile.drill.id, box=h("div",{class:"drillpick"});
     picks.forEach(function(c){ box.appendChild(h("button",{type:"button","data-k":c.id,"aria-pressed":String(cur===c.id),onclick:function(){ S.profile.drill={id:c.id,title:c.title,text:c.drill,date:today()}; saveProfile(); setPressed(box,c.id); toast("Today's drill set. It'll show when you start a ranked session."); }},
-      h("small",{text:c.id+" · "+c.title}), c.drill)); });
+      h("small",{text:c.id+" · "+c.title+(inTheme(tid,c.id)?" · your theme":"")}), c.drill)); });
     v.appendChild(h("section",{class:"panel"}, h("h3",{text:"Pick today's drill"}), h("p",{class:"sub",style:"margin:0",text:"One drill from this session to try in your next ranked games. Using it in a match is what turns a card into a skill."}), box));
   }
 }
@@ -963,7 +1051,6 @@ function focusGroups(){
   return order.map(function(k){ return map[k]; }).sort(function(a,b){ return a.last<b.last?1:-1; });
 }
 function installing(seq){ return seq.length>=2 && seq.slice(-2).every(function(x){ return x==="nailed"; }); }
-function nextHabitId(id){ var i=P.habits.findIndex(function(x){ return x.id===String(id); }); return i>=0 && i<P.habits.length-1 ? P.habits[i+1].id : null; }
 function dotsEl(seq){ return h("div",{class:"dots"}, seq.map(function(e){ return h("span",{class:"edot "+e,title:e}); })); }
 
 // ----- Session mode: two taps per game during a long ranked session -----
@@ -1006,40 +1093,39 @@ function rpClimb(){
 }
 function lastEndRp(){ var ss=sortedSessions(); for(var i=ss.length-1;i>=0;i--){ if(ss[i].endRp!=null) return ss[i].endRp; } return null; }
 function fmtRp(n){ return Number(n).toLocaleString(); }
-function clipMods(){ var m={}, cut=addDays(today(),-30), M=reasonMap(); S.clips.forEach(function(c){ var r=M[c.cause]; if(r && r.mod!=null && c.date>=cut) m[String(r.mod)]=(m[String(r.mod)]||0)+1; }); return m; }
-function topClipReason(){ var n={}, cut=addDays(today(),-30), M=reasonMap(); S.clips.forEach(function(c){ if(c.cause && c.cause!=="win" && c.cause!=="other" && M[c.cause] && c.date>=cut) n[c.cause]=(n[c.cause]||0)+1; });
-  var k=Object.keys(n).sort(function(a,b){ return n[b]-n[a]; })[0]; return k&&n[k]>=2?{r:M[k],n:n[k]}:null; }
+function clipThemes(){ var m={}, cut=addDays(today(),-30); S.clips.forEach(function(c){ var t=c.cause&&c.cause!=="win"?clipTheme(c):null; if(t && (c.date||"")>=cut) m[t]=(m[t]||0)+1; }); return m; }
 function drillScore(id){
-  var sc=0, cutoff=addDays(today(),-60), miss=0, shaky=0, cm=clipMods(), card=byId[id], seen=card?Math.min(3,cm[String(card.mod)]||0):0; sc+=seen;
+  var sc=0, cutoff=addDays(today(),-60), miss=0, shaky=0, cm=clipThemes(), seen=Math.min(3,(THEMES_OF_CARD[id]||[]).reduce(function(a,t){ return a+(cm[t]||0); },0)); sc+=seen;
   S.recall.forEach(function(r){ if(r.id===id && r.d>=cutoff){ if(r.g==="miss"){ sc+=2; miss++; } else if(r.g==="shaky"){ sc+=1; shaky++; } } });
   var rv=S.reviews[id], st=stage(rv), slips=rv&&rv.box?Math.max(0,(rv.n||0)-rv.box):0; if(!miss&&!shaky&&slips){ sc+=slips; } sc += st==="learn"?1.5 : st==="solid"?0.5 : 0; if(rv && rv.d!=null) sc += (rv.d-5)/5;
   return {score:sc, miss:miss, shaky:shaky, slips:(!miss&&!shaky)?slips:0, stage:st, clips:seen};
 }
+// Your theme's cards come first (one subject), most-missed first; today's drill leads its group.
 function drillList(){
-  var list=CARDS.filter(function(c){ return c.drill && S.reviews[c.id] && !c.soon; }).map(function(c){ var d=drillScore(c.id); return {c:c, d:d, s:cardS(S.reviews[c.id])}; });
-  list.sort(function(a,b){ return b.d.score-a.d.score || a.s-b.s; });
-  if(S.profile.drill){ var i=-1; list.forEach(function(x,j){ if(x.c.id===S.profile.drill.id) i=j; }); if(i>0) list.unshift(list.splice(i,1)[0]); }
+  var tid=S.profile.theme&&S.profile.theme.id, td=S.profile.drill&&S.profile.drill.id;
+  var list=CARDS.filter(function(c){ return c.drill && S.reviews[c.id] && !c.soon; }).map(function(c){ var d=drillScore(c.id); return {c:c, d:d, s:cardS(S.reviews[c.id]), th:inTheme(tid,c.id)?1:0, td:c.id===td?1:0}; });
+  list.sort(function(a,b){ return (b.th-a.th) || (b.td-a.td) || b.d.score-a.d.score || a.s-b.s; });
   return list;
 }
-function drillWhy(x){ var bits=[]; if(x.d.miss) bits.push("missed "+x.d.miss+"×"); if(x.d.shaky) bits.push("shaky "+x.d.shaky+"×"); if(x.d.slips) bits.push("slipped "+x.d.slips+"× before"); if(x.d.clips) bits.push("seen in your clips"); bits.push(x.d.stage==="learn"?"still learning":x.d.stage==="solid"?"solid":"owned"); if(S.profile.drill && S.profile.drill.id===x.c.id) bits.unshift("today's drill"); return bits.join(" · "); }
-function drillListEl(limit, onPick){
-  var L=drillList().slice(0,limit||10), ul=h("ol",{class:"dlist"});
+function drillWhy(x){ var bits=[]; if(x.d.miss) bits.push("missed "+x.d.miss+"×"); if(x.d.shaky) bits.push("shaky "+x.d.shaky+"×"); if(x.d.slips) bits.push("slipped "+x.d.slips+"× before"); if(x.d.clips) bits.push("seen in your clips"); if(x.th) bits.unshift("your theme"); bits.push(x.d.stage==="learn"?"still learning":x.d.stage==="solid"?"solid":"owned"); if(S.profile.drill && S.profile.drill.id===x.c.id) bits.unshift("today's drill"); return bits.join(" · "); }
+function drillListEl(limit, onPick, list){
+  var L=(list||drillList()).slice(0,limit||10), ul=h("ol",{class:"dlist"});
   if(!L.length) return h("p",{class:"empty",text:"Your drill list fills up as you study cards in the Manual."});
   L.forEach(function(x,i){ ul.appendChild(h("li",null, h("span",{class:"rk",text:String(i+1)}), h("span",null, h("b",{text:x.c.id+" "+x.c.title}), h("span",{class:"why",text:drillWhy(x)}), h("span",{style:"display:block;color:var(--muted);margin-top:2px",text:x.c.drill})),
     onPick?h("button",{type:"button",onclick:function(){ onPick(x.c); }},"Start here"):null)); });
   return ul;
 }
-function startLive(fid, custom, st){
-  var rotating=fid==="rotate";
-  if(rotating && !drillList().length){ toast("No drills yet. Study a few cards first, or pick one focus."); return; }
-  var name=rotating?"Rotating drills":fid&&fid!=="custom"?FOCI[fid].name:(custom||"").trim(); if(!name){ toast("Type your focus first."); return; }
+function themeDrills(){ var all=drillList(), th=all.filter(function(x){ return x.th; }); return th.length>=2 ? th : all; }
+function startLive(mode, st){
+  var t=curTheme(), rotating=mode==="rotate"; if(!t){ toast("No theme yet."); return; }
+  if(rotating && !drillList().length){ toast("No drills yet. Study a few cards first, or play the theme all session."); return; }
   st=st||{}; var sr=st.rp==null?NaN:st.rp;
   if(st.rank){ setDivSize(st.rank, st.size); S.profile.rank=st.rank; saveProfile(); }
-  var rot=rotating?(S.profile.rotate>0?S.profile.rotate:3):0, dl=rotating?drillList().slice(0,15).map(function(x){ return x.c.id; }):[];
-  S.live={start:Date.now(), mode:rotating?"rotate":"one", focusId:(rotating||fid==="custom")?null:fid, focus:name, mod:!rotating&&fid&&fid!=="custom"&&FOCI[fid].mod!=null?FOCI[fid].mod:"", startRp:isNaN(sr)?null:sr, startRank:st.rank||null, startSize:st.size==null?null:st.size, games:[], pend:{exec:null,end:null,place:""},
-    drills:dl, drillIdx:0, drillStart:0, rotate:rot, pregame:S.dform.pregame===today()}; S.dform.pregame=null; S.dform.opts=false;
-  if(!rotating && fid && fid!=="custom"){ S.profile.focus=fid; saveProfile(); }
-  saveLive(); safeRender(); window.scrollTo(0,0); toast("Session started. Say your focus out loud, then queue.");
+  var rot=rotating?(S.profile.rotate>0?S.profile.rotate:3):0, dl=rotating?themeDrills().slice(0,15).map(function(x){ return x.c.id; }):[];
+  var td=S.profile.drill&&inTheme(t.id,S.profile.drill.id)&&byId[S.profile.drill.id]&&byId[S.profile.drill.id].drill?S.profile.drill.id:null;
+  S.live={start:Date.now(), mode:rotating?"rotate":"one", theme:t.id, focusId:null, focus:t.name, mod:"", startRp:isNaN(sr)?null:sr, startRank:st.rank||null, startSize:st.size==null?null:st.size, games:[], pend:{exec:null,end:null,place:""},
+    drills:dl, drillIdx:0, drillStart:0, rotate:rot, drillId:rotating?null:td, pregame:S.dform.pregame===today()}; S.dform.pregame=null; S.dform.opts=false;
+  saveLive(); safeRender(); window.scrollTo(0,0); toast("Session started. Say your theme out loud, then queue.");
 }
 function endLive(rp, note, en){
   var L=S.live, g=L.games; if(!g.length) return;
@@ -1051,19 +1137,19 @@ function endLive(rp, note, en){
   var causes=[]; g.forEach(function(x){ if(x.end && x.end!=="won" && causes.indexOf(x.end)<0) causes.push(x.end); });
   var places=g.map(function(x){ return x.place; }).filter(function(x){ return x!=null; });
   var r=parseInt(rp,10);
-  S.sessions.push({id:"s"+Date.now(), date:new Date(L.start).toISOString(), focusId:L.focusId, focus:L.focus, mod:L.mod, exec:score>=0.75?"nailed":score>=0.4?"some":"forgot",
+  S.sessions.push({id:"s"+Date.now(), date:new Date(L.start).toISOString(), theme:L.theme||null, mode:L.mode||"one", focusId:L.focusId, focus:L.focus, mod:L.mod, exec:score>=0.75?"nailed":score>=0.4?"some":"forgot",
     causes:causes, place:places.length?Math.min.apply(null,places):null, rp:isNaN(r)?0:r, startRp:L.startRp, endRp:!isNaN(er)?er:null, startRank:L.startRank||null, startSize:L.startSize==null?null:L.startSize, endRank:en.rank||L.startRank||null, endSize:en.size==null?null:en.size, rpKnown:rpKnown, note:(note||"").trim(), games:g.map(function(x){ return {exec:x.exec,end:x.end,place:x.place,kills:x.kills==null?null:x.kills,lobby:x.lobby||null,drill:x.drill||null,drillTried:!!x.drillTried, why:x.why||null}; }), mins:Math.round((Date.now()-L.start)/60000),
     pregame:!!L.pregame, drill:{ids:g.map(function(x){ return x.drill; }).filter(function(d,i,a){ return d && a.indexOf(d)===i; }), games:g.filter(function(x){ return x.drill; }).length, tried:g.filter(function(x){ return x.drillTried; }).length}});
   saveDebrief(); S.live=null; saveLive(); safeRender(); window.scrollTo(0,0);
   toast("Session saved: "+g.length+" game"+(g.length===1?"":"s")+".");
 }
-function curDrill(L){ return L.mode==="rotate" && L.drills&&L.drills.length ? byId[L.drills[L.drillIdx % L.drills.length]] : null; }
+function curDrill(L){ if(L.mode!=="rotate") return L.drillId&&byId[L.drillId] ? byId[L.drillId] : null; return L.drills&&L.drills.length ? byId[L.drills[L.drillIdx % L.drills.length]] : null; }
 function nextDrill(L){ L.drillIdx=(L.drillIdx+1)%L.drills.length; L.drillStart=L.games.length; saveLive(); var y=window.scrollY; safeRender(); window.scrollTo(0,y); toast("New drill: "+curDrill(L).title); }
 function liveDrill(L){
-  var c=curDrill(L); if(!c) return null;
+  var c=L.mode==="rotate"?curDrill(L):null; if(!c) return null;
   var on=L.games.length-(L.drillStart||0), due=L.rotate && on>=L.rotate;
   var box=h("div",{class:"drillnow asfocus"},
-    h("div",{class:"top"}, h("span",{text:"Your focus · drill "+((L.drillIdx%L.drills.length)+1)+" of "+L.drills.length}), h("span",{text:L.rotate?(due?"time to switch":"switch in "+(L.rotate-on)+" game"+(L.rotate-on===1?"":"s")):"no auto-switch"})),
+    h("div",{class:"top"}, h("span",{text:(themeName(L.theme)||"Your focus")+" · drill "+((L.drillIdx%L.drills.length)+1)+" of "+L.drills.length}), h("span",{text:L.rotate?(due?"time to switch":"switch in "+(L.rotate-on)+" game"+(L.rotate-on===1?"":"s")):"no auto-switch"})),
     h("div",{class:"name",text:c.id+" "+c.title}), h("p",{text:c.drill}));
   if(due) box.appendChild(h("div",{class:"rotate"}, h("div",{text:on+" games on this drill. Ready for the next one?"}),
     h("div",{class:"row",style:"margin-top:8px"}, h("button",{type:"button",class:"ghost",onclick:function(){ L.drillStart=L.games.length; saveLive(); safeRender(); }},"Keep it"), h("button",{type:"button",class:"ghost",style:"border-color:var(--teal)",onclick:function(){ nextDrill(L); }},"Next drill"))));
@@ -1074,11 +1160,11 @@ function renderLive(v){
   var L=S.live, sum=liveSummary(L), mins=Math.round((Date.now()-L.start)/60000), C=reasonMap(), pend=L.pend||(L.pend={exec:null,end:null,place:""});
   var panel=h("section",{class:"panel live"},
     h("div",{class:"livehead"}, h("span",{class:"livetag",text:"Session live"}), h("span",{class:"faint",text:(mins<60?mins+" min":Math.floor(mins/60)+"h "+(mins%60)+"m")+" · "+sum.n+" game"+(sum.n===1?"":"s")})),
-    L.mode==="rotate" ? null :     h("div",{class:"focus",style:"margin-top:10px"}, h("div",{class:"label",text:"Your focus"}), h("div",{class:"name",text:L.focus}), h("p",{text:"Say it out loud before every queue."+(L.startRp!=null?" Started at "+(L.startRank?L.startRank+", ":"")+fmtRp(L.startRp)+(L.startSize?" / "+fmtRp(L.startSize):"")+" RP.":"")})),
+    L.mode==="rotate" ? null :     h("div",{class:"focus",style:"margin-top:10px"}, h("div",{class:"label",text:L.theme?"Your theme":"Your focus"}), h("div",{class:"name",text:L.focus}), L.theme&&THEMES[L.theme]?h("p",{text:THEMES[L.theme].line}):null, curDrill(L)?h("p",{class:"faint"},h("b",{text:"Today's drill: "}),curDrill(L).drill):null, h("p",{text:"Say it out loud before every queue."+(L.startRp!=null?" Started at "+(L.startRank?L.startRank+", ":"")+fmtRp(L.startRp)+(L.startSize?" / "+fmtRp(L.startSize):"")+" RP.":"")})),
     liveDrill(L));
   // tilt check: three games in a row without the focus
   var last3=L.games.slice(-3);
-  if(last3.length===3 && last3.every(function(x){ return x.exec==="forgot"; })) panel.appendChild(h("div",{class:"tilt",text:"Three games in a row without your focus. Take 5 minutes and reset before you queue again. Tilt costs more RP than any single death."}));
+  if(last3.length===3 && last3.every(function(x){ return x.exec==="forgot"; })) panel.appendChild(h("div",{class:"tilt",text:"Three games in a row without your "+(L.theme?"theme":"focus")+". Take 5 minutes and reset before you queue again. Tilt costs more RP than any single death."}));
   // game entry
   var box=h("div",{class:"gamebox"}, h("h3",{text:"Game "+(sum.n+1)}));
   var execG=h("div",{class:"seg exec"}), endG=h("div",{class:"seg small"});
@@ -1106,14 +1192,14 @@ function renderLive(v){
   function lab(id,t,el){ return h("div",null, h("label",{class:"faint",for:id,style:"display:block;margin-bottom:4px"},t), el); }
   box.appendChild(h("div",{class:"field"}, h("div",{class:"q"},"Extras",h("span",{class:"opt"}," (optional)"),h("span",{class:"note",text:"Fill in first: the game logs as soon as you answer the two questions below."})),
     lobbyG, h("div",{class:"two",style:"margin-top:8px"}, lab("live-place","Place",place), lab("live-kills","Squad kills",kills))));
-  box.appendChild(h("div",{class:"field"}, h("div",{class:"q",text:curDrill(L)?"Did you run the drill?":"Did you run your focus?"}), execG));
+  box.appendChild(h("div",{class:"field"}, h("div",{class:"q",text:L.mode==="rotate"&&curDrill(L)?"Did you run the drill?":L.theme?"Did you run your theme?":"Did you run your focus?"}), execG));
   box.appendChild(h("div",{class:"field",style:"margin-top:10px;margin-bottom:0"}, h("div",{class:"q"},"How did it end?",h("span",{class:"note",text:"Pick the first mistake, not the last thing that happened. Logs the game as soon as both are picked."})), endG));
   panel.appendChild(box);
   if(sum.n){
     panel.appendChild(h("div",{class:"gdots"}, L.games.map(function(x,i){ return h("span",{class:"gdot "+x.exec,title:"Game "+(i+1),text:x.end==="won"?"★":""}); })));
     var endTxt=Object.keys(sum.ends).sort(function(a,b){ return sum.ends[b]-sum.ends[a]; }).map(function(k){ return (C[k]?C[k].label.toLowerCase():k)+" "+sum.ends[k]; }).join(", ");
     var kg=L.games.filter(function(x){ return x.kills!=null; }), kt=kg.reduce(function(a,x){ return a+x.kills; },0);
-    panel.appendChild(h("p",{class:"faint",style:"margin:4px 0 0",text:"Ran your focus "+sum.ran+" of "+sum.n+(endTxt?" · Ended by: "+endTxt:"")+(kg.length?" · Squad kills "+kt+" in "+kg.length+" game"+(kg.length===1?"":"s"):"")+(L.mode!=="rotate" && L.games.some(function(x){ return x.drillTried; })?" · Drill tried in "+L.games.filter(function(x){ return x.drillTried; }).length+" of "+sum.n:"")}));
+    panel.appendChild(h("p",{class:"faint",style:"margin:4px 0 0",text:"Ran your "+(L.theme?"theme ":"focus ")+sum.ran+" of "+sum.n+(endTxt?" · Ended by: "+endTxt:"")+(kg.length?" · Squad kills "+kt+" in "+kg.length+" game"+(kg.length===1?"":"s"):"")+(L.mode!=="rotate" && L.games.some(function(x){ return x.drillTried; })?" · Drill tried in "+L.games.filter(function(x){ return x.drillTried; }).length+" of "+sum.n:"")}));
     panel.appendChild(h("button",{type:"button",class:"linkbtn",onclick:function(){ L.games.pop(); saveLive(); safeRender(); toast("Last game removed."); }},"Undo last game"));
   }
   // end session
@@ -1137,25 +1223,30 @@ function renderLive(v){
     h("div",{class:"nav2"}, disc, h("button",{type:"button",class:"primary",disabled:!sum.n,onclick:function(){ endLive(hasStart?"":rp.value, note.value, eb.get()); }},"Save session"))));
   v.appendChild(panel);
 }
-var CHECK_F={}; Object.keys(P.clips.groups||{}).forEach(function(g){ (P.clips.groups[g].checks||[]).forEach(function(ch){ CHECK_F[ch.k]=ch.f; }); });
 function typeLabel(t){ var x=(P.clips.types||[]).filter(function(y){ return y[0]===t; })[0]; return x?x[1]:t; }
-function pregameClip(fid, card){
-  fid=fid==null?null:String(fid);
+function themeChecked(c,tid,val){ return Object.keys(c.checks||{}).some(function(k){ return THEME_OF_CHECK[k]===tid && c.checks[k]===val; }); }
+function pregameClip(tid, card){
   var list=S.clips.slice().sort(function(a,b){ return (b.created||0)-(a.created||0); });
   if(!list.length) return null;
-  if(card){ var M=reasonMap(), hit=list.filter(function(c){ var r=M[c.cause]; return r && r.mod!=null && String(r.mod)===String(card.mod); })[0];
+  if(card){ var ts=THEMES_OF_CARD[card.id]||[], hit=list.filter(function(c){ return c.cause!=="win" && ts.indexOf(clipTheme(c))>=0; })[0];
     if(hit) return {c:hit, why:"Your first drill is about this kind of mistake. Watch the 5 to 30 seconds before it went wrong and picture the drill instead."}; }
-  function hitsFocus(c,val){ return Object.keys(c.checks||{}).some(function(k){ return String(CHECK_F[k])===fid && c.checks[k]===val; }); }
-  var good=fid?list.filter(function(c){ return (c.type==="win"||c.type==="knock") && hitsFocus(c,"y"); })[0]:null;
+  var good=tid?list.filter(function(c){ return (c.type==="win"||c.type==="knock") && (c.themeHit==="y" || themeChecked(c,tid,"y")); })[0]:null;
   if(good) return {c:good, why:"You did it right here. Watch what you did so you can repeat it."};
-  var miss=fid?list.filter(function(c){ return String(c.habit)===fid || hitsFocus(c,"n"); })[0]:null;
-  if(miss) return {c:miss, why:"This is the mistake your focus fixes. Watch the 5 to 30 seconds before it went wrong and picture doing it right."};
-  return {c:list[0], why:"No clip matches this focus yet, so here's your latest. Watch it only for your focus."};
+  var miss=tid?list.filter(function(c){ return (c.cause!=="win" && clipTheme(c)===tid) || themeChecked(c,tid,"n"); })[0]:null;
+  if(miss) return {c:miss, why:"This is the mistake your theme fixes. Watch the 5 to 30 seconds before it went wrong and picture doing it right."};
+  return {c:list[0], why:"No clip matches this theme yet, so here's your latest. Watch it only for your theme."};
 }
-function pregamePanel(fid, card){
-  var f=card?{what:card.drill, cards:[card.id]}:FOCI[fid], pick=pregameClip(fid, card), done=S.dform.pregame===today();
-  var box=h("div",{class:"pregame"});
-  var steps=h("ol",null);
+// the theme card to recall before queueing: the drill you'll run, else today's drill, else your weakest studied theme card
+function pregameCard(t, card){
+  if(card) return card;
+  var td=S.profile.drill&&byId[S.profile.drill.id]; if(td && inTheme(t.id,td.id) && S.reviews[td.id]) return td;
+  var st=t.cards.filter(function(id){ return S.reviews[id] && byId[id]; }).sort(function(a,b){ return cardS(S.reviews[a])-cardS(S.reviews[b]); });
+  return st.length?byId[st[0]]:null;
+}
+function pregamePanel(card){
+  var t=curTheme(); if(!t) return h("div");
+  var pick=pregameClip(t.id, card), rc=pregameCard(t, card), done=S.dform.pregame===today();
+  var box=h("div",{class:"pregame"}), steps=h("ol",null);
   if(pick){ var c=pick.c;
     steps.appendChild(h("li",null,"Open this clip in your recordings and watch it once.",
       h("div",{class:"pgclip"}, h("div",{class:"lbl",text:(c.label||"Unnamed clip")+" · "+typeLabel(c.type)}),
@@ -1163,10 +1254,10 @@ function pregamePanel(fid, card){
         c.gut?h("div",{style:"margin-top:4px"},h("b",{text:"What went wrong: "}),c.gut):null,
         c.lastGood?h("div",null,h("b",{text:"Last good decision: "}),c.lastGood):null,
         h("div",{class:"faint",style:"margin-top:4px",text:pick.why}))));
-  } else steps.appendChild(h("li",{text:"Pick any recent fight in your recordings and watch it once, looking only for your focus. (Reviewed clips will show up here.)"}));
-  steps.appendChild(h("li",null,h("b",{text:card?"Read your first drill ("+card.title+"): ":"Read your focus: "}),f?f.what:"Say what you'll do differently this session."));
-  if(f && f.cards && f.cards.length) steps.appendChild(h("li",{text:"Quick refresher: cards "+f.cards.join(", ")+" in the Manual Library."}));
-  steps.appendChild(h("li",{text:"Say it out loud once. Then start the session."}));
+  } else steps.appendChild(h("li",{text:"Pick any recent fight in your recordings and watch it once, looking only for your theme. (Reviewed clips will show up here.)"}));
+  if(rc && rc.kp && rc.kp.length) steps.appendChild(h("li",null, h("b",{text:"From memory: "}), "say the "+rc.kp.length+" key points of "+rc.id+" "+rc.title+". Then check.",
+    h("details",{class:"more",style:"margin:6px 0 0"}, h("summary",{text:"Check"}), h("ul",{style:"margin:6px 0 0;padding-left:18px"}, rc.kp.map(function(k){ return h("li",{text:k[0]}); })))));
+  steps.appendChild(h("li",null, h("b",{text:card?"Your first drill: ":"Say your theme out loud: "}), card?card.drill:t.line));
   box.appendChild(steps);
   box.appendChild(h("button",{type:"button",class:"ghost",style:"margin-top:10px"+(done?";border-color:var(--teal)":""),onclick:function(){ S.dform.pregame=today(); toast("Primed. Now start your session."); safeRender(); }}, done?"✓ Pre-game done":"Done, I'm ready"));
   return box;
@@ -1181,50 +1272,39 @@ function bedtimePanel(){
     h("button",{type:"button",class:"ghost",onclick:function(){ S.ui.clipSub="review"; goTab("clips"); }},"Review a clip"));
 }
 function renderLiveStart(v){
-  var mode=S.profile.sessMode==="rotate"?"rotate":"one";
-  var f=S.dform.liveFocus||S.profile.focus||P.habits[0].id;
-  var fsel=h("select",{class:"inp",id:"live-focus"});
-  FOCUS_ORDER.forEach(function(k){ var o=h("option",{value:k,text:focusName(k)}); if(f===k) o.selected=true; fsel.appendChild(o); });
-  var oc=h("option",{value:"custom",text:"Something else…"}); if(f==="custom") oc.selected=true; fsel.appendChild(oc);
-  var custom=h("input",{class:"inp",id:"live-custom",placeholder:"Your focus, in a few words",style:"margin-top:8px",hidden:f!=="custom"});
-  custom.value=S.dform.liveCustom||"";
-  custom.addEventListener("input",function(){ S.dform.liveCustom=custom.value; });
-  var dl=drillList(), first=dl.length?dl[0].c:null, rotN=S.profile.rotate>0?S.profile.rotate:3;
-  var pgWrap=h("div");
-  var pgDet=h("details",{class:"more",style:"margin:0 0 12px"}, h("summary",{text:S.dform.pregame===today()?"Pre-game 5 ✓":"Pre-game 5: one clip, your focus, out loud"}), pgWrap);
-  function pgFill(){ pgWrap.innerHTML=""; pgWrap.appendChild(mode==="rotate"?pregamePanel(null, first):pregamePanel(fsel.value==="custom"?null:fsel.value)); }
-  fsel.addEventListener("change",function(){ S.dform.liveFocus=fsel.value; custom.hidden=fsel.value!=="custom"; pgFill(); });
+  var t=curTheme(), mode=S.profile.sessMode==="rotate"?"rotate":"one";
+  var dl=themeDrills(), first=dl.length?dl[0].c:null, rotN=S.profile.rotate>0?S.profile.rotate:3;
+  var pgDet=h("details",{class:"more",style:"margin:0 0 12px"}, h("summary",{text:S.dform.pregame===today()?"Pre-game 5 ✓":"Pre-game 5: one clip, recall your theme, say it out loud"}), pregamePanel(mode==="rotate"?first:null));
   var lr=lastRank(), rb=rankBox("live-start", lr||{rank:S.profile.rank||""});
-  pgFill();
   function keepScroll(){ var y=window.scrollY; safeRender(); window.scrollTo(0,y); }
-  var clipLine=(function(){ var t=topClipReason(); if(!t) return null; var m=t.r.mod; return h("p",{class:"faint",style:"margin:0 0 12px",text:"Your clips keep showing “"+t.r.label+"” ("+t.n+"× this month)."+(m==null?"":dl.some(function(x){ return String(x.c.mod)===String(m); })?" Drills from Module "+m+" · "+MODS[m]+" are moved up your list.":" You haven't started Module "+m+" · "+MODS[m]+" yet. Its cards cover this.")}); })();
   var banLine=(S.profile.banBackups&&S.profile.banBackups.length)?h("p",{class:"faint",style:"margin:0 0 12px",text:"If your legend gets banned: "+S.profile.banBackups.join(", then ")+"."}):null;
-  var go=h("button",{type:"button",class:"primary",onclick:function(){ startLive(mode==="rotate"?"rotate":fsel.value, custom.value, rb.get()); }},"Start session");
-  var known=!!(lr || S.sessions.length), haveRank=!!(lr && lr.rank && lr.rp!=null), compact=known && haveRank && !S.dform.opts && (mode==="rotate"?!!first:fsel.value!=="custom"||!!custom.value.trim());
+  var go=h("button",{type:"button",class:"primary",onclick:function(){ startLive(mode, rb.get()); }},"Start session");
+  var known=!!(lr || S.sessions.length), haveRank=!!(lr && lr.rank && lr.rp!=null), compact=known && haveRank && !S.dform.opts && (mode==="rotate"?!!first:true);
   var panel=h("section",{class:"panel"}, h("h2",{text:"Playing ranked?"}));
   if(compact){
     var cur=rb.get();
     panel.appendChild(h("div",{class:"qs"},
-      h("span",{class:"k",text:"Focus"}), h("span",{class:"v",text:mode==="rotate"?"Rotate drills every "+rotN+" games":(fsel.value==="custom"?custom.value:focusName(fsel.value))}),
+      h("span",{class:"k",text:"Theme"}), h("span",{class:"v",text:t?t.name:"—"}),
+      h("span",{class:"k",text:"Practice"}), h("span",{class:"v",text:mode==="rotate"?"Its drills, a new one every "+rotN+" games":"The theme all session"}),
       h("span",{class:"k",text:"Rank"}), h("span",{class:"v",text:cur.rank?cur.rank+(cur.rp!=null?" · "+fmtRp(cur.rp)+(cur.size?" / "+fmtRp(cur.size):"")+" RP":""):"Not set"})));
-    panel.appendChild(pgDet); if(clipLine) panel.appendChild(clipLine); if(banLine) panel.appendChild(banLine);
+    panel.appendChild(pgDet); if(banLine) panel.appendChild(banLine);
     panel.appendChild(go);
-    panel.appendChild(h("button",{type:"button",class:"linkbtn",style:"margin-top:10px",onclick:function(){ S.dform.opts=true; keepScroll(); }},"Change focus, rank or options"));
+    panel.appendChild(h("button",{type:"button",class:"linkbtn",style:"margin-top:10px",onclick:function(){ S.dform.opts=true; keepScroll(); }},"Change practice style or rank"));
     v.appendChild(panel); return;
   }
-  panel.appendChild(h("p",{class:"sub",text:"Pick how you'll practice, then log each game in two taps. Built for long sessions: 5 games or 25."}));
+  panel.appendChild(h("p",{class:"sub",text:"Your theme is the focus of every game. Pick how to practice it, then log each game in two taps. Built for long sessions: 5 games or 25."}));
   var modeG=h("div",{class:"seg small"});
-  [["one","One focus all session"],["rotate","Rotate drills"]].forEach(function(o){ modeG.appendChild(h("button",{type:"button","data-k":o[0],"aria-pressed":String(mode===o[0]),onclick:function(){ S.profile.sessMode=o[0]; saveProfile(); keepScroll(); }},o[1])); });
-  panel.appendChild(h("div",{class:"field"}, h("div",{class:"q"},"How do you want to practice?",h("span",{class:"note",text:mode==="rotate"?"A new drill from your most-missed cards every few games. Good when you couldn't practice beforehand. Still one thing at a time.":"The same focus every game. Best for turning one fix into a habit."})), modeG));
-  if(mode==="one") panel.appendChild(h("div",{class:"field"}, h("label",{class:"q",for:"live-focus"},"Your one focus"), fsel, custom));
-  else {
+  [["one","The theme all session"],["rotate","Rotate its drills"]].forEach(function(o){ modeG.appendChild(h("button",{type:"button","data-k":o[0],"aria-pressed":String(mode===o[0]),onclick:function(){ S.profile.sessMode=o[0]; saveProfile(); keepScroll(); }},o[1])); });
+  panel.appendChild(h("div",{class:"field"}, h("div",{class:"q"},"How do you want to practice "+(t?t.name:"it")+"?",h("span",{class:"note",text:mode==="rotate"?"A different drill from your theme every few games, most-missed first. Same subject, fresh angle. Still one thing at a time.":"The theme's one-line focus every game. Best for turning it into a habit."})), modeG));
+  if(mode==="rotate"){
     var rotG=h("div",{class:"seg small"});
     [[2,"2 games"],[3,"3 games"],[5,"5 games"]].forEach(function(o){ rotG.appendChild(h("button",{type:"button","data-k":String(o[0]),"aria-pressed":String(rotN===o[0]),onclick:function(){ S.profile.rotate=o[0]; saveProfile(); setPressed(rotG,String(o[0])); }},o[1])); });
     panel.appendChild(h("div",{class:"field"}, h("div",{class:"q"},"New drill every"), rotG));
-    if(!first) panel.appendChild(h("p",{class:"empty",text:"Your drill list fills up as you study cards in the Manual. Use one focus for now."}));
-    else panel.appendChild(h("details",{class:"more",style:"margin:-6px 0 12px"}, h("summary",{text:"Starts with "+first.title+". See the list"}), drillListEl(10, function(c){ S.profile.drill={id:c.id,title:c.title,text:c.drill,date:today()}; saveProfile(); keepScroll(); toast("Starting with "+c.title+"."); })));
+    if(!first) panel.appendChild(h("p",{class:"empty",text:"Your drill list fills up as you study cards in the Manual. Play the theme all session for now."}));
+    else { if(!dl[0].th) panel.appendChild(h("p",{class:"faint",style:"margin:-6px 0 8px",text:"You've studied fewer than two of your theme's cards, so this uses your most-missed drills for now. Your theme's cards come first in the Manual."}));
+      panel.appendChild(h("details",{class:"more",style:"margin:-6px 0 12px"}, h("summary",{text:"Starts with "+first.title+". See the list"}), drillListEl(10, function(c){ S.profile.drill={id:c.id,title:c.title,text:c.drill,date:today()}; saveProfile(); keepScroll(); toast("Starting with "+c.title+"."); }, dl))); }
   }
-  panel.appendChild(pgDet); if(clipLine) panel.appendChild(clipLine); if(banLine) panel.appendChild(banLine);
+  panel.appendChild(pgDet); if(banLine) panel.appendChild(banLine);
   panel.appendChild(h("div",{class:"field"}, h("label",{class:"q",for:"live-start-rank"},"Your rank and RP right now",h("span",{class:"note",text:(lr?"Filled in from where your last session ended. Fix it if it changed. ":"")+"Copy it from the rank screen, e.g. Silver I, 394 / 750. Each division starts its own count."})), rb.el));
   panel.appendChild(go);
   if(known) panel.appendChild(h("button",{type:"button",class:"linkbtn",style:"margin-top:10px",onclick:function(){ S.dform.opts=false; keepScroll(); }},"Done, show the short version"));
@@ -1240,16 +1320,10 @@ function renderDebrief(v){
     h("div",{class:"stat"},h("div",{class:"k",text:S.profile.rank||"Rank"}),h("div",{class:"v",text:placed.length?"#"+(placed.reduce(function(a,s){ return a+s.place; },0)/placed.length).toFixed(1):"—"}),h("div",{class:"k",text:"avg place"}))));
 
   if(S.live) renderLive(v); else renderLiveStart(v);
+  var tp=themePanel("debrief"); if(tp) v.appendChild(tp);
   var wi=writeInPanel(); if(wi) v.appendChild(wi);
   // log form
-  var F=S.dform; if(!F.focus) F.focus=S.profile.focus||P.habits[0].id;
-  var fsel=h("select",{class:"inp",id:"d-focus"});
-  FOCUS_ORDER.forEach(function(k){ var o=h("option",{value:k,text:focusName(k)}); if(F.focus===k) o.selected=true; fsel.appendChild(o); });
-  var oc=h("option",{value:"custom",text:"Something else…"}); if(F.focus==="custom") oc.selected=true; fsel.appendChild(oc);
-  var custom=h("input",{class:"inp",id:"d-custom",placeholder:"Your focus, in a few words",style:"margin-top:8px",hidden:F.focus!=="custom"});
-  custom.value=F.custom||"";
-  custom.addEventListener("input",function(){ F.custom=custom.value; ready(); });
-  fsel.addEventListener("change",function(){ F.focus=fsel.value; custom.hidden=F.focus!=="custom"; ready(); });
+  var F=S.dform, T=curTheme();
   var execG=h("div",{class:"seg exec"});
   [["nailed","Nailed it"],["some","Some of it"],["forgot","Forgot"]].forEach(function(o){ execG.appendChild(h("button",{type:"button","data-k":o[0],"aria-pressed":String(F.exec===o[0]),onclick:function(){ F.exec=F.exec===o[0]?null:o[0]; setPressed(execG,F.exec); ready(); }},o[1])); });
   var causeG=h("div");
@@ -1265,39 +1339,29 @@ function renderDebrief(v){
   var note=h("input",{class:"inp",id:"d-note",placeholder:"One line you want to remember"});
   var save=h("button",{type:"button",class:"primary",onclick:function(){
     if(save.disabled) return;
-    var fid=F.focus==="custom"?null:F.focus, fname=fid?FOCI[fid].name:(F.custom||"").trim();
     var pl=parseInt(place.value,10), r=parseInt(rp.value,10);
-    S.sessions.push({id:"s"+Date.now(), date:new Date().toISOString(), focusId:fid, focus:fname, mod:fid&&FOCI[fid].mod!=null?FOCI[fid].mod:"", exec:F.exec, causes:F.causes.slice(), place:isNaN(pl)?null:pl, rp:isNaN(r)?0:r, note:note.value.trim()});
-    saveDebrief(); if(fid){ S.profile.focus=fid; saveProfile(); }
-    S.dform={exec:null,causes:[],focus:F.focus,custom:F.custom}; safeRender(); toast("Session logged.");
+    S.sessions.push({id:"s"+Date.now(), date:new Date().toISOString(), theme:T?T.id:null, focusId:null, focus:T?T.name:"", mod:"", exec:F.exec, causes:F.causes.slice(), place:isNaN(pl)?null:pl, rp:isNaN(r)?0:r, note:note.value.trim()});
+    saveDebrief();
+    S.dform={exec:null,causes:[]}; safeRender(); toast("Session logged.");
   }},"Log session");
-  function ready(){ var ok=F.exec && F.causes.length && (F.focus!=="custom" || (F.custom||"").trim()); save.disabled=!ok; }
+  function ready(){ var ok=F.exec && F.causes.length; save.disabled=!ok; }
   ready();
   v.appendChild(h("details",{class:"panel more"}, h("summary",{text:"Already played? Log a whole session at once"}),
     h("p",{class:"sub",style:"margin-top:8px",text:"Under a minute. Use this when you didn't run a live session."}),
-    h("div",{class:"field"}, h("label",{class:"q",for:"d-focus"},"Your one focus"), fsel, custom),
-    h("div",{class:"field"}, h("div",{class:"q",text:"Did you run it?"}), execG),
+    h("div",{class:"field"}, h("div",{class:"q"},"Did you run your theme?",h("span",{class:"note",text:T?T.name+": "+T.line:""})), execG),
     h("div",{class:"field"}, h("div",{class:"q"},"How did your runs end?",h("span",{class:"note",text:"Tap all that happened."})), causeG),
     h("div",{class:"two"}, h("div",{class:"field"},h("label",{class:"q",for:"d-place"},"Best placement",h("span",{class:"opt"}," (optional)")),place), h("div",{class:"field"},h("label",{class:"q",for:"d-rp"},"RP change",h("span",{class:"opt"}," (optional)")),rp)),
     h("div",{class:"field"}, h("label",{class:"q",for:"d-note"},"Note",h("span",{class:"opt"}," (optional)")), note),
     save));
 
-  // current habit
-  var g=focusGroups(), cp=h("section",{class:"panel"});
-  if(!g.length){
-    var f0=S.profile.focus||P.habits[0].id;
-    cp.appendChild(h("div",{class:"focus"},h("div",{class:"label",text:"Start here"}),h("div",{class:"name",text:focusName(f0)}),h("p",{text:FOCI[f0]?FOCI[f0].what:""})));
-    cp.appendChild(h("p",{class:"verdict",text:"Say it out loud before you queue, play, then log it. A habit is installing when you nail it two sessions in a row."}));
-  } else {
-    var cur=g[0], inst=installing(cur.seq), nx=cur.focusId&&isHabit(cur.focusId)?nextHabitId(cur.focusId):null;
-    cp.appendChild(h("div",{class:"focus"},h("div",{class:"label",text:cur.mod!==""&&MODS[cur.mod]?"Module "+cur.mod+" · "+MODS[cur.mod]:"Current focus"}),h("div",{class:"name",text:cur.focus}),dotsEl(cur.seq)));
-    cp.appendChild(h("p",{class:"verdict"}, inst ? [h("b",{text:"Installing."})," Move on"+(nx?" to ":"."), nx?h("b",{text:focusName(nx)}):null, nx?".":null] : [h("b",{text:"Keep it."})," Stay on this focus until you nail it two sessions in a row."]));
-    if(inst && nx && S.profile.focus!==nx) cp.appendChild(h("button",{type:"button",class:"ghost",style:"margin-top:10px",onclick:function(){ S.profile.focus=nx; saveProfile(); S.dform.focus=nx; safeRender(); toast("New focus: "+focusName(nx)); }},"Make it my focus"));
-    if(g.length>1) cp.appendChild(h("div",{style:"margin-top:12px"}, g.slice(1,5).map(function(x){ return h("div",{class:"frow"},h("div",{class:"ft"},h("span",{text:x.focus}),h("span",{class:"faint",text:installing(x.seq)?"installing":""})),dotsEl(x.seq)); })));
-  }
-  v.appendChild(cp);
+  // earlier themes: did the leak actually shrink?
+  var tl=(S.profile.themeLog||[]).filter(function(x){ return THEMES[x.id] && daysBetween(x.start,x.end)>=1; }).slice(-5).reverse();
+  if(tl.length){ var ep=h("section",{class:"panel"}, h("h3",{text:"Earlier themes"}));
+    tl.forEach(function(x){ ep.appendChild(h("div",{class:"frow"}, h("div",{class:"ft"}, h("span",{text:THEMES[x.id].name}), h("span",{class:"faint",text:x.done?"done":"switched"})),
+      h("span",{class:"faint",text:fmtDate(x.start)+" → "+fmtDate(x.end)+(x.base!=null&&x.after!=null?" · lost "+Math.round(100*x.base)+"% → "+Math.round(100*x.after)+"% of games":"")}))); });
+    v.appendChild(ep); }
 
-  // leaks + study next
+  // how runs end
   var lp=h("section",{class:"panel"}, h("h3",{text:"How your runs end"}));
   if(!list.length) lp.appendChild(h("p",{class:"empty",text:"Empty until your first log."}));
   else {
@@ -1305,16 +1369,9 @@ function renderDebrief(v){
     list.forEach(function(s){ (s.games&&s.games.length?s.games.map(function(g){ return g.end; }):(s.causes||[])).forEach(function(k){ if(k && C[k]) cnt[k]=(cnt[k]||0)+1; }); });
     var ck=Object.keys(cnt).sort(function(a,b){ return cnt[b]-cnt[a]; });
     if(!ck.length) lp.appendChild(h("p",{class:"empty",text:"No deaths logged yet."}));
-    bars(lp, ck.slice(0,8).map(function(k){ return {label:C[k].label,n:cnt[k],color:C[k].color}; }));
+    var tid=S.profile.theme&&S.profile.theme.id;
+    bars(lp, ck.slice(0,8).map(function(k){ return {label:C[k].label+(tid&&THEME_OF_REASON[k]===tid?" · your theme":""),n:cnt[k],color:C[k].color}; }));
     if(ck.length>8) lp.appendChild(h("p",{class:"faint",text:"+ "+(ck.length-8)+" more reasons, logged less often."}));
-    var recent=list.slice(-10);
-    if(recent.length>=3){
-      var rc={}; recent.forEach(function(s){ var ks=s.games&&s.games.length?s.games.map(function(g){ return g.end; }):(s.causes||[]); ks.forEach(function(k){ if(k && k!=="other" && k!=="won" && C[k]) rc[k]=(rc[k]||0)+1; }); });
-      var top=Object.keys(rc).sort(function(a,b){ return rc[b]-rc[a]; }).filter(function(k){ return C[k].mod!=null; })[0];
-      if(top){ var m=C[top].mod;
-        lp.appendChild(h("div",{class:"focus",style:"margin-top:14px"}, h("div",{class:"label",text:"Study next"}), h("div",{class:"name",text:"Module "+m+" · "+MODS[m]}), h("p",{text:(P.moduleWhy[m]||"")+" Based on your last "+recent.length+" sessions."}),
-          h("button",{type:"button",class:"linkbtn",onclick:function(){ S.ui.tab="manual"; S.ui.manualSub="library"; S.ui.libMod=m; saveUI(); safeRender(); window.scrollTo(0,0); }},"Open Module "+m+" in the Manual"))); }
-    }
   }
   v.appendChild(lp);
 
@@ -1384,8 +1441,9 @@ function cText(q, key, ph, optional, rows){
 function cField(q, control, note){ return h("div",{class:"field"}, h("div",{class:"q"}, q, note?h("span",{class:"note",text:note}):null), control); }
 function askBox(title, items){ return h("div",{class:"ask"}, h("div",{class:"t",text:title}), h("ul",null, items.map(function(t){ return h("li",{text:t}); }))); }
 function checkGroup(key){
-  var G=CL.groups[key];
-  return h("div",{class:"group"}, h("h3",{text:G.title}), G.checks.map(function(ch){
+  var G=CL.groups[key], tid=S.profile.theme&&S.profile.theme.id;
+  var list=G.checks.slice().sort(function(a,b){ return (THEME_OF_CHECK[b.k]===tid)-(THEME_OF_CHECK[a.k]===tid); });
+  return h("div",{class:"group"}, h("h3",{text:G.title}), list.map(function(ch){ var mine=!!tid && THEME_OF_CHECK[ch.k]===tid;
     var hint=ch.hint||null; if(ch.legendHint && P.kit[S.draft.legend]) hint=S.draft.legend+": "+P.kit[S.draft.legend];
     var tri=h("div",{class:"tri"});
     [["y","Yes"],["n","No"],["?","N/A"]].forEach(function(o){
@@ -1393,13 +1451,12 @@ function checkGroup(key){
         if(S.draft.checks[ch.k]===o[0]) delete S.draft.checks[ch.k]; else S.draft.checks[ch.k]=o[0];
         setPressed(tri, S.draft.checks[ch.k]||null); saveDraft(); }}, o[1]));
     });
-    return h("div",{class:"check"}, h("div",{class:"t",text:ch.t}), hint?h("div",{class:"hint2",text:hint}):null, tri);
+    return h("div",{class:"check"+(mine?" mine":"")}, mine?h("div",{class:"mytag",text:"Your theme"}):null, h("div",{class:"t",text:ch.t}), hint?h("div",{class:"hint2",text:hint}):null, tri);
   }));
 }
-function suggestFocus(d){
-  if(d.habit) return String(d.habit);
-  var c=causeOf(d.cause); if(c&&c.f) return c.f;
-  var score={}; ALLCHECKS.forEach(function(ch){ if(d.checks[ch.k]==="n") score[ch.f]=(score[ch.f]||0)+1; });
+function suggestTheme(d){
+  if(d.cause && d.cause!=="win" && THEME_OF_REASON[d.cause]) return THEME_OF_REASON[d.cause];
+  var score={}; Object.keys(d.checks||{}).forEach(function(k){ if(d.checks[k]==="n" && THEME_OF_CHECK[k]) score[THEME_OF_CHECK[k]]=(score[THEME_OF_CHECK[k]]||0)+1; });
   var best=null; for(var k in score) if(best==null||score[k]>score[best]) best=k; return best;
 }
 function clipLegends(){ var m=(S.profile.mains||[]).slice(); if(S.draft.legend && m.indexOf(S.draft.legend)<0 && S.draft.legend!=="Other") m.push(S.draft.legend); return m.concat(["Other"]); }
@@ -1444,18 +1501,16 @@ function clipStep(n){
   if(n===6){
     box.appendChild(h("p",{class:"how",text:"Name it, pick the fix, then picture yourself doing the fix once at normal speed. Spotting the mistake isn't enough. Rehearsing the better play is what carries into your games."}));
     box.appendChild(cField(win?"What was this clip about?":"What mainly ended this clip?", reasonPicker({cur:d.cause, why:d.why, src:"clips", lead:[["win","Clean play to repeat"]],
-      onPick:function(k){ S.draft.cause=k; S.draft.why=""; S.draft.habit=null; saveDraft(); var y=window.scrollY; safeRender(); window.scrollTo(0,y); },
-      onOther:function(t){ S.draft.cause="other"; S.draft.why=t; S.draft.habit=null; saveDraft(); var y=window.scrollY; safeRender(); window.scrollTo(0,y); }}),
+      onPick:function(k){ S.draft.cause=k; S.draft.why=""; saveDraft(); var y=window.scrollY; safeRender(); window.scrollTo(0,y); },
+      onOther:function(t){ S.draft.cause="other"; S.draft.why=t; saveDraft(); var y=window.scrollY; safeRender(); window.scrollTo(0,y); }}),
       "Same list as your ranked sessions, so what you find here shapes what you practice there."));
     box.appendChild(cField(win?"What made it work?":"Was it the decision or the execution?", cSeg(CL.kinds,"kind",true), "Decision: wrong fight, timing or spot. Execution: right idea, but the shots, peeks or movement let you down."));
-    if(d.cause!=="win"){
-      var sug=suggestFocus(d), hb=h("div",{class:"habits"});
-      FOCUS_ORDER.forEach(function(k){
-        hb.appendChild(h("button",{type:"button","data-k":k,"aria-pressed":String(sug===k),onclick:function(){
-          var cur=suggestFocus(S.draft); S.draft.habit=(cur===k && S.draft.habit===k)?null:k; setPressed(hb, suggestFocus(S.draft)); saveDraft();
-        }}, h("span",{class:"n",text:isHabit(k)?k:"+"}), h("span",{text:FOCI[k].name}), h("span",{class:"c",text:isHabit(k)?FOCI[k].cards.join(", "):""})));
-      });
-      box.appendChild(h("div",{class:"field"}, h("div",{class:"q"},"What fixes it?",h("span",{class:"opt"}, sug&&!d.habit?" (suggested from your answers)":"")), hb));
+    var T=curTheme();
+    if(T){
+      var thG=h("div",{class:"seg small"});
+      [["y","Yes"],["n","No"],["?","Not in this clip"]].forEach(function(o){ thG.appendChild(h("button",{type:"button","data-k":o[0],"aria-pressed":String(d.themeHit===o[0]),onclick:function(){ S.draft.themeHit=S.draft.themeHit===o[0]?null:o[0]; setPressed(thG,S.draft.themeHit); saveDraft(); }},o[1])); });
+      var sg=d.cause!=="win"?suggestTheme(d):null;
+      box.appendChild(h("div",{class:"field"}, h("div",{class:"q"}, win?"Did you run your theme here?":"Would your theme have saved this?", h("span",{class:"note",text:T.name+(sg&&sg!==T.id?". This clip's mistake points to "+THEMES[sg].name+"; it counts toward which theme you work on next.":sg===T.id?". This clip's mistake is your theme.":"")})), thG));
     }
     box.appendChild(cText(win?"What will you repeat next game?":"What would a top-tier player have done here?","fix", win?"e.g. Wait for the knock call before swinging":"e.g. Utility first, one shot, back up, heal, re-peek from cover"));
     var tg=h("button",{type:"button",class:"toggle","aria-pressed":String(!!d.rehearsed),onclick:function(){ S.draft.rehearsed=!S.draft.rehearsed; tg.setAttribute("aria-pressed",String(S.draft.rehearsed)); tg.firstChild.textContent=S.draft.rehearsed?"✓":""; saveDraft(); }},
@@ -1472,7 +1527,7 @@ function saveReview(){
   var d=S.draft, now=Date.now();
   S.clips.push({ id:"c"+now, created:now, date:today(), type:d.type, map:d.map||"", legend:d.legend||"", label:(d.label||"").trim(), situation:d.situation||[], starter:d.starter||null, plan:d.plan||null,
     gut:(d.gut||"").trim(), when:d.when||null, lastGood:(d.lastGood||"").trim(), checks:d.checks||{}, cause:d.cause, why:d.cause==="other"?(d.why||"").trim():"", kind:d.kind||null,
-    habit:d.cause==="win"?null:suggestFocus(d), fix:(d.fix||"").trim(), rehearsed:!!d.rehearsed, question:(d.question||"").trim(), answer:"", qDone:false });
+    habit:null, theme:d.cause==="win"?null:suggestTheme(d), themeHit:d.themeHit||null, fix:(d.fix||"").trim(), rehearsed:!!d.rehearsed, question:(d.question||"").trim(), answer:"", qDone:false });
   if(d.cause==="other" && d.why) logWriteIn(d.why,"clips");
   saveClips(); S.draft=blankDraft(); S.step=-1; lset(K.draft,null); safeRender(); window.scrollTo(0,0);
   toast("Saved. "+S.clips.length+" clip"+(S.clips.length===1?"":"s")+" reviewed.");
@@ -1518,17 +1573,13 @@ function renderPatterns(v){
     h("div",{class:"stat"},h("div",{class:"k",text:"Last 7 days"}),h("div",{class:"v",text:String(week)})),
     h("div",{class:"stat"},h("div",{class:"k",text:"Open questions"}),h("div",{class:"v",text:String(openQCount())}))));
   if(!total){ v.appendChild(h("section",{class:"panel"}, h("h2",{text:"Your patterns show up here"}), h("p",{class:"sub",style:"margin:0",text:"After each review this page counts what ended your clips, whether it was the decision or the execution, which checks you miss most, and how early your options disappear. After 3 clips it names what to work on next."}))); return; }
-  var leaks=clips.filter(function(c){ return c.cause && c.cause!=="win"; }), score={};
-  leaks.forEach(function(c){ var ca=causeOf(c.cause); if(ca&&ca.f) score[ca.f]=(score[ca.f]||0)+2; });
-  clips.forEach(function(c){ ALLCHECKS.forEach(function(ch){ if(c.checks&&c.checks[ch.k]==="n") score[ch.f]=(score[ch.f]||0)+1; }); });
-  var best=null; for(var k in score) if(best==null||score[k]>score[best]) best=k;
-  var fp=h("section",{class:"panel"});
-  if(total<3 || !best){ var left=Math.max(3-total,1); fp.appendChild(h("div",{class:"focus"}, h("div",{class:"label",text:"Your next focus"}), h("div",{class:"name",text:"Review "+left+" more clip"+(left===1?"":"s")}), h("p",{text:"Three clips is the fewest that shows a real pattern rather than one bad fight."}))); }
-  else {
-    fp.appendChild(h("div",{class:"focus"}, h("div",{class:"label",text:"Your next focus"}), h("div",{class:"name",text:focusName(best)}), h("p",{text:FOCI[best].note+". Your clips point here most often."})));
-    if(S.profile.focus!==best) fp.appendChild(h("button",{type:"button",class:"ghost",style:"margin-top:10px",onclick:function(){ S.profile.focus=best; saveProfile(); S.dform.focus=best; safeRender(); toast("Ranked focus set: "+focusName(best)); }},"Make it my ranked focus"));
-    else fp.appendChild(h("p",{class:"faint",style:"margin:8px 0 0",text:"This is already your ranked focus."}));
-  }
+  var leaks=clips.filter(function(c){ return c.cause && c.cause!=="win"; });
+  var fp=h("section",{class:"panel"}), tp=themePanel("clips"); if(tp) v.appendChild(tp);
+  var LS=leakScores(addDays(today(),-30)).filter(function(x){ return x.n>0; }), tid=S.profile.theme&&S.profile.theme.id;
+  fp.appendChild(h("h3",{text:"Where your mistakes point"}));
+  fp.appendChild(h("p",{class:"sub",text:"Last 30 days of games, clips and cards, scored by theme. The top one becomes your theme when the current one sticks."}));
+  if(!LS.length) fp.appendChild(h("p",{class:"empty",text:"Nothing yet. Log games and review clips to fill this."}));
+  else bars(fp, LS.slice(0,6).map(function(x){ return {label:THEMES[x.id].name+(x.id===tid?" · your theme":""), n:Math.round(x.n*10)/10, color:x.id===tid?"var(--amber)":"var(--grey)"}; }));
   v.appendChild(fp);
   var kp=h("section",{class:"panel"}, h("h3",{text:"Decision or execution"}), h("p",{class:"sub",text:"Decisions are fixed by review and cards. Execution is fixed in the firing range."}));
   var kc={}; leaks.forEach(function(c){ if(c.kind) kc[c.kind]=(kc[c.kind]||0)+1; });
@@ -1542,7 +1593,7 @@ function renderPatterns(v){
   var mp=h("section",{class:"panel"}, h("h3",{text:"Checks you miss most"}));
   var rows=ALLCHECKS.map(function(ch){ var y=0,nn=0; clips.forEach(function(c){ var a=c.checks&&c.checks[ch.k]; if(a==="y") y++; if(a==="n") nn++; }); return {ch:ch,y:y,n:nn}; }).filter(function(r){ return r.n>0; }).sort(function(a,b){ return (b.n/(b.n+b.y))-(a.n/(a.n+a.y)) || b.n-a.n; }).slice(0,8);
   if(!rows.length) mp.appendChild(h("p",{class:"empty",text:"No misses marked yet."}));
-  rows.forEach(function(r){ mp.appendChild(h("div",{class:"miss"}, h("span",null, r.ch.t, h("span",{class:"h",text:r.ch.group+" · "+focusName(r.ch.f)})), h("span",{class:"r",text:"missed "+r.n+" of "+(r.n+r.y)}))); });
+  rows.forEach(function(r){ mp.appendChild(h("div",{class:"miss"}, h("span",null, r.ch.t, h("span",{class:"h",text:r.ch.group+" · "+themeName(THEME_OF_CHECK[r.ch.k])})), h("span",{class:"r",text:"missed "+r.n+" of "+(r.n+r.y)}))); });
   v.appendChild(mp);
   var pp=h("section",{class:"panel"}, h("h3",{text:"Your plan going in"}), h("p",{class:"sub",text:"A lot of \"No real plan\" means fights are choosing you."}));
   var pc={}, anyP=false; clips.forEach(function(c){ if(c.plan){ pc[c.plan]=(pc[c.plan]||0)+1; anyP=true; } });
@@ -1573,11 +1624,11 @@ function renderQuestions(v){
 }
 function missedList(c){ return ALLCHECKS.filter(function(ch){ return c.checks&&c.checks[ch.k]==="n"; }).map(function(ch){ return ch.t; }); }
 function toTSV(){
-  var cols=["Date","Clip type","Map","Legend","Clip name","Situation","Who started","Plan","What happened","Options gone / advantage","Safe choice / setup","Main cause","Decision or execution","Fix focus","Fix","Rehearsed","Missed checks","Question","Answer"];
+  var cols=["Date","Clip type","Map","Legend","Clip name","Situation","Who started","Plan","What happened","Options gone / advantage","Safe choice / setup","Main cause","Decision or execution","Theme","Fix","Rehearsed","Missed checks","Question","Answer"];
   function cl(s){ return String(s==null?"":s).replace(/[\t\r\n]+/g," "); }
   var lines=[cols.join("\t")];
   newestClips().forEach(function(c){ var ca=causeOf(c.cause);
-    lines.push([c.date,label(CL.types,c.type),c.map,c.legend,c.label,labels(CL.situations,c.situation),label(CL.starters,c.starter),label(CL.plans,c.plan),c.gut,label(CL.when,c.when),c.lastGood,ca?ca.label:"",label(CL.kinds,c.kind),focusName(c.habit),c.fix,c.rehearsed?"Yes":"No",missedList(c).join("; "),c.question,c.answer].map(cl).join("\t")); });
+    lines.push([c.date,label(CL.types,c.type),c.map,c.legend,c.label,labels(CL.situations,c.situation),label(CL.starters,c.starter),label(CL.plans,c.plan),c.gut,label(CL.when,c.when),c.lastGood,ca?ca.label:"",label(CL.kinds,c.kind),clipLabelTheme(c),c.fix,c.rehearsed?"Yes":"No",missedList(c).join("; "),c.question,c.answer].map(cl).join("\t")); });
   return lines.join("\n");
 }
 function renderClipLog(v){
@@ -1600,7 +1651,7 @@ function renderClipLog(v){
       var dl=h("dl"); function add(k,val){ if(val){ dl.appendChild(h("dt",{text:k})); dl.appendChild(h("dd",{text:val})); } }
       add("Clip",[c.map,c.legend,c.label].filter(Boolean).join(" · ")); add("Situation",labels(CL.situations,c.situation)); add("Who started",label(CL.starters,c.starter)); add("Plan",label(CL.plans,c.plan));
       add(c.type==="win"?"What went right":"What went wrong",c.gut); add(c.type==="win"?"Took the advantage":"Options gone",label(CL.when,c.when)); add(c.type==="win"?"Setup":"Safe choice",c.lastGood);
-      add("Main cause",ca?ca.label:""); add("Decision or execution",label(CL.kinds,c.kind)); add("Fix focus",focusName(c.habit)); add("Fix",c.fix); add("Rehearsed",c.rehearsed?"Yes":"");
+      add("Main cause",ca?ca.label:""); add("Decision or execution",label(CL.kinds,c.kind)); add("Theme",clipLabelTheme(c)); add("Theme part of it",c.themeHit==="y"?"Yes":c.themeHit==="n"?"No":""); add("Fix",c.fix); add("Rehearsed",c.rehearsed?"Yes":"");
       add("Missed",missedList(c).join("; ")); add("Question",c.question); add("Answer",c.answer);
       var armed=S.delArm===c.id;
       row.appendChild(h("div",{class:"detail"}, dl, h("div",{class:"row",style:"margin-top:12px"}, h("button",{type:"button",class:"ghost"+(armed?" danger":""),onclick:function(){
@@ -1676,10 +1727,12 @@ function proofBlocks(D){
   if(D.recall.cur.full) B.push({big:"★ "+D.recall.cur.full, lab:"Full answers from memory this week, every detail"});
   if(D.recall.cur.n>=5) B.push({big:pct(D.recall.cur.h,D.recall.cur.t)+"%", lab:"Key points hit from memory, last 7 days"+(D.recall.prev.t?" (was "+pct(D.recall.prev.h,D.recall.prev.t)+"%)":"")});
   B.push({big:D.cards.now.own+" / "+D.cards.total, lab:"Concepts owned"+(D.cards.first?" (was "+D.cards.first.own+" on "+fmtDate(D.cards.firstDay)+")":"")+" · "+D.cards.now.started+" started"});
+  var td=(S.profile.themeLog||[]).filter(function(x){ return x.done && THEMES[x.id] && x.base!=null && x.after!=null && x.after<x.base; });
+  if(td.length){ var lt=td[td.length-1]; B.push({big:Math.round(100*lt.base)+"% → "+Math.round(100*lt.after)+"%", lab:"Games lost to “"+THEMES[lt.id].name+"”, before vs after I worked on it"+(td.length>1?" · "+td.length+" themes done":"")}); }
   if(D.habits.installed.length) B.push({big:String(D.habits.installed.length), lab:"Habit"+(D.habits.installed.length===1?"":"s")+" installed in ranked"});
   var rc=rpClimb();
   if(rc && rc.net>0) B.push({big:"+"+fmtRp(rc.net)+" RP", lab:rc.from&&rc.to&&rc.from!==rc.to?"Climbed from "+rc.from+" to "+rc.to:"Net RP across "+rc.n+" logged session"+(rc.n===1?"":"s")});
-  if(D.sessions && D.sessions.split && !D.sessions.few) B.push({big:D.sessions.recent+"%", lab:"Sessions where I ran my focus (was "+D.sessions.early+"%)"});
+  if(D.sessions && D.sessions.split && !D.sessions.few) B.push({big:D.sessions.recent+"%", lab:"Sessions where I ran my theme (was "+D.sessions.early+"%)"});
   if(B.length<4 && S.clips.length) B.push({big:String(S.clips.length), lab:"Clips reviewed like a coach"});
   if(B.length<4 && D.recall.all.n) B.push({big:String(D.recall.all.h), lab:"Key points recalled, all time"});
   return B.slice(0,4);
@@ -1927,6 +1980,7 @@ function render(){
   if(S.settings) return renderSettings(view);
   if(S.proof) return renderProof(view);
   takeSnapshot();
+  var themeMsg=ensureTheme(); if(themeMsg) setTimeout(function(){ toast(themeMsg); },0);
   if(S.ui.tab==="debrief") renderDebrief(view);
   else if(S.ui.tab==="clips") renderClips(view);
   else if(S.ui.tab==="maps") renderMaps(view);
