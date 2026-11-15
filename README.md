@@ -9,4 +9,4 @@ A learning loop for competitive games, built on the Learning How to Learn method
 
 Game content lives in a pack file (`pack-apex.js`). Supporting a different game means writing a new pack; the app code stays the same.
 
-Install: open the site in Chrome on Android, then menu → **Install app**. All data stays on the device. Back it up from Settings (gear icon).
+Install: open the site in Chrome on Android, then menu → **Install app**. Your cards, sessions and clip reviews stay on the device; back them up from Settings (gear icon). Two things can leave the phone, anonymously (Settings → Sharing): grader appeals, only if you agree the first time you appeal, and crash reports, which you can turn off.

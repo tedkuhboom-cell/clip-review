@@ -189,7 +189,6 @@ details.more p{font-size:14px;margin:6px 0}
 .gdot{width:18px;height:18px;border-radius:5px;font-size:10px;display:grid;place-items:center;color:var(--amber-ink);font-weight:700}
 .gdot.nailed{background:var(--teal)} .gdot.some{background:var(--amber)} .gdot.forgot{background:var(--red)}
 .tilt{background:var(--red-bg);border:1px solid var(--red);border-radius:10px;padding:10px 12px;font-size:13.5px;margin:10px 0}
-.seg.exec button[data-k="nailed"][aria-pressed="true"]{background:var(--teal-bg);border-color:var(--teal);color:var(--teal-ink)}
 
 /* appeals + streak */
 .appealbox{background:var(--panel-2);border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:12px}
@@ -410,9 +409,10 @@ document.title = "Clip Review";
 // ===================== storage =====================
 var PFX = P.storagePrefix;
 var K = { profile:PFX+"_profile_v1", manual:PFX+"_manual_v1", debrief:PFX+"_debrief_v1", clips:PFX+"_clip_review_v1", draft:PFX+"_clip_draft",
-          clipTimer:PFX+"_clip_session", backup:PFX+"_last_backup", ui:PFX+"_ui_v1" };
+          clipTimer:PFX+"_clip_session", backup:PFX+"_last_backup", ui:PFX+"_ui_v1", install:PFX+"_install_id", outbox:PFX+"_outbox" };
 function lget(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
-function lset(k,v){ try{ if(v==null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+var saveWarned=false;
+function lset(k,v){ try{ if(v==null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); return true; }catch(e){ if(!saveWarned){ saveWarned=true; showSaveFail(e); } return false; } }
 
 // ===================== helpers =====================
 function h(tag, attrs){ var el=document.createElement(tag); if(attrs) for(var k in attrs){ var v=attrs[k]; if(v==null||v===false) continue; if(k==="text") el.textContent=v; else if(k==="html") el.innerHTML=v; else if(k==="class") el.className=v; else if(k.slice(0,2)==="on") el.addEventListener(k.slice(2),v); else el.setAttribute(k, v===true?"":v); }
@@ -433,20 +433,68 @@ function typing(){ var a=document.activeElement; return !!(a && (a.tagName==="TE
 function setPressed(group, val){ var bs=group.querySelectorAll("button[data-k]"); for(var i=0;i<bs.length;i++){ var k=bs[i].getAttribute("data-k"); bs[i].setAttribute("aria-pressed", String(Array.isArray(val)? val.indexOf(k)>=0 : k===val)); } }
 
 // ===================== errors =====================
-function showErr(msg){
+function showErr(msg, stack){
+  reportError(msg, stack);
   var el=document.getElementById("err"); clear(el);
   el.appendChild(h("p",null,"Something on this page broke. Tap Reset screen to keep going; your data is saved. If it keeps happening, screenshot this box for Claude."));
   el.appendChild(h("p",null,h("code",{text:String(msg||"Unknown error").slice(0,300)})));
   el.appendChild(h("button",{type:"button",class:"ghost",onclick:function(){ el.hidden=true; safeRender(); }},"Reset screen"));
   el.hidden=false;
 }
-window.addEventListener("error",function(e){ showErr(e && (e.message || (e.error&&e.error.message))); });
-window.addEventListener("unhandledrejection",function(e){ var r=e&&e.reason; showErr(r&&(r.message||r.code)||r); });
+// A failed save is worse than a crash: the user thinks it's saved. Say so once, and offer a way out.
+function showSaveFail(e){
+  reportError("Save failed: "+((e&&(e.name||e.message))||"storage error"));
+  var el=document.getElementById("err"); clear(el);
+  el.appendChild(h("p",null,h("b",null,"This phone stopped saving your changes. "),"Its storage is full or the browser is blocking it. What you've done since opening the app may be lost when you close it."));
+  el.appendChild(h("p",null,"Save a backup file now, then free up space on your phone (or check that the browser allows this site to store data)."));
+  el.appendChild(h("p",null,h("code",{text:String((e&&(e.name||e.message))||"Storage error").slice(0,120)})));
+  el.appendChild(h("div",{class:"row"}, h("button",{type:"button",class:"ghost",onclick:function(){ saveBackup(); }},"Save a backup now"), h("button",{type:"button",class:"ghost",onclick:function(){ el.hidden=true; }},"Dismiss")));
+  el.hidden=false; window.scrollTo(0,0);
+}
+window.addEventListener("error",function(e){ showErr(e && (e.message || (e.error&&e.error.message)), e && e.error && e.error.stack); });
+window.addEventListener("unhandledrejection",function(e){ var r=e&&e.reason; showErr(r&&(r.message||r.code)||r, r&&r.stack); });
+
+// ===================== sharing (Supabase) =====================
+// Anonymous, optional sending of grader appeals and crash reports. SUPA_KEY is the project's public
+// "publishable" key: row level security lets it ADD rows to these two tables and nothing else (no reading).
+// Rows carry a random install id, never a name or account. Unsent rows wait in an outbox until online.
+var SUPA_URL="https://fzfsqzuselkuynhuiplc.supabase.co/rest/v1/", SUPA_KEY="sb_publishable_ps1UYscNTyBur2JsYq5TFA_IZ0LbSAs";
+var APP_VERSION=(function(){ var d=new Date(document.lastModified); return isNaN(d)?"":d.toISOString().slice(0,16); })();   // deploy time from GitHub Pages
+function newUuid(){ if(window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  var b=new Uint8Array(16); crypto.getRandomValues(b); b[6]=(b[6]&15)|64; b[8]=(b[8]&63)|128;
+  var x=Array.prototype.map.call(b,function(v){ return (v+256).toString(16).slice(1); }).join("");
+  return x.slice(0,8)+"-"+x.slice(8,12)+"-"+x.slice(12,16)+"-"+x.slice(16,20)+"-"+x.slice(20); }
+function installId(){ var x=lget(K.install); if(typeof x!=="string" || x.length!==36){ x=newUuid(); lset(K.install,x); } return x; }
+function supaPost(table,row){ return fetch(SUPA_URL+table,{method:"POST",keepalive:true,headers:{apikey:SUPA_KEY,"Content-Type":"application/json",Prefer:"return=minimal"},body:JSON.stringify(row)}); }
+var flushing=false;
+function flushOutbox(){
+  if(flushing || navigator.onLine===false) return;
+  var box=lget(K.outbox)||[]; if(!box.length) return; flushing=true;
+  supaPost(box[0].t, box[0].row).then(function(res){
+    flushing=false;
+    var bad=[400,409,413,422].indexOf(res.status)>=0;   // a row the server will never accept: drop it, don't block the queue
+    if(res.ok || bad){ var b=lget(K.outbox)||[]; b.shift(); lset(K.outbox,b); flushOutbox(); }
+  }, function(){ flushing=false; });
+}
+function queueSend(table,row){ var b=lget(K.outbox)||[]; b.push({t:table,row:row}); if(b.length>200) b=b.slice(-200); lset(K.outbox,b); flushOutbox(); }
+function appealRow(a){ return {install_id:installId(), app_version:APP_VERSION, pack:P.id, card_id:String(a.id).slice(0,20), from_grade:a.from, to_grade:a.to,
+  points:(a.points||[]).slice(0,20), answer:String(a.answer||"").slice(0,4000), note:String(a.note||"").slice(0,2000), full_answer:!!a.full, client_ts:new Date(a.ts).toISOString()}; }
+function shareAppeal(a){ queueSend("appeals", appealRow(a)); a.sent=true; }
+var errSent={}, errCount=0;
+function reportError(msg, stack){
+  try{
+    var st=(typeof S==="undefined") ? null : S;
+    if(st && st.profile && st.profile.sendErrors===false) return;
+    msg=String(msg||"Unknown error").slice(0,1000); if(errSent[msg] || errCount>=5) return; errSent[msg]=1; errCount++;
+    var scr=!st?"start" : !st.profile.setup?"setup" : st.settings?"settings" : st.proof?"proof" : st.ui.tab+(st.ui.tab==="manual"&&st.mSession?":session":st.ui.tab==="debrief"&&st.live?":live":"");
+    var row={install_id:installId(), app_version:APP_VERSION, pack:P.id, message:msg, stack:stack?String(stack).slice(0,4000):null, screen:scr.slice(0,80), user_agent:navigator.userAgent.slice(0,400), client_ts:new Date().toISOString()};
+    supaPost("client_errors",row).then(function(res){ if(!res.ok && [400,409,413,422].indexOf(res.status)<0) queueSend("client_errors",row); }, function(){ queueSend("client_errors",row); });
+  }catch(e){}
+}
 
 // ===================== content =====================
 var MODS = P.modules;
 var CARDS = P.cards, byId = {}; CARDS.forEach(function(c){ byId[c.id]=c; });
-var INTERVAL = {1:1,2:3,3:7,4:14,5:30};
 var FOCI = {}, FOCUS_ORDER = [];
 P.habits.forEach(function(hb){ FOCI[hb.id]={name:hb.name, what:hb.what, mod:hb.mod, note:"Cards "+hb.cards.join(", "), cards:hb.cards}; FOCUS_ORDER.push(hb.id); });
 Object.keys(P.extraFoci||{}).forEach(function(k){ var x=P.extraFoci[k]; FOCI[k]={name:x.name, what:x.what, mod:null, note:x.what, cards:[]}; FOCUS_ORDER.push(k); });
@@ -791,6 +839,13 @@ function renderMSession(v){
       panel.appendChild(h("button",{type:"button",class:"primary",onclick:function(){ finishCard(c, fg, r); }},"Next card"));
       var mustMiss=r.grade!=="got", deepMiss=!!(r.dt && r.dn<r.dt);
       if((mustMiss||deepMiss) && !s.appealed && !s.appealOpen) panel.appendChild(h("button",{type:"button",class:"appeal",onclick:function(){ s.appealOpen=true; s.claim=[]; s.appealNote=""; safeRender(); }}, mustMiss?"The grader missed something I said":"The grader missed a go-deeper point"));
+      if(s.askShare){ var shr=s.askShare;   // first appeal ever: ask once, the answer becomes the setting
+        panel.appendChild(h("div",{class:"appealbox"}, h("div",{class:"q",text:"Send appeals to help fix the grader?"}),
+          h("p",{class:"faint",style:"margin:0 0 10px",text:"Sending the card, your answer and your note shows where the grader misses correct answers, so it can be fixed for everyone. Nothing else is sent: no name, no account. You can change this in Settings."}),
+          h("div",{class:"nav2"},
+            h("button",{type:"button",class:"ghost",onclick:function(){ S.profile.shareAppeals=false; saveProfile(); s.askShare=null; safeRender(); toast("Appeals stay on this phone."); }},"Keep on phone"),
+            h("button",{type:"button",class:"primary",onclick:function(){ S.profile.shareAppeals=true; saveProfile(); shareAppeal(shr); saveManual(); s.askShare=null; safeRender(); toast("Thanks. Sent, and future appeals will be too."); }},"Send them"))));
+      }
       if(s.appealOpen && !s.appealed){
         var missK=c.kp.map(function(kp,i){ return {k:"k"+i,i:i,label:kp[0]}; }).filter(function(x){ return !r.hits[x.i]; });
         var missD=(c.dp||[]).map(function(kp,i){ return {k:"d"+i,i:i,label:kp[0]}; }).filter(function(x){ return !(r.dhits&&r.dhits[x.i]); });
@@ -806,8 +861,10 @@ function renderMSession(v){
           var allMust=r.hits.every(function(hh,i){ return hh || kC.indexOf(i)>=0; }), allDeep=(r.dhits||[]).every(function(hh,i){ return hh || dC.indexOf(i)>=0; });
           if(!r.full && allMust && allDeep && r.total>0){ r.full=true; r.fullAppealed=true; }
           var pts=kC.map(function(i){ return c.kp[i][0]; }).concat(dC.map(function(i){ return "Go deeper: "+c.dp[i][0]; }));
-          S.appeals.push({ts:Date.now(), d:today(), id:c.id, points:pts, note:note.value.trim(), answer:s.answer, from:r.grade, to:s.appealUp?bump(r.grade):r.grade, full:!!r.fullAppealed});
+          var rec={ts:Date.now(), d:today(), id:c.id, points:pts, note:note.value.trim(), answer:s.answer, from:r.grade, to:s.appealUp?bump(r.grade):r.grade, full:!!r.fullAppealed};
+          S.appeals.push(rec);
           if(S.appeals.length>500) S.appeals=S.appeals.slice(-500);
+          if(S.profile.shareAppeals===true) shareAppeal(rec); else if(S.profile.shareAppeals==null) s.askShare=rec;
           saveManual(); s.appealed=true; s.appealOpen=false; safeRender();
           toast(s.appealUp?"Upgraded. Your note is saved for review.":r.fullAppealed?"★ Full answer. Your note is saved for review.":"Saved for review.");
         }}, mustMiss?"Upgrade and save my note":"Save my note");
@@ -836,7 +893,7 @@ function finishCard(c,g,r){
   if(S.recall.length>3000) S.recall=S.recall.slice(-3000);
   saveManual();
   s.done[it.kind]++; if(r){ s.hit=(s.hit||0)+r.n; s.tot=(s.tot||0)+r.total; }
-  s.i++; s.phase="front"; s.answer=""; s.result=null; s.appealed=false; s.appealUp=false; s.dclaimed=[]; safeRender(); window.scrollTo(0,0);
+  s.i++; s.phase="front"; s.answer=""; s.result=null; s.appealed=false; s.appealUp=false; s.dclaimed=[]; s.askShare=null; safeRender(); window.scrollTo(0,0);
 }
 function renderMDone(v){
   var t=today(), d=S.mSession.done, nd=nextDue(t), again=dueList(t).length, parts=[];
@@ -1045,13 +1102,11 @@ function renderLive(v){
     L.games.push({exec:pend.exec, end:pend.end, why:pend.end==="other"?(pend.why||null):null, place:isNaN(pl)?null:pl, kills:isNaN(kl)?null:kl, lobby:pend.lobby||null, drill:cd?cd.id:null, drillTried:!!cd && pend.exec!=="forgot", ts:Date.now()});
     L.pend={exec:null,end:null,why:null,place:"",kills:"",lobby:null,drillTried:false}; saveLive(); var y=window.scrollY; safeRender(); window.scrollTo(0,y); toast("Game "+L.games.length+" logged.");
   }
+  // Extras come first: the game logs itself as soon as both taps below are picked, so anything after them would be too late.
+  function lab(id,t,el){ return h("div",null, h("label",{class:"faint",for:id,style:"display:block;margin-bottom:4px"},t), el); }
+  box.appendChild(h("div",{class:"field"}, h("div",{class:"q"},"Extras",h("span",{class:"opt"}," (optional)"),h("span",{class:"note",text:"Fill in first: the game logs as soon as you answer the two questions below."})),
+    lobbyG, h("div",{class:"two",style:"margin-top:8px"}, lab("live-place","Place",place), lab("live-kills","Squad kills",kills))));
   box.appendChild(h("div",{class:"field"}, h("div",{class:"q",text:curDrill(L)?"Did you run the drill?":"Did you run your focus?"}), execG));
-  if(false){ var dt=h("button",{type:"button",class:"toggle","aria-pressed":String(!!pend.drillTried),onclick:function(){ pend.drillTried=!pend.drillTried; dt.setAttribute("aria-pressed",String(pend.drillTried)); dt.firstChild.textContent=pend.drillTried?"✓":""; saveLive(); }},
-      h("span",{class:"box",text:pend.drillTried?"✓":""}), h("span",{text:"I tried the drill this game"}));
-    box.appendChild(h("div",{class:"field"}, dt)); }
-  box.appendChild(h("details",{class:"more"}, h("summary",{text:"Extras (optional): lobby, place, kills"}),
-    h("div",{class:"field",style:"margin-top:6px"}, h("div",{class:"q"},"Lobby type",h("span",{class:"note",text:"Shown at load-in from Season 31. Explains big RP swings."})), lobbyG),
-    h("div",{class:"two"}, place, kills)));
   box.appendChild(h("div",{class:"field",style:"margin-top:10px;margin-bottom:0"}, h("div",{class:"q"},"How did it end?",h("span",{class:"note",text:"Pick the first mistake, not the last thing that happened. Logs the game as soon as both are picked."})), endG));
   panel.appendChild(box);
   if(sum.n){
@@ -1680,6 +1735,7 @@ function renderProof(v){
     if(pgs) hp.appendChild(h("div",{class:"trend"}, h("span",{text:"Sessions started with a pre-game review"}), h("span",{class:"r",text:pgs+" of "+S.sessions.length})));
     var dg=0, dtr=0; S.sessions.forEach(function(x){ (x.games||[]).forEach(function(g){ if(g.drill){ dg++; if(g.drillTried) dtr++; } }); });
     if(dg) hp.appendChild(h("div",{class:"trend"}, h("span",{text:"Games where I tried a drill"}), h("span",{class:"r",text:dtr+" of "+dg+" ("+pct(dtr,dg)+"%)"})));
+    // Sessions logged around 2026-11-08 stored "did you try your drill" as text ("yes"/"some"); newer ones count games instead.
     var dr=S.sessions.filter(function(x){ return x.drill && typeof x.drill.tried==="string"; });
     if(dr.length) hp.appendChild(h("div",{class:"trend"}, h("span",{text:"Sessions where I tried my drill"}), h("span",{class:"r",text:dr.filter(function(x){ return x.drill.tried==="yes"; }).length+" of "+dr.length+(dr.filter(function(x){ return x.drill.tried==="some"; }).length?" (+"+dr.filter(function(x){ return x.drill.tried==="some"; }).length+" partly)":"")})));
     if(gl) hp.appendChild(h("div",{class:"trend"}, h("span",{text:"Games where I ran my focus"}), h("span",{class:"r",text:gr+" of "+gl+" ("+pct(gr,gl)+"%)"})));
@@ -1747,7 +1803,7 @@ function restoreFrom(file){
   r.onload=function(){
     try{
       var o=JSON.parse(r.result); if(!o || (o.pack && o.pack!==P.id)) throw new Error("pack");
-      var added={clips:0,sessions:0,cards:0}, gotDraft=false;
+      var added={clips:0,sessions:0,cards:0,reasons:0}, gotDraft=false;
       (o.clips||[]).forEach(function(c){ if(c&&c.id&&!S.clips.some(function(x){ return x.id===c.id; })){ S.clips.push(c); added.clips++; } });
       (o.sessions||[]).forEach(function(s){ if(s&&s.id&&!S.sessions.some(function(x){ return x.id===s.id; })){ S.sessions.push(s); added.sessions++; } });
       var aseen={}; S.appeals.forEach(function(x){ aseen[x.ts+"|"+x.id]=1; });
@@ -1760,9 +1816,19 @@ function restoreFrom(file){
       var rv=(o.manual&&o.manual.reviews)||{}; Object.keys(rv).forEach(function(id){ var mine=S.reviews[id], theirs=rv[id]; if(theirs && (!mine || (theirs.last||"")>(mine.last||""))){ S.reviews[id]=theirs; added.cards++; } });
       if(o.draft && o.draft.type && !S.draft.type){ S.draft=normDraft(o.draft); S.step=(typeof o.draft._step==="number"&&o.draft._step>=0)?Math.min(o.draft._step,LAST):-1; lset(K.draft,S.draft); gotDraft=true; }
       if(o.live && !S.live){ S.live=o.live; saveLive(); }
-      if(o.profile && o.profile.setup && !S.profile.setup){ S.profile=Object.assign(S.profile,o.profile); }
+      var op=o.profile;
+      if(op && op.setup && !S.profile.setup){ S.profile=Object.assign(S.profile,op); }
+      else if(op){
+        // Already set up: keep this phone's choices, add what only the backup has.
+        var rk={}; (S.profile.customReasons||[]).forEach(function(r){ rk[r.k]=1; });
+        (op.customReasons||[]).forEach(function(r){ if(r&&r.k&&!rk[r.k]){ (S.profile.customReasons=S.profile.customReasons||[]).push(r); rk[r.k]=1; added.reasons++; } });
+        var wk={}; (S.profile.writeIns||[]).forEach(function(w){ wk[w.ts+"|"+w.t]=1; });
+        (op.writeIns||[]).forEach(function(w){ if(w&&w.t&&!wk[w.ts+"|"+w.t]){ (S.profile.writeIns=S.profile.writeIns||[]).push(w); wk[w.ts+"|"+w.t]=1; } });
+        Object.keys(op.divSize||{}).forEach(function(r){ S.profile.divSize=S.profile.divSize||{}; if(S.profile.divSize[r]==null) S.profile.divSize[r]=op.divSize[r]; });
+        ["retention","sessionCap","bedClip","rankSystem","goalRank","banBackups","rotate","sessMode","drill"].forEach(function(k){ if(S.profile[k]==null && op[k]!=null) S.profile[k]=op[k]; });
+      }
       saveClips(); saveDebrief(); saveManual(); saveProfile(); S.settings=false; safeRender(); window.scrollTo(0,0);
-      var parts=[]; if(added.cards) parts.push(added.cards+" card"+(added.cards===1?"":"s")); if(added.sessions) parts.push(added.sessions+" session"+(added.sessions===1?"":"s")); if(added.clips) parts.push(added.clips+" clip review"+(added.clips===1?"":"s")); if(gotDraft) parts.push("your unfinished review");
+      var parts=[]; if(added.cards) parts.push(added.cards+" card"+(added.cards===1?"":"s")); if(added.sessions) parts.push(added.sessions+" session"+(added.sessions===1?"":"s")); if(added.clips) parts.push(added.clips+" clip review"+(added.clips===1?"":"s")); if(added.reasons) parts.push(added.reasons+" custom reason"+(added.reasons===1?"":"s")); if(gotDraft) parts.push("your unfinished review");
       toast(parts.length?"Restored "+parts.join(", ")+".":"Nothing new in that file.");
     }catch(e){ toast(e&&e.message==="pack"?"That backup is for a different game.":"That file isn't a Clip Review backup."); }
   };
@@ -1805,8 +1871,17 @@ function renderSettings(v){
     h("div",{class:"field"}, h("label",{class:"q",for:"set-goal"},"Season 32 goal",h("span",{class:"note",text:"Pick a division, not just a tier. Shows on your Proof screen."})), goalSel),
     h("div",{class:"field"}, h("div",{class:"q"},"Ban backups",banNote), banG)));
   v.appendChild(h("section",{class:"panel"}, h("h2",{text:"Backup"}),
-    h("p",{class:"sub",text:(last?"Last backup "+fmtAgo(last)+". ":"No backup yet. ")+"Everything lives only on this phone: cards, sessions and clip reviews. Save a backup file every week or two and keep it somewhere safe, like Google Drive."}),
+    h("p",{class:"sub",text:(last?"Last backup "+fmtAgo(last)+". ":"No backup yet. ")+"Your cards, sessions and clip reviews live only on this phone. Save a backup file every week or two and keep it somewhere safe, like Google Drive."}),
     h("div",{class:"row"}, h("button",{type:"button",class:"ghost",onclick:saveBackup},"Save backup file"), h("button",{type:"button",class:"ghost",onclick:pickRestore},"Restore from file"))));
+  // sharing: appeals (asked on first appeal) and crash reports (on unless turned off)
+  var shG=h("div",{class:"seg small"}), erG=h("div",{class:"seg small"}), waiting=(lget(K.outbox)||[]).length;
+  [["yes","Send them"],["no","Keep on phone"]].forEach(function(o){ shG.appendChild(h("button",{type:"button","data-k":o[0],"aria-pressed":String(p.shareAppeals===(o[0]==="yes")),onclick:function(){ S.profile.shareAppeals=o[0]==="yes"; setPressed(shG,o[0]); saveProfile(); toast(o[0]==="yes"?"Future appeals will be sent.":"Appeals stay on this phone."); }},o[1])); });
+  [["on","Send"],["off","Don't send"]].forEach(function(o){ erG.appendChild(h("button",{type:"button","data-k":o[0],"aria-pressed":String((p.sendErrors!==false)===(o[0]==="on")),onclick:function(){ S.profile.sendErrors=o[0]==="on"; setPressed(erG,o[0]); saveProfile(); }},o[1])); });
+  v.appendChild(h("section",{class:"panel"}, h("h2",{text:"Sharing"}),
+    h("p",{class:"sub",text:"Nothing that identifies you is ever sent. Each phone gets a random ID so reports from the same phone can be grouped."}),
+    h("div",{class:"field"}, h("div",{class:"q"},"Grader appeals",h("span",{class:"note",text:(p.shareAppeals==null?"You'll be asked the first time you appeal. ":"")+"Sends the card, your answer and your note, so the grader can be fixed when it misses a correct answer."})), shG),
+    h("div",{class:"field"}, h("div",{class:"q"},"Crash reports",h("span",{class:"note",text:"When something breaks, sends the error, which screen you were on and your browser type. Never anything you typed."})), erG),
+    waiting ? h("p",{class:"faint",style:"margin:0",text:waiting+" waiting to send. They go out next time you're online."}) : null));
   // grader appeals: review and send for tuning
   var ap=S.appeals.slice().reverse(), apPanel=h("section",{class:"panel"}, h("h2",{text:"Grader appeals ("+ap.length+")"}),
     h("p",{class:"sub",text:"Every time someone says the grader missed something, the answer and their note land here. Copy them and send them to Claude to tune the key points, or to spot answers that stretch the truth."}));
@@ -1829,7 +1904,7 @@ function renderSettings(v){
   v.appendChild(h("details",{class:"panel more"}, h("summary",{text:"The method behind this app"}),
     h("p",{text:"Built on the ideas in Learning How to Learn (Oakley and Sejnowski)."}),
     h("p",null,h("b",{text:"Recall beats rereading. "}),"The Manual makes you answer before it shows you."),
-    h("p",null,h("b",{text:"Spacing. "}),"Cards come back after 1, 3, 7, 14 and 30 days, right before you'd forget."),
+    h("p",null,h("b",{text:"Spacing. "}),"Each card comes back right before you'd forget it: after a day or two at first, then weeks and months as it sticks."),
     h("p",null,h("b",{text:"Interleaving. "}),"Reviews mix topics, so you practice picking the right idea."),
     h("p",null,h("b",{text:"Chunking. "}),"One habit at a time in ranked until it runs on its own."),
     h("p",null,h("b",{text:"Honest feedback. "}),"The Debrief and clip reviews show what's really happening, not what it felt like."),
@@ -1857,7 +1932,7 @@ function render(){
   else if(S.ui.tab==="maps") renderMaps(view);
   else renderManual(view);
 }
-function safeRender(){ try{ render(); }catch(e){ showErr(e&&e.message||e); } }
+function safeRender(){ try{ render(); }catch(e){ showErr(e&&e.message||e, e&&e.stack); } }
 document.getElementById("nav").addEventListener("click",function(e){ var b=e.target.closest("button[data-tab]"); if(!b) return; goTab(b.getAttribute("data-tab")); });
 document.getElementById("gear").addEventListener("click",function(){ S.proof=false; S.settings=!S.settings; safeRender(); window.scrollTo(0,0); });
 document.getElementById("proofbtn").addEventListener("click",function(){ S.settings=false; S.proof=!S.proof; safeRender(); window.scrollTo(0,0); });
@@ -1865,6 +1940,7 @@ document.getElementById("proofbtn").addEventListener("click",function(){ S.setti
 document.addEventListener("visibilitychange",function(){ if(document.visibilityState==="visible" && S.ui.tab==="manual" && !S.settings && !S.mSession && !typing()) safeRender(); });
 
 safeRender();
+flushOutbox(); window.addEventListener("online", flushOutbox);
 try{ if(navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function(){}); }catch(e){}
 if("serviceWorker" in navigator){ window.addEventListener("load",function(){ navigator.serviceWorker.register("sw.js").catch(function(){}); }); }
 })();
