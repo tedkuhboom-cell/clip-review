@@ -316,6 +316,16 @@ svg.spark{width:100%;height:60px;display:block}
 .tri button[data-k="y"][aria-pressed="true"]{background:var(--teal-bg);border-color:var(--teal);color:var(--teal-ink)}
 .tri button[data-k="n"][aria-pressed="true"]{background:var(--red-bg);border-color:var(--red);color:var(--red-ink)}
 .tri button[data-k="?"][aria-pressed="true"]{background:var(--line);border-color:var(--faint)}
+.endpick .endsub{margin-top:8px;padding-left:10px;border-left:3px solid var(--line)}
+.lastgame{border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:12px;padding:10px 12px;margin:12px 0 0;background:var(--panel-2)}
+.lastgame .lgh{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.lastgame .label{font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:var(--faint)}
+.seg.chips button.mine{box-shadow:inset 3px 0 0 var(--amber)}
+.lastgame .star{margin-top:8px}
+.lastgame .star[aria-pressed="true"]{color:var(--amber)}
+.miss .mytag{font-size:12px;color:var(--amber)}
+.miss .h .linkbtn{font-size:12px;padding:0;min-height:0;vertical-align:baseline}
+.results .q{font-weight:600;margin:4px 0 8px}
 .check.mine{border-left:3px solid var(--amber);padding-left:10px;margin-left:-13px}
 .check .mytag{font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:var(--amber);font-weight:600}
 .tcards{list-style:none;margin:12px 0 0;padding:0}
@@ -523,6 +533,12 @@ function clipLabelTheme(c){ return themeName(clipTheme(c)) || focusName(c.habit)
 var CL = P.clips;
 var GROUP_ORDER = ["drop","position","comms","fight","kit"];
 var ALLCHECKS = []; GROUP_ORDER.forEach(function(g){ if(CL.groups[g]) CL.groups[g].checks.forEach(function(c){ c.group=CL.groups[g].title; ALLCHECKS.push(c); }); });
+// every check by key: clip checks plus ranked-only ones (asked between games, not in a clip review)
+var CHECK_BY={}, CLIP_CHECK={}; ALLCHECKS.forEach(function(c){ CHECK_BY[c.k]=c; CLIP_CHECK[c.k]=1; }); (P.gameChecks||[]).forEach(function(c){ CHECK_BY[c.k]=c; });
+// the checks a ranked death asks about ("What was missing?"): your theme's first, at most 5
+function missChecks(end, tid){ return ((P.reasonChecks||{})[end]||[]).filter(function(k){ return CHECK_BY[k]; }).map(function(k,i){ return {k:k,i:i,m:tid&&THEME_OF_CHECK[k]===tid?1:0}; }).sort(function(a,b){ return (b.m-a.m)||(a.i-b.i); }).slice(0,5).map(function(x){ return x.k; }); }
+function missCounts(games){ var n={}, det=0, deaths=0; games.forEach(function(g){ if(!g.end || g.end==="won") return; deaths++; if(g.miss&&g.miss.length){ det++; g.miss.forEach(function(k){ if(CHECK_BY[k]) n[k]=(n[k]||0)+1; }); } }); return {n:n, keys:Object.keys(n).sort(function(a,b){ return n[b]-n[a]; }), det:det, deaths:deaths}; }
+function gameLabel(g){ if(g.end==="won") return "Won / top 3"; if(g.end==="other") return g.why||"Other"; var r=reasonMap()[g.end]; return r?r.label:(g.end||"—"); }
 function causeOf(k){ if(k==="win") return CL.causes[0]; return reasonMap()[k]||null; }
 // ----- why a game or clip ended: one shared list (pack reasons + the user's own) -----
 function reasonList(){ return P.reasons.concat((S.profile.customReasons||[]).map(function(r){ return {k:r.k,label:r.label,group:"yours",mod:r.mod||null,color:"var(--rose)",custom:true}; })); }
@@ -609,7 +625,7 @@ var GRADE_NAME={got:"Got it",shaky:"Shaky",miss:"Missed"};
 function depthHits(answer, dp){ var toks=gnorm(answer).split(" ").filter(Boolean); return (dp||[]).map(function(kp){ return kp[1].some(function(a){ return altHit(a,toks); }); }); }
 
 // ===================== state =====================
-function blankDraft(){ return {type:null,map:"",legend:"",label:"",situation:[],starter:null,plan:null,gut:"",when:null,lastGood:"",checks:{},cause:null,why:"",kind:null,habit:null,themeHit:null,fix:"",rehearsed:false,question:""}; }
+function blankDraft(){ return {type:null,map:"",legend:"",label:"",situation:[],starter:null,plan:null,gut:"",when:null,lastGood:"",checks:{},cause:null,why:"",kind:null,habit:null,themeHit:null,fix:"",rehearsed:false,question:"",date:null,fromGame:null}; }
 function normDraft(d){ var b=blankDraft(); d=d||{}; for(var k in b) if(d[k]===undefined) d[k]=b[k]; if(!Array.isArray(d.situation)) d.situation=[]; if(!d.checks||typeof d.checks!=="object") d.checks={}; return d; }
 var S = {
   profile: Object.assign({setup:false, rank:"", mains:[], newPerDay:3}, lget(K.profile)||{}),
@@ -736,13 +752,14 @@ function sessGameCount(s){ return s.games&&s.games.length ? s.games.length : Mat
 function leakScores(since){
   var sc={}; THEME_ORDER.forEach(function(id){ sc[id]={id:id,n:0,deaths:0,clips:0,checks:0,cards:0}; });
   function add(id,k,w){ if(id && sc[id]){ sc[id].n+=w; sc[id][k]++; } }
-  S.sessions.forEach(function(s){ if(sessDay(s)<since) return; sessEnds(s).forEach(function(k){ add(THEME_OF_REASON[k],"deaths",1); }); });
+  S.sessions.forEach(function(s){ if(sessDay(s)<since) return; sessEnds(s).forEach(function(k){ add(THEME_OF_REASON[k],"deaths",1); });
+    (s.games||[]).forEach(function(g){ (g.miss||[]).forEach(function(k){ add(THEME_OF_CHECK[k],"checks",1); }); }); });
   S.clips.forEach(function(c){ if((c.date||"")<since) return; if(c.cause && c.cause!=="win") add(THEME_OF_REASON[c.cause],"clips",2);
     Object.keys(c.checks||{}).forEach(function(k){ if(c.checks[k]==="n") add(THEME_OF_CHECK[k],"checks",1); }); });
   S.recall.forEach(function(r){ if(r.d<since) return; var w=r.g==="miss"?0.5:r.g==="shaky"?0.25:0; if(w) (THEMES_OF_CARD[r.id]||[]).forEach(function(id){ add(id,"cards",w); }); });
   return THEME_ORDER.map(function(id){ return sc[id]; }).sort(function(a,b){ return b.n-a.n; });
 }
-function leakWhy(x){ var b=[]; if(x.deaths) b.push(x.deaths+" game"+(x.deaths===1?"":"s")+" lost to it"); if(x.clips) b.push(x.clips+" clip"+(x.clips===1?"":"s")+" ended by it"); if(x.checks) b.push(x.checks+" missed clip check"+(x.checks===1?"":"s")); if(x.cards) b.push(x.cards+" missed or shaky card answer"+(x.cards===1?"":"s")); return b.join(" · "); }
+function leakWhy(x){ var b=[]; if(x.deaths) b.push(x.deaths+" game"+(x.deaths===1?"":"s")+" lost to it"); if(x.clips) b.push(x.clips+" clip"+(x.clips===1?"":"s")+" ended by it"); if(x.checks) b.push(x.checks+" missed check"+(x.checks===1?"":"s")); if(x.cards) b.push(x.cards+" missed or shaky card answer"+(x.cards===1?"":"s")); return b.join(" · "); }
 function themeRate(id, from, to){ var g=0, d=0; S.sessions.forEach(function(s){ var day=sessDay(s); if(day<from || (to && day>=to)) return; g+=sessGameCount(s); sessEnds(s).forEach(function(k){ if(THEME_OF_REASON[k]===id) d++; }); }); return {games:g, deaths:d, rate:g?d/g:null}; }
 function setTheme(id, why, src, done){
   var t=today(), old=S.profile.theme;
@@ -1123,7 +1140,7 @@ function startLive(mode, st){
   if(st.rank){ setDivSize(st.rank, st.size); S.profile.rank=st.rank; saveProfile(); }
   var rot=rotating?(S.profile.rotate>0?S.profile.rotate:3):0, dl=rotating?themeDrills().slice(0,15).map(function(x){ return x.c.id; }):[];
   var td=S.profile.drill&&inTheme(t.id,S.profile.drill.id)&&byId[S.profile.drill.id]&&byId[S.profile.drill.id].drill?S.profile.drill.id:null;
-  S.live={start:Date.now(), mode:rotating?"rotate":"one", theme:t.id, focusId:null, focus:t.name, mod:"", startRp:isNaN(sr)?null:sr, startRank:st.rank||null, startSize:st.size==null?null:st.size, games:[], pend:{exec:null,end:null,place:""},
+  S.live={id:"s"+Date.now(), start:Date.now(), mode:rotating?"rotate":"one", theme:t.id, focusId:null, focus:t.name, mod:"", startRp:isNaN(sr)?null:sr, startRank:st.rank||null, startSize:st.size==null?null:st.size, games:[], pend:{exec:null,end:null,place:""},
     drills:dl, drillIdx:0, drillStart:0, rotate:rot, drillId:rotating?null:td, pregame:S.dform.pregame===today()}; S.dform.pregame=null; S.dform.opts=false;
   saveLive(); safeRender(); window.scrollTo(0,0); toast("Session started. Say your theme out loud, then queue.");
 }
@@ -1137,8 +1154,8 @@ function endLive(rp, note, en){
   var causes=[]; g.forEach(function(x){ if(x.end && x.end!=="won" && causes.indexOf(x.end)<0) causes.push(x.end); });
   var places=g.map(function(x){ return x.place; }).filter(function(x){ return x!=null; });
   var r=parseInt(rp,10);
-  S.sessions.push({id:"s"+Date.now(), date:new Date(L.start).toISOString(), theme:L.theme||null, mode:L.mode||"one", focusId:L.focusId, focus:L.focus, mod:L.mod, exec:score>=0.75?"nailed":score>=0.4?"some":"forgot",
-    causes:causes, place:places.length?Math.min.apply(null,places):null, rp:isNaN(r)?0:r, startRp:L.startRp, endRp:!isNaN(er)?er:null, startRank:L.startRank||null, startSize:L.startSize==null?null:L.startSize, endRank:en.rank||L.startRank||null, endSize:en.size==null?null:en.size, rpKnown:rpKnown, note:(note||"").trim(), games:g.map(function(x){ return {exec:x.exec,end:x.end,place:x.place,kills:x.kills==null?null:x.kills,lobby:x.lobby||null,drill:x.drill||null,drillTried:!!x.drillTried, why:x.why||null}; }), mins:Math.round((Date.now()-L.start)/60000),
+  S.sessions.push({id:L.id||("s"+Date.now()), date:new Date(L.start).toISOString(), theme:L.theme||null, mode:L.mode||"one", focusId:L.focusId, focus:L.focus, mod:L.mod, exec:score>=0.75?"nailed":score>=0.4?"some":"forgot",
+    causes:causes, place:places.length?Math.min.apply(null,places):null, rp:isNaN(r)?0:r, startRp:L.startRp, endRp:!isNaN(er)?er:null, startRank:L.startRank||null, startSize:L.startSize==null?null:L.startSize, endRank:en.rank||L.startRank||null, endSize:en.size==null?null:en.size, rpKnown:rpKnown, note:(note||"").trim(), games:g.map(function(x){ return {exec:x.exec,end:x.end,place:x.place,kills:x.kills==null?null:x.kills,lobby:x.lobby||null,drill:x.drill||null,drillTried:!!x.drillTried, why:x.why||null, miss:x.miss||[], clip:!!x.clip, clipDone:!!x.clipDone, ts:x.ts||null}; }), mins:Math.round((Date.now()-L.start)/60000),
     pregame:!!L.pregame, drill:{ids:g.map(function(x){ return x.drill; }).filter(function(d,i,a){ return d && a.indexOf(d)===i; }), games:g.filter(function(x){ return x.drill; }).length, tried:g.filter(function(x){ return x.drillTried; }).length}});
   saveDebrief(); S.live=null; saveLive(); safeRender(); window.scrollTo(0,0);
   toast("Session saved: "+g.length+" game"+(g.length===1?"":"s")+".");
@@ -1156,6 +1173,47 @@ function liveDrill(L){
   else box.appendChild(h("button",{type:"button",class:"linkbtn",onclick:function(){ nextDrill(L); }},"Skip to next drill"));
   return box;
 }
+/* How did it end: tap the area (same groups as the Manual and Clips), then the reason inside it. */
+function endPicker(o){
+  var M=reasonMap(), wrap=h("div",{class:"rpick endpick"}), top=h("div",{class:"seg small"});
+  var grp=o.cur==="other"?"__other":(o.grp || (o.cur && o.cur!=="won" && M[o.cur] ? M[o.cur].group : null));
+  function b(k,label,on,fn){ top.appendChild(h("button",{type:"button","data-k":k,"aria-pressed":String(!!on),onclick:fn},label)); }
+  b("won","Won / top 3",o.cur==="won",function(){ o.onPick(o.cur==="won"?null:"won"); });
+  var groups=P.reasonGroups.slice(); if(reasonList().some(function(r){ return r.custom; })) groups.push({k:"yours",short:"Your reasons"});
+  groups.forEach(function(g){ b(g.k,g.short||g.label,grp===g.k,function(){ o.onGroup(grp===g.k?null:g.k); }); });
+  b("__other","Other",grp==="__other",function(){ o.onGroup(grp==="__other"?null:"__other"); });
+  wrap.appendChild(top);
+  if(grp && grp!=="__other"){
+    var sub=h("div",{class:"seg small"});
+    reasonList().filter(function(r){ return r.group===grp && !r.hidden; }).forEach(function(r){ sub.appendChild(h("button",{type:"button","data-k":r.k,"aria-pressed":String(o.cur===r.k),onclick:function(){ o.onPick(o.cur===r.k?null:r.k); }},r.label)); });
+    wrap.appendChild(h("div",{class:"endsub"}, sub));
+  }
+  if(grp==="__other"){
+    var ob=h("div",{class:"otherbox endsub"}), oi=h("input",{class:"inp",placeholder:"What happened, in a few words","aria-label":"Write in the reason"}), sug=h("div",{class:"sug"});
+    oi.value=o.why||"";
+    oi.addEventListener("input",function(){ sug.innerHTML=""; var r=closestReason(oi.value); if(r) sug.appendChild(h("span",null,"Sounds like “"+r.label+"”.",h("button",{type:"button",class:"linkbtn",onclick:function(){ o.onPick(r.k); }},"Use that"))); });
+    ob.appendChild(oi); ob.appendChild(sug); ob.appendChild(h("button",{type:"button",class:"ghost",onclick:function(){ var t=oi.value.trim(); if(!t){ toast("Write a few words first."); return; } o.onOther(t); }},"Log it"));
+    wrap.appendChild(ob);
+  }
+  return wrap;
+}
+/* The game you just logged: what was missing (optional taps) and a star to review it as a clip later. */
+function lastGamePanel(L){
+  var i=L.games.length-1, g=L.games[i]; if(!g) return null;
+  var tid=L.theme, ks=g.end==="won"?[]:missChecks(g.end, tid); if(!g.miss) g.miss=[];
+  var box=h("div",{class:"lastgame"}, h("div",{class:"lgh"}, h("span",{class:"label",text:"Game "+(i+1)+" logged"}), h("b",{text:gameLabel(g)})));
+  if(ks.length){
+    var seg=h("div",{class:"seg small chips"}), anyMine=false;
+    ks.forEach(function(k){ var mine=!!tid && THEME_OF_CHECK[k]===tid; if(mine) anyMine=true;
+      seg.appendChild(h("button",{type:"button","data-k":k,class:mine?"mine":null,"aria-pressed":String(g.miss.indexOf(k)>=0),onclick:function(){ var j=g.miss.indexOf(k); if(j>=0) g.miss.splice(j,1); else g.miss.push(k); setPressed(seg,g.miss); saveLive(); }}, CHECK_BY[k].m)); });
+    box.appendChild(h("div",{class:"field",style:"margin:8px 0 0"}, h("div",{class:"q"},"What was missing?",h("span",{class:"note",text:"Tap any that fit, or skip and queue. You can change this until you log the next game."+(anyMine?" Marked = part of your theme.":"")})), seg));
+  }
+  var star=h("button",{type:"button",class:"linkbtn star"});
+  function st(){ star.textContent=g.clip?"★ Starred for clip review":"☆ Clip this one later"; star.setAttribute("aria-pressed",String(!!g.clip)); }
+  st(); star.addEventListener("click",function(){ g.clip=!g.clip; saveLive(); st(); toast(g.clip?"Starred. It will wait in Clips.":"Unstarred."); });
+  box.appendChild(star);
+  return box;
+}
 function renderLive(v){
   var L=S.live, sum=liveSummary(L), mins=Math.round((Date.now()-L.start)/60000), C=reasonMap(), pend=L.pend||(L.pend={exec:null,end:null,place:""});
   var panel=h("section",{class:"panel live"},
@@ -1170,9 +1228,10 @@ function renderLive(v){
   var execG=h("div",{class:"seg exec"}), endG=h("div",{class:"seg small"});
   [["nailed","Yes"],["some","Some"],["forgot","No"]].forEach(function(o){ execG.appendChild(h("button",{type:"button","data-k":o[0],"aria-pressed":String(pend.exec===o[0]),onclick:function(){ pend.exec=pend.exec===o[0]?null:o[0]; setPressed(execG,pend.exec); saveLive(); maybeLog(); }},o[1])); });
   function rerender(){ var y=window.scrollY; safeRender(); window.scrollTo(0,y); }
-  endG=reasonPicker({cur:pend.end, why:pend.why, src:"debrief", lead:GAME_ENDS, otherBtn:"Log it",
-    onPick:function(k){ pend.end=k; pend.why=null; saveLive(); if(k && pend.exec) maybeLog(); else rerender(); },
-    onOther:function(t){ pend.end="other"; pend.why=t; saveLive(); if(pend.exec) maybeLog(); else { toast("Now pick whether you ran your focus."); rerender(); } }});
+  endG=endPicker({cur:pend.end, grp:pend.grp, why:pend.why,
+    onGroup:function(g){ pend.grp=g; pend.end=null; pend.why=null; saveLive(); rerender(); },
+    onPick:function(k){ pend.end=k; pend.why=null; if(k==="won") pend.grp=null; saveLive(); if(k && pend.exec) maybeLog(); else rerender(); },
+    onOther:function(t){ pend.end="other"; pend.why=t; saveLive(); if(pend.exec) maybeLog(); else { toast("Now pick whether you ran your theme."); rerender(); } }});
   var place=h("input",{class:"inp",id:"live-place",type:"number",inputmode:"numeric",min:"1",max:"20",placeholder:"Place"}); place.value=pend.place||"";
   place.addEventListener("input",function(){ pend.place=place.value; saveLive(); });
   var kills=h("input",{class:"inp",id:"live-kills",type:"number",inputmode:"numeric",min:"0",max:"60",placeholder:"Squad kills"}); kills.value=pend.kills||"";
@@ -1185,15 +1244,16 @@ function renderLive(v){
     var kl=parseInt(pend.kills,10);
     var cd=curDrill(L);
     if(pend.end==="other" && pend.why) logWriteIn(pend.why,"debrief");
-    L.games.push({exec:pend.exec, end:pend.end, why:pend.end==="other"?(pend.why||null):null, place:isNaN(pl)?null:pl, kills:isNaN(kl)?null:kl, lobby:pend.lobby||null, drill:cd?cd.id:null, drillTried:!!cd && pend.exec!=="forgot", ts:Date.now()});
-    L.pend={exec:null,end:null,why:null,place:"",kills:"",lobby:null,drillTried:false}; saveLive(); var y=window.scrollY; safeRender(); window.scrollTo(0,y); toast("Game "+L.games.length+" logged.");
+    L.games.push({exec:pend.exec, end:pend.end, why:pend.end==="other"?(pend.why||null):null, place:isNaN(pl)?null:pl, kills:isNaN(kl)?null:kl, lobby:pend.lobby||null, drill:cd?cd.id:null, drillTried:!!cd && pend.exec!=="forgot", miss:[], clip:false, ts:Date.now()});
+    L.pend={exec:null,end:null,grp:null,why:null,place:"",kills:"",lobby:null,drillTried:false}; saveLive(); var y=window.scrollY; safeRender(); window.scrollTo(0,y); toast("Game "+L.games.length+" logged.");
   }
   // Extras come first: the game logs itself as soon as both taps below are picked, so anything after them would be too late.
   function lab(id,t,el){ return h("div",null, h("label",{class:"faint",for:id,style:"display:block;margin-bottom:4px"},t), el); }
   box.appendChild(h("div",{class:"field"}, h("div",{class:"q"},"Extras",h("span",{class:"opt"}," (optional)"),h("span",{class:"note",text:"Fill in first: the game logs as soon as you answer the two questions below."})),
     lobbyG, h("div",{class:"two",style:"margin-top:8px"}, lab("live-place","Place",place), lab("live-kills","Squad kills",kills))));
   box.appendChild(h("div",{class:"field"}, h("div",{class:"q",text:L.mode==="rotate"&&curDrill(L)?"Did you run the drill?":L.theme?"Did you run your theme?":"Did you run your focus?"}), execG));
-  box.appendChild(h("div",{class:"field",style:"margin-top:10px;margin-bottom:0"}, h("div",{class:"q"},"How did it end?",h("span",{class:"note",text:"Pick the first mistake, not the last thing that happened. Logs the game as soon as both are picked."})), endG));
+  box.appendChild(h("div",{class:"field",style:"margin-top:10px;margin-bottom:0"}, h("div",{class:"q"},"How did it end?",h("span",{class:"note",text:"Pick the area, then the first mistake (not the last thing that happened). Logs the game as soon as both questions are answered."})), endG));
+  var lg=lastGamePanel(L); if(lg) panel.appendChild(lg);
   panel.appendChild(box);
   if(sum.n){
     panel.appendChild(h("div",{class:"gdots"}, L.games.map(function(x,i){ return h("span",{class:"gdot "+x.exec,title:"Game "+(i+1),text:x.end==="won"?"★":""}); })));
@@ -1268,7 +1328,7 @@ function bedtimePanel(){
   var last=lastClipDay(), t=today(), gap=last?daysBetween(last,t):null;
   if(gap!=null && gap<every) return null;
   return h("section",{class:"panel bedtime"}, h("div",{class:"focus"}, h("div",{class:"label",text:"Before bed"}), h("div",{class:"name",text:"Review one clip tonight"}),
-      h("p",{text:(gap==null?"You haven't reviewed a clip yet. ":"Your last clip review was "+gap+" day"+(gap===1?"":"s")+" ago. ")+"After your cards, pick one fight from today and run a review, about 10 minutes. Sleep helps lock in what you study right before it. Skip it if you're tilted; a calm review finds your real mistake."})),
+      h("p",{text:(gap==null?"You haven't reviewed a clip yet. ":"Your last clip review was "+gap+" day"+(gap===1?"":"s")+" ago. ")+(starredGames().length?"You starred "+starredGames().length+" game"+(starredGames().length===1?"":"s")+" in ranked; start with one of those. ":"")+"After your cards, pick one fight from today and run a review, about 10 minutes. Sleep helps lock in what you study right before it. Skip it if you're tilted; a calm review finds your real mistake."})),
     h("button",{type:"button",class:"ghost",onclick:function(){ S.ui.clipSub="review"; goTab("clips"); }},"Review a clip"));
 }
 function renderLiveStart(v){
@@ -1311,6 +1371,52 @@ function renderLiveStart(v){
   v.appendChild(panel);
 }
 
+function openCardInLibrary(c){ S.mSession=null; S.ui.manualSub="library"; S.ui.libMod=String(c.mod); goTab("manual"); }
+function missRows(panel, mc, limit){
+  var tid=S.profile.theme&&S.profile.theme.id, box=h("div",{class:"misslist"});
+  mc.keys.slice(0,limit).forEach(function(k){ var c=CHECK_BY[k], cd=byId[c.card], mine=!!tid && THEME_OF_CHECK[k]===tid;
+    box.appendChild(h("div",{class:"miss"}, h("span",null, h("span",{text:c.m}), mine?h("span",{class:"mytag",text:" · your theme"}):null,
+      cd?h("span",{class:"h"}, "Card "+cd.id+" "+cd.title+" ", h("button",{type:"button",class:"linkbtn",onclick:function(){ openCardInLibrary(cd); }},"Study")):null),
+      h("span",{class:"r",text:mc.n[k]+"×"}))); });
+  panel.appendChild(box);
+}
+/* Results of the last live session: where it went wrong, what was missing, starred games. */
+function lastSessionPanel(){
+  var ss=sortedSessions(), s=ss[ss.length-1]; if(!s || !s.games || !s.games.length) return null;
+  var g=s.games, n=g.length, C=reasonMap(), tid=S.profile.theme&&S.profile.theme.id, mc=missCounts(g);
+  var ran=g.filter(function(x){ return x.exec==="nailed"; }).length, some=g.filter(function(x){ return x.exec==="some"; }).length, wins=g.filter(function(x){ return x.end==="won"; }).length;
+  var kg=g.filter(function(x){ return x.kills!=null; }), kills=kg.reduce(function(a,x){ return a+x.kills; },0);
+  var endMs=new Date(s.date).getTime()+(s.mins||0)*60000, recent=Date.now()-endMs < 12*3600*1000;
+  var p=h("section",{class:"panel results"}, h("h3",{text:(recent?"Session results":"Last session")+" · "+pretty(sessDay(s))}));
+  var qs=h("div",{class:"qs"});
+  function kv(k,v){ qs.appendChild(h("span",{class:"k",text:k})); qs.appendChild(h("span",{class:"v",text:v})); }
+  kv("Games", n+(s.mins?" in "+(s.mins<60?s.mins+" min":Math.floor(s.mins/60)+"h "+(s.mins%60)+"m"):""));
+  kv(s.theme?"Ran your theme":"Ran your focus", ran+" of "+n+(some?" · partly "+some:""));
+  kv("Top 3", String(wins)+(kg.length?" · squad kills "+kills:""));
+  if(s.rpKnown!==false && (s.rp || s.endRp!=null)) kv("RP", (s.rp>0?"+":"")+(s.rp||0)+(s.endRank?" · "+s.endRank:""));
+  p.appendChild(qs);
+  // where it went wrong, by area
+  var area={}, by={}; g.forEach(function(x){ if(!x.end || x.end==="won") return; var r=C[x.end], a=(r&&r.group)||"other"; area[a]=(area[a]||0)+1; by[a]=by[a]||{}; by[a][x.end]=(by[a][x.end]||0)+1; });
+  var GL={}; P.reasonGroups.forEach(function(q){ GL[q.k]=q; });
+  var ak=Object.keys(area).sort(function(a,b){ return area[b]-area[a]; });
+  if(ak.length){
+    p.appendChild(h("div",{class:"q",text:"Where it went wrong"}));
+    bars(p, ak.map(function(a){ var rs=Object.keys(by[a]).sort(function(x,y){ return by[a][y]-by[a][x]; });
+      return {label:(GL[a]?(GL[a].short||GL[a].label):a==="yours"?"Your reasons":"Other")+": "+rs.map(function(k){ return gameLabel({end:k}).toLowerCase()+(by[a][k]>1?" ×"+by[a][k]:""); }).join(", "), n:area[a], color:C[rs[0]]?C[rs[0]].color:"var(--grey)"}; }));
+  }
+  // what was missing
+  p.appendChild(h("div",{class:"q",style:"margin-top:12px"}, "What was missing", mc.det?h("span",{class:"note",text:"From the "+mc.det+" of "+mc.deaths+" deaths you added detail to."}):null));
+  if(mc.keys.length){
+    missRows(p, mc, 4);
+    var th0=THEME_OF_CHECK[mc.keys[0]];
+    if(th0 && THEMES[th0]) p.appendChild(h("p",{class:"hint",text: th0===tid ? "Your top miss is part of your theme, “"+THEMES[tid].name+"”. Same focus next session." : "Your top miss points to “"+THEMES[th0].name+"”. It counts toward which theme you work on next."}));
+  } else p.appendChild(h("p",{class:"empty",text: mc.deaths ? "No detail added. After each death, tap what was missing and this shows exactly what to fix." : "No deaths logged."}));
+  var stc=g.filter(function(x){ return x.clip && !x.clipDone; }).length;
+  if(stc) p.appendChild(h("div",{class:"row",style:"margin-top:12px;align-items:center"}, h("span",{class:"faint",text:"★ "+stc+" game"+(stc===1?"":"s")+" starred for clip review"}), h("button",{type:"button",class:"ghost",onclick:function(){ S.ui.clipSub="review"; goTab("clips"); }},"Review now")));
+  if(s.note) p.appendChild(h("p",{class:"faint",style:"margin:10px 0 0",text:"Note: "+s.note}));
+  p._recent=recent;
+  return p;
+}
 function renderDebrief(v){
   var list=sortedSessions(), C=reasonMap();
   var net=list.reduce(function(a,s){ return a+(s.rp||0); },0), placed=list.filter(function(s){ return s.place!=null; });
@@ -1319,8 +1425,11 @@ function renderDebrief(v){
     h("div",{class:"stat"},h("div",{class:"k",text:"Net RP"}),h("div",{class:"v"+(net>0?" pos":net<0?" neg":""),text:(net>0?"+":"")+net})),
     h("div",{class:"stat"},h("div",{class:"k",text:S.profile.rank||"Rank"}),h("div",{class:"v",text:placed.length?"#"+(placed.reduce(function(a,s){ return a+s.place; },0)/placed.length).toFixed(1):"—"}),h("div",{class:"k",text:"avg place"}))));
 
+  var lsp=S.live?null:lastSessionPanel(), lsRecent=lsp && lsp._recent;
+  if(lsRecent) v.appendChild(lsp);
   if(S.live) renderLive(v); else renderLiveStart(v);
   var tp=themePanel("debrief"); if(tp) v.appendChild(tp);
+  if(lsp && !lsRecent) v.appendChild(lsp);
   var wi=writeInPanel(); if(wi) v.appendChild(wi);
   // log form
   var F=S.dform, T=curTheme();
@@ -1374,6 +1483,9 @@ function renderDebrief(v){
     if(ck.length>8) lp.appendChild(h("p",{class:"faint",text:"+ "+(ck.length-8)+" more reasons, logged less often."}));
   }
   v.appendChild(lp);
+  var cut30=addDays(today(),-30), g30=[]; list.forEach(function(s){ if(sessDay(s)>=cut30) (s.games||[]).forEach(function(x){ g30.push(x); }); });
+  var mc30=missCounts(g30);
+  if(mc30.keys.length){ var mp=h("section",{class:"panel"}, h("h3",{text:"What's missing when you die"}), h("p",{class:"sub",text:"Last 30 days of ranked, from the "+mc30.det+" death"+(mc30.det===1?"":"s")+" you added detail to. These count toward picking your theme."})); missRows(mp, mc30, 6); v.appendChild(mp); }
 
   // RP sparkline
   if(list.length>=2){
@@ -1409,6 +1521,36 @@ function renderDebrief(v){
 }
 
 // ===================== CLIPS =====================
+function starredGames(){
+  var out=[];
+  S.sessions.forEach(function(s){ (s.games||[]).forEach(function(g,i){ if(g.clip && !g.clipDone) out.push({sid:s.id, i:i, g:g, day:sessDay(s), ts:g.ts||new Date(s.date).getTime()+i}); }); });
+  if(S.live) S.live.games.forEach(function(g,i){ if(g.clip && !g.clipDone) out.push({sid:S.live.id||"live", i:i, g:g, day:today(), ts:g.ts||Date.now()}); });
+  return out.sort(function(a,b){ return b.ts-a.ts; });
+}
+function setGameFlag(ref, key, val){
+  if(S.live && (S.live.id||"live")===ref.sid){ var lg=S.live.games[ref.i]; if(lg){ lg[key]=val; saveLive(); } return; }
+  var s=S.sessions.filter(function(x){ return x.id===ref.sid; })[0], g=s&&s.games&&s.games[ref.i]; if(g){ g[key]=val; saveDebrief(); }
+}
+function draftFromGame(r){
+  var d=blankDraft(), g=r.g, won=g.end==="won";
+  d.type=won?"win":"death"; d.cause=won?"win":(g.end||null); d.why=g.end==="other"?(g.why||""):"";
+  (g.miss||[]).forEach(function(k){ if(CLIP_CHECK[k]) d.checks[k]="n"; });
+  d.label="Ranked "+fmtDate(r.day)+", game "+(r.i+1)+": "+gameLabel(g); d.date=r.day; d.fromGame={sid:r.sid, i:r.i};
+  return d;
+}
+function starredPanel(){
+  var L=starredGames(); if(!L.length) return null;
+  var p=h("section",{class:"panel"}, h("h3",{text:"Starred in ranked"}), h("p",{class:"sub",text:"Games you starred between matches. Find each one in your recordings. The review starts with what you logged; change anything the video shows differently."}));
+  L.slice(0,6).forEach(function(r){
+    var miss=(r.g.miss||[]).map(function(k){ return CHECK_BY[k]?CHECK_BY[k].m.toLowerCase():null; }).filter(Boolean);
+    p.appendChild(h("div",{class:"frow"}, h("div",{class:"ft"}, h("b",{style:"font-weight:500",text:"Game "+(r.i+1)+": "+gameLabel(r.g)}), h("span",{class:"faint",text:fmtDate(r.day)})),
+      miss.length?h("div",{class:"faint",style:"font-size:13px;margin-top:2px",text:"Missing: "+miss.join(", ")}):null,
+      h("div",{class:"row",style:"margin-top:8px;align-items:center"}, h("button",{type:"button",class:"ghost",onclick:function(){ S.draft=draftFromGame(r); startClipTimer(); goStep(0); }},"Review it"),
+        h("button",{type:"button",class:"linkbtn",onclick:function(){ setGameFlag(r,"clip",false); safeRender(); toast("Unstarred."); }},"Unstar"))));
+  });
+  if(L.length>6) p.appendChild(h("p",{class:"faint",text:"+ "+(L.length-6)+" more."}));
+  return p;
+}
 function startClipTimer(){ var now=Date.now(); if(!S.clipTimer || now-S.clipTimer>3*3600*1000){ S.clipTimer=now; lset(K.clipTimer,now); } }
 function timerEl(){
   if(!S.clipTimer || Date.now()-S.clipTimer>3*3600*1000) return null;
@@ -1525,10 +1667,11 @@ function updateClipNav(){ var b=document.getElementById("nextbtn"), hn=document.
 function goStep(n){ S.step=n; saveDraft(); safeRender(); window.scrollTo(0,0); }
 function saveReview(){
   var d=S.draft, now=Date.now();
-  S.clips.push({ id:"c"+now, created:now, date:today(), type:d.type, map:d.map||"", legend:d.legend||"", label:(d.label||"").trim(), situation:d.situation||[], starter:d.starter||null, plan:d.plan||null,
+  S.clips.push({ id:"c"+now, created:now, date:d.date||today(), type:d.type, map:d.map||"", legend:d.legend||"", label:(d.label||"").trim(), situation:d.situation||[], starter:d.starter||null, plan:d.plan||null,
     gut:(d.gut||"").trim(), when:d.when||null, lastGood:(d.lastGood||"").trim(), checks:d.checks||{}, cause:d.cause, why:d.cause==="other"?(d.why||"").trim():"", kind:d.kind||null,
     habit:null, theme:d.cause==="win"?null:suggestTheme(d), themeHit:d.themeHit||null, fix:(d.fix||"").trim(), rehearsed:!!d.rehearsed, question:(d.question||"").trim(), answer:"", qDone:false });
   if(d.cause==="other" && d.why) logWriteIn(d.why,"clips");
+  if(d.fromGame) setGameFlag(d.fromGame,"clipDone",true);
   saveClips(); S.draft=blankDraft(); S.step=-1; lset(K.draft,null); safeRender(); window.scrollTo(0,0);
   toast("Saved. "+S.clips.length+" clip"+(S.clips.length===1?"":"s")+" reviewed.");
 }
@@ -1544,6 +1687,7 @@ function renderClips(v){
       h("div",{class:"row"},
         S.draft.type?h("button",{type:"button",class:"ghost",onclick:function(){ startClipTimer(); goStep(typeof S.draft._step==="number"&&S.draft._step>=0?Math.min(S.draft._step,LAST):0); }},"Resume unsaved review"):null,
         h("button",{type:"button",class:"primary",onclick:function(){ S.draft=blankDraft(); startClipTimer(); goStep(0); }},"Start a clip review"))));
+    var stp=starredPanel(); if(stp) v.appendChild(stp);
     v.appendChild(h("section",{class:"panel"}, h("h3",{text:"How each review runs"}),
       h("ol",{class:"steps-list"},
         h("li",null,h("span",null,h("b",null,"Clip. "),"What kind, what was going on, who started it.")),
