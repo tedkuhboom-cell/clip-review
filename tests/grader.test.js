@@ -70,3 +70,8 @@ test("content pack: ids are unique and every reference points at a real card", (
 test("content pack file is in the readable layout (run: node tools/pack-io.js)", () => {
   assert.strictEqual(fs.readFileSync(PACK_FILE, "utf8").replace(/\r\n/g, "\n"), formatPack(P));
 });
+
+test("the Claude grader has an up-to-date copy of the cards (run: node tools/build-grade-cards.js)", () => {
+  const { build, OUT } = require("../tools/build-grade-cards.js");
+  assert.deepStrictEqual(JSON.parse(fs.readFileSync(OUT, "utf8")), JSON.parse(build()));
+});
