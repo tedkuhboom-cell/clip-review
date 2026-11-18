@@ -1236,7 +1236,7 @@ function rcAsPath(x, H){ var N=x.length; return [[0,0]].concat(x.map(function(v,
 // Score a drawn pull against the real one, 0..1. Size doesn't matter (your drawing is scaled to the same depth);
 // how far it goes left or right, and at what depth, does. 0 = no better than a straight line down.
 function rcScore(ref, user){
-  var N=24, r=rcProfile(ref,N), rH=r.H||1, out={score:0, ref:rcAsPath(r.x,rH), user:null, rH:rH, rx:r.x, ux:null};
+  var N=RC_N, r=rcProfile(ref,N), rH=r.H||1, out={score:0, ref:rcAsPath(r.x,rH), user:null, rH:rH, rx:r.x, ux:null};
   if(!user || user.length<5) return out;
   var u=rcProfile(user,N); if(u.H<=0) return out;
   var k=rH/u.H, ux=u.x.map(function(v){ return v*k; }), du=0, ds=0;
@@ -1246,6 +1246,29 @@ function rcScore(ref, user){
   return out;
 }
 function rcGrade(score){ return score>=0.6?"got" : score>=0.35?"shaky" : "miss"; }
+var RC_N=24, RC_PARTS=3;
+function rcPartRange(part){ var m=RC_N/RC_PARTS; return [part*m, (part+1)*m]; }
+// Which third of a whole drawing was furthest from the real pull.
+function rcWorstPart(res){ var worst=0, wd=-1; for(var p=0;p<RC_PARTS;p++){ var r=rcPartRange(p), d=0; for(var i=r[0];i<r[1];i++) d+=Math.abs(res.rx[i]-res.ux[i]); if(d>wd){ wd=d; worst=p; } } return worst; }
+// Score one part drawn in place, with the rest of the pull showing. user points are in the pull's own
+// coordinates (first shot at 0,0), so position counts here: the part has to join up with what's shown.
+// 0 = no better than a straight line from where the part starts to where it ends.
+function rcScorePart(ref, user, part){
+  var N=RC_N, r=rcProfile(ref,N), H=r.H||1, rg=rcPartRange(part), a=rg[0], b=rg[1], sum=[], cnt=[], i, run=0;
+  var entry=a?r.x[a-1]:0, exit=r.x[b-1], out={score:0, short:true, side:0, rx:r.x, H:H, entry:entry, exit:exit};
+  for(i=0;i<N;i++){ sum.push(0); cnt.push(0); }
+  (user||[]).forEach(function(q){ run=Math.max(run,q[1]); var bi=Math.floor(run/H*N); if(bi>=0 && bi<N){ sum[bi]+=q[0]; cnt[bi]++; } });
+  var have=0; for(i=a;i<b;i++) if(cnt[i]) have++;
+  if(have<(b-a)*0.6) return out;
+  var ux=[]; for(i=a;i<b;i++) ux.push(cnt[i]?sum[i]/cnt[i]:null);
+  for(i=0;i<ux.length;i++) if(ux[i]==null){ var l=i-1, rr=i+1; while(l>=0 && ux[l]==null) l--; while(rr<ux.length && ux[rr]==null) rr++;
+    ux[i] = l<0 ? ux[rr] : rr>=ux.length ? ux[l] : ux[l]+(ux[rr]-ux[l])*(i-l)/(rr-l); }
+  var du=0, ds=0, sg=0, m=b-a;
+  for(i=0;i<m;i++){ var line=entry+(exit-entry)*(i+0.5)/m; du+=Math.abs(r.x[a+i]-ux[i]); sg+=ux[i]-r.x[a+i]; ds+=Math.abs(r.x[a+i]-line); }
+  du/=m*H; ds/=m*H; sg/=m*H;
+  out.short=false; out.score=Math.max(0, Math.min(1, 1-du/Math.max(ds,0.12))); out.side=sg>0.05?1:sg<-0.05?-1:0;
+  return out;
+}
 // Which way the pull goes in each third: -1 left, 0 straight down, 1 right.
 function rcThirds(x, rH){ var n=x.length, out=[]; for(var t=0;t<3;t++){ var a=t?x[Math.round(t*n/3)-1]:0, b=x[Math.round((t+1)*n/3)-1], dx=(b-a)/rH; out.push(Math.abs(dx)<0.07?0:dx<0?-1:1); } return out; }
 function rcHint(res){
@@ -1328,16 +1351,16 @@ function renderRecoil(v){
   else {
     intro.appendChild(h("button",{type:"button",class:"primary",disabled:!due.length,onclick:function(){ rcOpen("draw",due); }}, due.length?"Draw from memory · "+due.length+" gun"+(due.length>1?"s":""):"All drawn for today"));
     var next=null; mine.forEach(function(id){ var r=S.recoil.reviews[id]; if(r && r.due>t && (!next||r.due<next)) next=r.due; });
-    intro.appendChild(h("p",{class:"hint",style:"margin:8px 0 0",text: due.length ? "New guns start with a trace over the real pattern; you draw them from memory from the next day." : next ? "Next draw "+pretty(next)+". The spray game is open any time." : ""}));
+    intro.appendChild(h("p",{class:"hint",style:"margin:8px 0 0",text: due.length ? "A new gun takes about a minute: trace it, draw each part with the rest showing, then the whole thing." : next ? "Next draw "+pretty(next)+". The spray game is open any time." : ""}));
   }
   v.appendChild(intro);
   if(mine.length){
     var list=h("section",{class:"panel"}, h("h3",{text:"Your guns"}));
     mine.forEach(function(id){ var g=rgById[id], r=S.recoil.reviews[id], best=S.recoil.best[id];
-      var st = !r ? "New · trace it first" : r.due<=t ? "Due to draw" : "Next draw "+pretty(r.due);
+      var st = !r ? "New · learn it (about a minute)" : r.due<=t ? "Due to draw" : "Next draw "+pretty(r.due);
       list.appendChild(h("div",{class:"rcrow"}, rcThumbIf(g, r),
         h("div",{class:"rcmeta"}, h("b",{text:g.name}), h("span",{class:"faint",text:st+(best!=null?" · spray best "+best+"%":"")})),
-        h("div",{class:"rcbtns"}, h("button",{type:"button",class:"ghost",onclick:function(){ rcOpen("draw",[id]); }}, !r?"Trace":"Draw"), h("button",{type:"button",class:"ghost",onclick:function(){ rcOpen("game",[id]); }},"Spray"))));
+        h("div",{class:"rcbtns"}, h("button",{type:"button",class:"ghost",onclick:function(){ rcOpen("draw",[id]); }}, !r?"Learn":"Draw"), h("button",{type:"button",class:"ghost",onclick:function(){ rcOpen("game",[id]); }},"Spray"))));
     });
     v.appendChild(list);
   }
@@ -1354,6 +1377,7 @@ function renderRecoil(v){
   v.appendChild(pick);
   v.appendChild(h("details",{class:"panel more"}, h("summary",{text:"How this works"}),
     h("p",null,h("b",{text:"Draw from memory."})," Pull the shape with one finger, starting at the dot. The app scores your drawing against the real pull (size doesn't matter, the shape does) and brings each gun back on the same spaced schedule as your cards."),
+    h("p",null,h("b",{text:"New guns and retries."})," A new gun is built up in steps: trace it, draw each third with the rest showing, then the whole thing. On a review, your first try sets the schedule, so the app knows what you really remembered. If you miss, Try again hides only the part you got most wrong, then you redraw it all. Retry as often as you like; it's practice and doesn't change the schedule."),
     h("p",null,h("b",{text:"Spray game."})," Hold to fire, drag to fight the kick. With the guide on you see the pull to follow and the stick recipe, with the current step lit up as the gun fires; turn it off to test yourself. Dragging on glass isn't a thumbstick, so this teaches the shape and the timing, not the feel."),
     h("p",null,h("b",{text:"Stick recipe."})," Each gun's pull is turned into a few steps, like \u201cShots 1\u20138: down, a little left.\u201d On a stick you hold a direction and lean, so the recipe is worked out from how fast and which way the pull moves between shots. Memorize when it changes."),
     h("p",null,h("b",{text:"Firing Range."})," Two mags per gun at a wall, pulling the shape you drew. That's where it becomes muscle memory. With aim assist on controller, the big moves matter more than every wiggle."),
@@ -1364,56 +1388,109 @@ function rcRecipe(plan, worst, els){
 }
 function rcThumbIf(g, r){ return r ? rcThumb(g) : h("div",{class:"rcthumb rcnew",text:"?"}); }
 
-function rcNextInQueue(){ var q=S.rc; q.i++; if(q.i>=q.queue.length) rcClose(); else { q.res=null; q.stroke=null; safeRender(); window.scrollTo(0,0); } }
+function rcNextInQueue(){ var q=S.rc; q.i++; q.d=null; if(q.i>=q.queue.length) rcClose(); else { safeRender(); window.scrollTo(0,0); } }
+function rcLog(e){ S.recoil.log.push(e); if(S.recoil.log.length>3000) S.recoil.log=S.recoil.log.slice(-3000); }
 
+// One gun at a time. q.d is the state for the current gun:
+//   stage "trace" (new gun: over the real line) -> "part" (one third hidden, the rest showing) -> "whole" (from memory)
+//   A new gun climbs all of that. A known gun starts at "whole"; that first try sets its schedule. After a miss,
+//   "Try again" goes through the part it got most wrong, then the whole thing again, as often as you like.
 function renderRcDraw(v){
-  var q=S.rc, id=q.queue[q.i], g=rgById[id], rev=S.recoil.reviews[id], t=today(), study=!rev && !q.res, sched=q.res ? q.sched : (study || rcIsDue(id,t));
-  var W=320, H=380, c=rcCanvas("rcpad",W,H), ctx=c.getContext("2d"); ctx.scale(c._dpr,c._dpr);
-  var fit=rcFit(g.pull,W,H), done=!!q.res;
+  var q=S.rc, id=q.queue[q.i], g=rgById[id], t=today(), rev=S.recoil.reviews[id];
+  if(!q.d) q.d = rev ? {stage:"whole", ladder:false, part:0, tries:0, sched:rcIsDue(id,t)} : {stage:"trace", ladder:true, part:0, tries:0, sched:false};
+  var d=q.d, W=320, H=380, c=rcCanvas("rcpad",W,H), ctx=c.getContext("2d"); ctx.scale(c._dpr,c._dpr);
+  var fit=rcFit(g.pull,W,H), prof=rcProfile(g.pull,RC_N), done=!!d.res;
+  var refPts=rcAsPath(prof.x,prof.H).map(function(p){ return [fit.ox+p[0]*fit.k, fit.oy+p[1]*fit.k]; });   // index 0 = first shot, i+1 = band i
+  var rg=rcPartRange(d.part), teal=rcCss("--teal"), amber=rcCss("--amber");
   function paint(){
     ctx.clearRect(0,0,W,H);
-    if(study) rcPath(ctx, fit.pts, rcCss("--line"), 10);
-    if(done && q.res.user){ var res=q.res, k=fit.k*rcHeight(rcFrom0(g.pull))/res.rH;
-      rcPath(ctx, res.ref.map(function(p){ return [fit.ox+p[0]*k, fit.oy+p[1]*k]; }), rcCss("--teal"), 4);
-      rcPath(ctx, res.user.map(function(p){ return [fit.ox+p[0]*k, fit.oy+p[1]*k]; }), rcCss("--amber"), 3, [7,5]);
-    } else if(q.stroke) rcPath(ctx, q.stroke, rcCss("--amber"), 4);
-    rcDot(ctx, fit.ox, fit.oy, 7, rcCss("--amber"));
+    if(d.stage==="trace"){ rcPath(ctx, fit.pts, rcCss("--line"), 10); if(d.stroke) rcPath(ctx, d.stroke, amber, 4); rcDot(ctx, fit.ox, fit.oy, 7, amber); return; }
+    if(d.stage==="part"){
+      rcPath(ctx, refPts.slice(0, rg[0]+1), teal, 4); rcPath(ctx, refPts.slice(rg[1]), teal, 4);
+      if(done) rcPath(ctx, refPts.slice(rg[0], rg[1]+1), teal, 4);
+      if(d.stroke) rcPath(ctx, d.stroke, amber, done?3:4, done?[7,5]:null);
+      var en=refPts[rg[0]], ex=refPts[rg[1]];
+      rcDot(ctx, en[0], en[1], 7, amber);
+      ctx.save(); ctx.strokeStyle=amber; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(ex[0],ex[1],7,0,7); ctx.stroke(); ctx.restore();
+      return;
+    }
+    if(done && d.res.user){ var res=d.res;
+      rcPath(ctx, res.ref.map(function(p){ return [fit.ox+p[0]*fit.k, fit.oy+p[1]*fit.k]; }), teal, 4);
+      rcPath(ctx, res.user.map(function(p){ return [fit.ox+p[0]*fit.k, fit.oy+p[1]*fit.k]; }), amber, 3, [7,5]);
+    } else if(d.stroke) rcPath(ctx, d.stroke, amber, 4);
+    rcDot(ctx, fit.ox, fit.oy, 7, amber);
   }
+  var minH = d.stage==="part" ? 20 : 30;
   if(!done){
     var drawing=false;
-    c.addEventListener("pointerdown",function(e){ e.preventDefault(); try{ c.setPointerCapture(e.pointerId); }catch(_){} drawing=true; q.stroke=[rcPos(c,e)]; paint(); });
-    c.addEventListener("pointermove",function(e){ if(!drawing) return; e.preventDefault(); q.stroke.push(rcPos(c,e)); paint(); });
-    function up(){ if(!drawing) return; drawing=false; checkBtn.disabled=!(q.stroke && q.stroke.length>=5 && rcHeight(q.stroke)>=30); }
+    c.addEventListener("pointerdown",function(e){ e.preventDefault(); try{ c.setPointerCapture(e.pointerId); }catch(_){} drawing=true; d.stroke=[rcPos(c,e)]; paint(); });
+    c.addEventListener("pointermove",function(e){ if(!drawing) return; e.preventDefault(); d.stroke.push(rcPos(c,e)); paint(); });
+    function up(){ if(!drawing) return; drawing=false; checkBtn.disabled=!(d.stroke && d.stroke.length>=5 && rcHeight(d.stroke)>=minH); }
     c.addEventListener("pointerup",up); c.addEventListener("pointercancel",up);
   }
+  function restage(stage, part){ d.stage=stage; if(part!=null) d.part=part; d.res=null; d.stroke=null; d.grade=null; safeRender(); window.scrollTo(0,0); }
+  var partName=["top","middle","bottom"][d.part];
+  var tag = d.stage==="trace" ? "New gun \u00b7 trace" : d.stage==="part" ? (d.ladder&&!d.learned?"New gun \u00b7 ":"Try again \u00b7 ")+partName+" part" : d.ladder&&!d.learned ? "New gun \u00b7 from memory" : d.tries===0||(d.tries===1&&done) ? (d.sched?"Draw from memory":"Practice draw") : "Try again \u00b7 practice";
+  var how = d.stage==="trace" ? "Trace the grey line from the dot down, the way you'd pull."
+    : d.stage==="part" ? "The "+partName+" part is hidden. Draw it from the dot to the ring, so it joins up with the rest."
+    : "Draw how you pull, from the first shot (the dot) to the last. One stroke.";
   var panel=h("section",{class:"panel"},
     h("div",{class:"prog"}, h("span",{text:(q.i+1)+" of "+q.queue.length}), h("div",{class:"track"},h("span",{style:"width:"+Math.round(q.i/q.queue.length*100)+"%"})),
       h("button",{type:"button",class:"ghost",style:"min-height:36px;padding:6px 12px;font-size:12.5px",onclick:rcClose},"End")),
-    h("div",{class:"tagrow"}, h("span",{class:"tag "+(study?"new":"due"),text:study?"New gun · trace":sched?"Draw from memory":"Practice draw"})),
+    h("div",{class:"tagrow"}, h("span",{class:"tag "+(d.ladder&&!d.learned?"new":"due"),text:tag})),
     h("h2",{class:"cardtitle",text:g.name}),
-    h("p",{class:"faint",style:"margin:0 0 10px",text: study ? "Trace the grey line from the dot down, the way you'd pull. You'll draw it from memory from tomorrow." : "Draw how you pull, from the first shot (the dot) to the last. One stroke."}));
+    h("p",{class:"faint",style:"margin:0 0 10px",text:how}));
+
   var checkBtn=h("button",{type:"button",class:"primary",disabled:true,onclick:function(){
-    if(study){ S.recoil.reviews[id]=schedule(null,"shaky",t,false); S.recoil.log.push({ts:Date.now(), d:t, id:id, kind:"trace"}); saveRecoil(); toast("Traced. You'll draw it from memory tomorrow."); return rcNextInQueue(); }
-    var res=rcScore(g.pull, q.stroke); q.res=res; q.sched=sched; var gr=rcGrade(res.score); q.grade=gr;
-    if(sched) S.recoil.reviews[id]=schedule(rev, gr, t, false);
-    S.recoil.log.push({ts:Date.now(), d:t, id:id, kind:"draw", s:Math.round(res.score*100), g:gr, sched:sched}); if(S.recoil.log.length>3000) S.recoil.log=S.recoil.log.slice(-3000);
+    if(d.stage==="trace"){ rcLog({ts:Date.now(), d:t, id:id, kind:"trace"}); saveRecoil(); return restage("part",0); }
+    if(d.stage==="part"){
+      var up=d.stroke.map(function(p){ return [(p[0]-fit.ox)/fit.k, (p[1]-fit.oy)/fit.k]; });
+      d.res=rcScorePart(g.pull, up, d.part); d.grade=d.res.short?"miss":rcGrade(d.res.score); safeRender(); window.scrollTo(0,0); return;
+    }
+    var res=rcScore(g.pull, d.stroke), gr=rcGrade(res.score), first=d.tries===0; d.res=res; d.grade=gr; d.tries++;
+    if(d.ladder && !d.learned){ d.learned=true; S.recoil.reviews[id]=schedule(null,"shaky",t,false); rcLog({ts:Date.now(), d:t, id:id, kind:"learn", s:Math.round(res.score*100), g:gr}); }
+    else {
+      if(first && d.sched){ d.first=gr; S.recoil.reviews[id]=schedule(rev, gr, t, false); }
+      rcLog({ts:Date.now(), d:t, id:id, kind:first?"draw":"retry", s:Math.round(res.score*100), g:gr, sched:first&&d.sched});
+    }
     saveRecoil(); safeRender(); window.scrollTo(0,0);
-  }}, study?"Done tracing":"Check my drawing");
+  }}, d.stage==="trace"?"Done tracing":d.stage==="part"?"Check this part":"Check my drawing");
+
   if(done){
-    var res=q.res, gr=q.grade, nr=S.recoil.reviews[id];
-    panel.appendChild(h("div",{class:"verdictbar "+gr}, h("b",{text:GRADE_NAME[gr]}), h("span",{class:"faint",text:Math.round(res.score*100)+"% match"})));
-    panel.appendChild(h("p",{class:"hint",style:"margin:0 0 8px",text:rcHint(res)}));
+    var res=d.res, gr=d.grade;
+    if(d.stage==="part"){
+      panel.appendChild(h("div",{class:"verdictbar "+gr}, h("b",{text:GRADE_NAME[gr]}), h("span",{class:"faint",text:res.short?"":Math.round(res.score*100)+"% match"})));
+      panel.appendChild(h("p",{class:"hint",style:"margin:0 0 8px",text: res.short ? "Draw the whole gap, from the dot to the ring." : gr==="got" ? "That's the "+partName+" part." : res.side>0 ? "Too far right through this part. Compare the two lines." : res.side<0 ? "Too far left through this part. Compare the two lines." : "Right place, wrong shape. Look at where it bends."}));
+    } else {
+      panel.appendChild(h("div",{class:"verdictbar "+gr}, h("b",{text:GRADE_NAME[gr]}), h("span",{class:"faint",text:Math.round(res.score*100)+"% match"})));
+      panel.appendChild(h("p",{class:"hint",style:"margin:0 0 8px",text:rcHint(res)}));
+    }
     panel.appendChild(h("div",{class:"rckey"}, h("span",null,h("i",{style:"background:var(--teal)"}),"The gun's pull"), h("span",null,h("i",{style:"background:var(--amber)"}),"Yours")));
   }
   panel.appendChild(c);
-  if(done){ panel.appendChild(h("div",{class:"kphead",style:"margin-top:12px",text:"On the stick"})); panel.appendChild(rcRecipe(rcPlan(g))); }
+
   if(!done){
-    panel.appendChild(h("div",{class:"nav2",style:"margin-top:12px"}, h("button",{type:"button",class:"ghost",onclick:function(){ q.stroke=null; checkBtn.disabled=true; paint(); }},"Clear"), checkBtn));
+    panel.appendChild(h("div",{class:"nav2",style:"margin-top:12px"}, h("button",{type:"button",class:"ghost",onclick:function(){ d.stroke=null; checkBtn.disabled=true; paint(); }},"Clear"), checkBtn));
+  } else if(d.stage==="part"){
+    var last=d.part===RC_PARTS-1, onward = d.ladder&&!d.learned ? (last ? function(){ restage("whole"); } : function(){ restage("part", d.part+1); }) : function(){ restage("whole"); };
+    var onLabel = d.ladder&&!d.learned&&!last ? "Next part" : "Now the whole thing";
+    panel.appendChild(h("div",{class:"nav2",style:"margin-top:12px"},
+      d.grade==="got" ? h("button",{type:"button",class:"ghost",onclick:function(){ restage("part"); }},"Do it again") : h("button",{type:"button",class:"ghost",onclick:onward},"Skip"),
+      d.grade==="got" ? h("button",{type:"button",class:"primary",onclick:onward},onLabel) : h("button",{type:"button",class:"primary",onclick:function(){ restage("part"); }},"Try this part again")));
   } else {
-    panel.appendChild(h("p",{class:"hint",style:"margin:10px 0",text: sched ? (gr==="miss"?"Back tomorrow.":"Back "+fmtGap(daysBetween(t,nr.due))+".") : "Practice draw: your schedule doesn't change."}));
-    panel.appendChild(h("div",{class:"nav2"},
-      h("button",{type:"button",class:"ghost",onclick:function(){ S.rc={mode:"game",queue:[id],i:0}; safeRender(); window.scrollTo(0,0); }},"Spray game"),
-      h("button",{type:"button",class:"primary",onclick:rcNextInQueue}, q.i+1<q.queue.length?"Next gun":"Done")));
+    var nr=S.recoil.reviews[id], firstTry=d.tries===1 && !d.ladder;
+    var when = d.ladder ? "Learned. You'll draw it from memory tomorrow."
+      : firstTry && d.sched ? (gr==="miss"?"Back tomorrow.":"Back "+fmtGap(daysBetween(t,nr.due))+".")+(gr!=="got"?" That was set by this first try; retries are practice.":"")
+      : d.sched ? "Practice try. Your schedule was set by your first try ("+GRADE_NAME[d.first]+")." : "Practice draw: your schedule doesn't change.";
+    panel.appendChild(h("div",{class:"kphead",style:"margin-top:12px",text:"On the stick"})); panel.appendChild(rcRecipe(rcPlan(g)));
+    panel.appendChild(h("p",{class:"hint",style:"margin:10px 0",text:when}));
+    var nextBtn=h("button",{type:"button",class:gr==="got"?"primary":"ghost",onclick:rcNextInQueue}, q.i+1<q.queue.length?"Next gun":"Done");
+    if(gr==="got") panel.appendChild(h("div",{class:"nav2"}, h("button",{type:"button",class:"ghost",onclick:function(){ S.rc={mode:"game",queue:[id],i:0}; safeRender(); window.scrollTo(0,0); }},"Spray game"), nextBtn));
+    else {
+      var wp=rcWorstPart(res);
+      panel.appendChild(h("div",{class:"nav2"}, nextBtn, h("button",{type:"button",class:"primary",onclick:function(){ restage("part", wp); }},"Try again")));
+      panel.appendChild(h("p",{class:"faint",style:"margin:8px 0 0",text:"Try again shows the pattern with the "+["top","middle","bottom"][wp]+" part hidden (where you were furthest off), then you draw the whole thing again."}));
+    }
   }
   v.appendChild(panel);
   paint();

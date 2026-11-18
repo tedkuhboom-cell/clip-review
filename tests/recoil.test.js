@@ -75,3 +75,25 @@ test("stick recipe matches the shape: RE-45 leans left throughout, Spitfire swin
   assert.deepStrictEqual(dirs("spitfire"), [1, -1, 1, -1]);
   assert.deepStrictEqual(dirs("3030"), [0]);
 });
+
+test("drawing one part: the real part scores Got it, a shifted or too-short stroke doesn't, a straight line fails where the pull bends", () => {
+  GUNS.forEach((g) => {
+    const H = R.rcProfile(g.pull, 24).H, dense = R.rcResample(g.pull, 120);
+    for (let p = 0; p < 3; p++) {
+      assert.strictEqual(R.rcGrade(R.rcScorePart(g.pull, dense, p).score), "got", g.id + " part " + p);
+      const shifted = R.rcScorePart(g.pull, dense.map((q) => [q[0] + 0.15 * H, q[1]]), p);
+      assert.notStrictEqual(R.rcGrade(shifted.score), "got", g.id + " part " + p + " shifted sideways");
+      assert.strictEqual(shifted.side, 1, "and it says which side");
+    }
+    assert.ok(R.rcScorePart(g.pull, dense.slice(0, 10), 1).short, g.id + " a stroke that doesn't cover the gap");
+  });
+  const sp = GUNS.find((x) => x.id === "spitfire"), pr = R.rcProfile(sp.pull, 24);
+  const line = Array.from({ length: 30 }, (_, i) => [pr.x[7] + ((pr.x[15] - pr.x[7]) * i) / 29, ((8 + (8 * i) / 29) / 24) * pr.H]);
+  assert.notStrictEqual(R.rcGrade(R.rcScorePart(sp.pull, line, 1).score), "got", "Spitfire's middle is not a straight line");
+});
+
+test("after a missed whole drawing, the retry targets the third that was furthest off", () => {
+  const g = GUNS.find((x) => x.id === "flatline"), H = R.rcProfile(g.pull, 24).H;
+  const bentBottom = R.rcResample(g.pull, 120).map((q) => [q[1] > H * 0.7 ? q[0] + (q[1] - H * 0.7) * 1.5 : q[0], q[1]]);
+  assert.strictEqual(R.rcWorstPart(R.rcScore(g.pull, bentBottom)), 2);
+});
