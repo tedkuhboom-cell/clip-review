@@ -603,17 +603,29 @@ var STEPS = ["Clip","Gut pass","Rewind","Before the fight","Comms","The fight","
 
 // ===================== key-point grader =====================
 // Each card lists key points; each point has accepted phrasings. A phrasing hits when every word stem in it
-// appears in the answer (prefix match, with a one-letter typo allowed on longer stems).
+// appears in the answer, close together (within NEAR words), so "back ... off" far apart doesn't count as "back off".
+// A stem matches a word by prefix; stems of 5+ letters also match inside a word; stems of 6+ letters allow a
+// one-letter typo after the first two letters (so "fight" is not read as "sight", or "flight" as "fight").
 function gnorm(s){ return String(s||"").toLowerCase().replace(/[’'`]/g,"").replace(/-/g,"").replace(/[^a-z0-9]+/g," ").trim(); }
 function lev1(a,b){ if(a===b) return true; var la=a.length, lb=b.length; if(Math.abs(la-lb)>1) return false;
   var i=0,j=0,ed=0; while(i<la&&j<lb){ if(a[i]===b[j]){i++;j++;continue;} if(++ed>1) return false; if(la>lb) i++; else if(lb>la) j++; else {i++;j++;} }
   return ed+(la-i)+(lb-j)<=1; }
-function stemHit(stem, toks){ for(var i=0;i<toks.length;i++){ var t=toks[i];
-    if(t.indexOf(stem)===0) return true;
-    if(stem.length>=5 && t.indexOf(stem)>=0) return true;
-    if(stem.length>=5 && t.length>=stem.length-1 && lev1(t.slice(0,stem.length),stem)) return true;
-    if(stem.length>=5 && lev1(t,stem)) return true; } return false; }
-function altHit(alt, toks){ var st=gnorm(alt).split(" ").filter(Boolean); return st.length>0 && st.every(function(x){ return stemHit(x,toks); }); }
+var NEAR=10;
+function tokHit(stem, t){
+  if(t.indexOf(stem)===0) return true;
+  if(stem.length>=5 && t.indexOf(stem)>=0) return true;
+  if(stem.length>=6 && t.slice(0,2)===stem.slice(0,2) && ((t.length>=stem.length-1 && lev1(t.slice(0,stem.length),stem)) || lev1(t,stem))) return true;
+  return false; }
+function stemPos(stem, toks){ var out=[]; for(var i=0;i<toks.length;i++) if(tokHit(stem,toks[i])) out.push(i); return out; }
+function stemHit(stem, toks){ return stemPos(stem,toks).length>0; }
+function altHit(alt, toks){
+  var st=gnorm(alt).split(" ").filter(Boolean); if(!st.length) return false;
+  var pos=st.map(function(x){ return stemPos(x,toks); });
+  if(pos.some(function(p){ return !p.length; })) return false;
+  if(st.length===1) return true;
+  return pos[0].some(function(a){   // every other stem has a match within NEAR words of this one
+    return pos.every(function(p){ return p.some(function(b){ return Math.abs(a-b)<=NEAR; }); }); });
+}
 function gradeAnswer(answer, kps){
   var toks=gnorm(answer).split(" ").filter(Boolean), total=kps.length;
   if(toks.length<2) return {hits:kps.map(function(){ return false; }), n:0, total:total, grade:"miss"};

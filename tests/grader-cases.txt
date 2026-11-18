@@ -1,0 +1,167 @@
+# Test answers for the graders (keyword grader and Claude grader).
+# Format:  <card> | <expected> | <answer>
+#   R      = right in different words: every must-have point should count
+#   W      = wrong, or the opposite of the card, often using the card's own vocabulary: no point should count
+#   P 10.. = partly right: one digit per must-have point, 1 = should count, 0 = should not
+# Written by hand on 2026-11-17 by the same author as the wider phrasings, so the keyword score on this file is
+# optimistic. Real answers are the better test: add them here as they come in
+# (Settings > Grader appeals, or the saved answers in a backup file).
+
+0.1 | R | it's about which squad is setting the pace and which one is just responding. i keep asking myself whether we're the ones making the calls at this moment or they are
+0.1 | W | tempo is how fast you play, so the team that moves and shoots quickest has it. you read it by checking your kill count
+0.1a | R | getting someone downed or popping their armor, making them use a battery or blow their tactical. each of those makes the other team respond to me instead of doing what they wanted
+0.1a | W | reloading behind cover and waiting for them to come to you. what they share is that they keep you safe
+0.1b | R | leaving for the next circle sooner than everybody else, being quicker than other squads at getting into a spot, and letting the closing circle do the squeezing for you
+0.1b | W | you can't, tempo only exists in gunfights. outside of fights you just loot until the ring forces you to move late
+0.2 | R | use it to improve our armor and kit or move to a better spot before others. don't just stand around, plink at squads way off, or go looking for one more unnecessary fight
+0.2 | W | relax and take a breather, maybe poke the far teams for some free damage and look for an extra fight for kp while we wait
+0.3 | R | where you're standing (height and things to hide behind), what supplies you have like shields and meds and grenades, and who's dictating. if none are on my side i don't take the even fight, i back off until i've built an edge
+0.3 | W | aim, movement and game sense. if none favor you just take the 50/50 and trust your gun skill
+0.3 | P 1100 | position like high ground and cover, and resources like armor and heals. i forget the third one. if none are in my favor just fight anyway and hope
+0.4 | R | first get stable, lock down the area i'm in and keep them from running me over. second be patient and let them be the ones to slip up
+0.4 | W | push out right away and swing on them to win the fight before they set up, speed is everything on weak side
+1.1 | R | if the circle made you go, you end up running across exposed ground and into chokepoints where squads are already camped. going on purpose means you moved to gain something like room, a better spot or knowledge of where teams are
+1.1 | W | there is no difference, a rotation is a rotation. the only thing that matters is taking the fastest route
+1.2 | R | if this turns bad, do we have a way to change course or get out
+1.2 | W | is this the fastest way to the ring
+1.3 | R | catalyst and conduit want to sit in zone and hold. maggie and ash want to play edge and fight their way in. alter and valkyrie can do either
+1.3 | W | maggie and ash hold zone, catalyst and conduit fight in from the edge, alter and valk only play zone
+1.4 | R | it gives an advantage like elevation, protection, good lines of sight and space to heal. but your legends need the tools to defend it, and it should have limited ways in plus a second way out
+1.4 | W | any tall building is a power position and any team can hold any of them as long as they get there first
+1.5 | R | it's the part of the map where the majority of squads are rotating through. you get jumped by multiple teams one after another there. move through the low terrain and inside structures so nobody spots you
+1.5 | W | heavy side is the side with the best loot so you should rotate through it in the open to get there quickest
+1.6 | R | early is about getting kitted with weapons and shields. mid you only take moves and fights that get you toward a strong final circle spot. late you anchor somewhere tough to attack and shoot squads who are forced to cross exposed ground
+1.6 | W | early you fight everyone for kp, mid you loot, late you rotate as the ring closes
+1.7 | R | scanning sooner lets you claim the strong spot ahead of other squads. the ring three scan gives the most info. if i don't know, i go to the middle of the circle we're in now
+1.7 | W | scan late so the info is fresh, ring one scan is the biggest info drop, and when unsure play the very edge of the ring
+1.8 | R | if they touch on a hard edge the next circle keeps heading further in that same direction. if they touch out in playable ground the next one comes back toward the middle
+1.8 | W | hard edge means the ring will bounce back to the opposite side, playable space means it keeps pulling the same way
+1.12 | R | keep an eye on where other squads are landing during the drop and for about half a minute after. if nobody is near us i break off from the jumpmaster and ping the building i'm taking
+1.12 | W | stare at my own landing spot and loot as fast as possible. always stay glued to the jumpmaster and loot the same building
+2.1 | R | a third party hits two fighting squads from the outside, getting sandwiched means you're the one stuck in the middle of two teams. stay on the edge by tracking where teams are and applying pressure so squads get driven into each other
+2.1 | W | third partying is when you get shot by two teams. you stay outside by sprinting into the middle of the fight first
+2.2 | R | there's most likely a second squad close by that they're nervous about
+2.2 | W | they're out of ammo and scared of us, so we should push them right away
+2.3 | R | to make sure no squad is sitting behind us that could come in on our back later
+2.3 | W | to farm damage for the evo shield, and because fights are fun
+2.4 | R | get there too soon and both squads turn on you. get there after it's over and the winning team has already reset. arrive in the middle while they're locked onto each other and you walk in from behind
+2.4 | W | arriving fast is always best because you get there before they heal. timing doesn't matter
+2.5 | R | it takes a long time to open and the alarm tells every squad where you are. either open it yourself when nobody is around and you can defend it, or wait for someone else to open it and jump them
+2.5 | W | it's dangerous because of the npc guards. your two plays are to grenade it or ignore it
+3.1 | R | pull out and regroup, then gather information on where they are with a recon ability before trying again
+3.1 | W | commit harder and sprint across the open space before they can react
+3.2 | R | you can throw a first place finish and end up sixth, and finishing high gives more ranked points than kills. when it's going wrong, swallow your pride, create distance and stay alive
+3.2 | W | the cost is wasted ammo. when a fight starts slipping you should commit harder to turn it around
+3.3 | R | if my squad is behind me i don't go ahead by myself, i look for info and let them reach me. in a fight we never stand on the same angle, i take a separate one so we get a crossfire
+3.3 | W | if they're behind, push ahead alone to get the first knock. when fighting together stand right next to each other on the same angle to focus fire
+3.4 | R | what do my squadmates' kits give us and which spots can we hold using them
+3.4 | W | where is the nearest enemy
+3.5 | R | so you don't get chunked in return and can top your shield back up. how much you hit them for decides it: break their armor and you go, tick them for a little and you hold. and if the exchange goes bad the whole squad pulls back at the same time
+3.5 | W | never back up when winning, always keep pushing. the squad should split up when the trade turns
+3.6 | R | make them hide and stop peeking using grenades and suppressing fire, then walk up on them and fight at close distance
+3.6 | W | keep sniping from range until you get the knock, never move closer
+3.7 | R | am i really going to follow up on this damage or is it pointless
+3.7 | W | do i have enough ammo
+3.10 | R | if we've poked for thirty seconds to a minute and nothing changed, time's up. to keep going we need someone down, a shield broken or a better spot. otherwise we leave and go somewhere else
+3.10 | W | it's the 3 minute timer for the ring. you need to loot before it runs out and then keep poking as long as you want
+3.11 | R | never take all of them together, make it a series of single fights where only one of them can see you. use doorways, grenades and your tactical to cut them apart. if you can't separate them, get out and find a new spot
+3.11 | W | fight all three at once in the open so they can't flank, and never leave because leaving loses rp
+3.12 | R | grab the armor out of the crate of the guy you just killed, it happens immediately and a battery takes several seconds you don't have
+3.12 | W | pop two cells, it's faster than a battery and safer than looting
+4.1 | R | cover controls how much of your body they can hit while you still shoot. sightlines are about what you can see compared to what they can see. spacing is how far you are from enemies, your squad and the ring
+4.1 | W | cover sightlines spacing
+4.1 | P 100 | cover lets you limit how much of you is exposed. the other two are aim and movement
+4.2 | R | go wide only once you've broken their shield so you can finish them. if you show at the same place again they already have their aim sitting there, so show up from somewhere else
+4.2 | W | wide swing whenever you feel confident. peeking the same spot twice is good because you already know the angle
+4.4 | R | having your aim already resting on the place they're going to show up, so you barely need to move it
+4.4 | W | having faster flicks than the other guy and higher sensitivity
+4.5 | R | because nobody reacts instantly, so leave a gap between your aim and the wall so the enemy runs into it. once you've tagged someone stop going slow and go fast
+4.5 | W | keep the crosshair tight on the edge at all times and always clear slowly even after a crack
+4.7 | R | when i've broken their shield and should press, when i got hit and need to relocate so they push an empty spot, and when the fight is stuck or my angle is bad so i need a different one
+4.7 | W | to look for loot, to show off movement, and because standing still is boring
+4.8 | R | to learn their location first, so that when i go for real my aim is lined up on them from the start
+4.8 | W | to bait out their shots and waste their ammo
+4.9 | R | the long gun opens the fight by breaking shields at mid range and holding them in place, then you swap to the shotgun or smg to end it in their face
+4.9 | W | the shotgun sets up the fight from range and the sniper finishes it up close
+4.10 | R | do it while in motion, like during a slide or when repositioning. never right as you're going in on someone or while you're exposed in the middle of it
+4.10 | W | reload and heal standing still in the open right before you push so you're full
+4.12 | R | at the height of an enemy's head. people let it sag toward the floor because they're scanning for items
+4.12 | W | at the ground so you can see loot, players get it wrong by aiming too high
+4.14 | R | your hands are trained for big corrections and now only tiny ones are needed, so you go past the target. stick with it and maybe turn the sens down slightly
+4.14 | W | because good placement is actually bad for aim. go back to your old habits right away
+4.16 | R | line up your aim, show yourself and fire, then get behind cover the second they return fire and come out again when you choose. you have to know where they are before starting, never do it blind
+4.16 | W | stand in the open and trade shots, nothing needs to come before it
+4.17 | R | crisp quick sideways strafes that aren't diagonal, and not repeating a pattern so they can't guess. tap strafing is the pc only one
+4.17 | W | jumping and crouch spamming. wall bouncing isn't available on controller
+4.18 | R | his squadmates are going to come at me to get payback or pick him up. so i put my aim on the route they'll come from before they arrive
+4.18 | W | nothing, the fight is over. go loot the box immediately
+5.1 | R | checking the minimap for the circle and other squads, and using my ears for steps, shooting and ability noises
+5.1 | W | watching my teammates' loot and listening to music
+5.2 | R | always tell them your status like i'm batting or i'm going in. and offer a plan with the why behind it instead of barking orders
+5.2 | W | stay quiet unless spoken to, and when you call something yell it as an order so they listen
+5.4 | R | i go in on it like i got the down myself. glance at the minimap and voice what i'm about to do before i do it
+5.4 | W | stay back and let him finish it alone. you stay in sync by not talking
+5.7 | R | heal next to a squadmate who has eyes on me and tell them to cover me. when it's my teammate healing i hold my aim on where an enemy would come at them from
+5.7 | W | run far away alone around a corner and heal silently. if a teammate heals, go loot
+5.7 | P 110 | heal near my team where they can see me and call that i'm healing. when a teammate heals i heal too
+5.8 | R | i tally every squad i can see and ask what i can't see, like uncovered angles and my way out. you look again at old angles because squads relocate quickly and it doesn't stay safe
+5.8 | W | count your ammo. once an angle is cleared it's safe for the rest of the game so don't waste time rechecking
+6.4 | R | your body goes into fight or flight, pulse racing, short breaths, vision narrowing and aim getting worse. putting a label on it is how you start to manage it
+6.4 | W | your controller lags in final fights. naming it doesn't help
+6.5 | R | before the fight take one slow deep inhale and believe you can win. during it don't replay what went wrong, just focus on what's in front of you right now
+6.5 | W | before the fight hype yourself up by yelling, during it think hard about every mistake you made
+6.6 | R | they've been in that mess so many times it's routine. you build it by deliberately putting yourself in tough situations like being outnumbered or having no health
+6.6 | W | calm players are born that way. you can't train it
+6.7 | R | because luck is involved, a dumb play sometimes works and a smart one sometimes fails. look at whether the call itself made sense with what you knew
+6.7 | W | winning is the only thing that matters, if you won it was a good play
+6.9 | R | the actual error usually happened several seconds before you died. ask: what was my objective, at what point did i run out of choices, was it a good bet, and what did i overlook
+6.9 | W | because the final moment is where the mistake is. the four questions are who killed me, with what gun, how much damage and what rank are they
+6.9 | P 11000 | the real mistake was a decision 5 to 30 seconds earlier. what was i trying to achieve. i can't remember the other three
+6.10 | R | hesitating and locking up. pick something quickly and go all the way with it
+6.10 | W | bad teammates. the fix is to take your time and think every option through carefully
+7.1 | R | how far you are from cover, from your squad and from the enemy. you lose it by bunching up on the same spot, by going too deep away from your team, and by backing off before you needed to
+7.1 | W | distance to the ring, to loot and to the jump tower. you lose space by reloading
+7.2 | R | if my shield got broken right this second, could i get to safety and recharge before they reach me. layers mean they have to climb or cross exposed ground to get to me
+7.2 | W | the test is whether you can see their name tag. layers are extra shields
+7.3 | R | figure out how they're playing, whether they're pushy, sitting back or spending abilities. if they're sitting back move up and claim ground, if they're pushy get ready first
+7.3 | W | read their rank badge. if it's high, leave
+8.1 | R | a full group of friends has a higher win rate than three randoms. for solos the matchmaker orders players by rp and gives each squad one high, one mid and one low player
+8.1 | W | premades get bonus rp. solo squads are built randomly
+8.2 | R | every player nominates a legend and it's a lottery where more votes means better odds. so have a second and third main ready
+8.2 | W | the highest ranked player picks the ban. prepare by one-tricking a single legend
+8.3 | R | challenger means you're two or more tiers under the lobby so you pay a discounted entry. goliath means you're two or more tiers over it so you pay more
+8.3 | W | challenger is the top squad and goliath is the biggest squad, neither changes entry cost
+8.4 | R | you get three of them when a single game could knock you down a tier. every time you would have dropped it burns one instead, and you only go down once they're all used up
+8.4 | W | shields protect your evo armor in ranked. you have one
+8.5 | R | open league covers iron through emerald. pro-am is diamond, masters and grandmaster. emerald sitting between platinum and diamond is the gate
+8.5 | W | casual league and ranked league. the gate is predator
+8.6 | R | each kill and each placement is a set amount with nothing multiplying them. since kills don't become worth more later, dropping hot or saving kills for endgame doesn't pay extra
+8.6 | W | kills are multiplied by placement so hot dropping is the best way to climb
+8.7 | R | any kill by a squadmate gives all three of us the complete kill rp. assists and participation don't exist anymore. so playing your support job is rewarded equally and there's no need to fight over the last hit
+8.7 | W | only the player who gets the final blow gets rp, so supports should chase kills
+8.8 | R | in open league kills count for a bit more. in pro-am placing high counts for more
+8.8 | W | open league only counts placement and pro-am only counts kills
+8.9 | R | the cost goes up a bit with each division instead of only at each tier, so there's no sudden cliff when you get into something like diamond
+8.9 | W | entry cost is the same for every rank
+9.1 | R | mirroring is going the same direction as them which makes tracking easy. countering is going the other direction which makes you harder to hit but harder to aim. mirror with a health lead, counter when you need to stay alive
+9.1 | W | crouch strafe and jump strafe. use jump strafe always
+9.2 | R | my own strafing shoves my aim off the target. i have to compensate at the exact moment i switch direction, not afterward
+9.2 | W | lag. fix it with a better connection
+9.3 | R | looking at the enemy's body instead of my reticle. your hands go where your eyes go, and staring at the reticle makes you twitchy and over-correct
+9.3 | W | on your crosshair, so you know exactly where you're aiming
+9.4 | R | hipfire when they're right on top of you, ads when they're further out, and in the middle range tap ads briefly to tighten the spread then let go
+9.4 | W | always ads, hipfire is never worth it
+9.5 | R | pull out my second weapon before the first one is empty, and reload while there's still a round in the mag because that animation is shorter
+9.5 | W | always empty the mag fully then reload, never swap
+9.6 | R | once you're airborne you can't change your path so you're simple to track. keep your feet planted so you can switch direction whenever
+9.6 | W | jumping makes you harder to hit so jump as much as possible
+9.7 | R | the torso. it's a bigger target so more of your shots land and you do more overall damage, heads are tiny
+9.7 | W | always the head for max damage
+9.8 | R | the one who's facing away or busy with my teammate. he's not strafing against me so my shots land
+9.8 | W | the one shooting at me, because he's the threat
+9.9 | R | squeezing the controller and stiffening up hurts your aim. keep your hands soft, watch the enemy and trust your muscle memory
+9.9 | W | because you're not trying hard enough. grip tighter and concentrate on the crosshair
+9.10 | R | ten to fifteen minutes in the firing range before queuing. start with a stock gun near a dummy, then move further away, then add strafing and slides
+9.10 | W | no warm up, just jump straight into ranked
+9.11 | R | no, don't touch them after a bad session because it wipes your muscle memory. give any new setting two to three weeks
+9.11 | W | yes, change sensitivity every night until it feels right
