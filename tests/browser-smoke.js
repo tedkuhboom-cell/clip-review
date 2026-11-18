@@ -135,10 +135,24 @@ const seed = {
   await page.click("[role=tab]:has-text('Recoil')");
   await page.waitForSelector("text=Pick the guns you actually use");
   await page.click(".seg button[data-k=r301]");
-  await page.click(".rcrow button:has-text('Trace')");
+  // a new gun: trace, then each third with the rest showing, then the whole thing
+  await page.click(".rcrow button:has-text('Learn')");
   await page.waitForSelector("text=Trace the grey line");
   await drawPull(page, "r301");
   await page.click("button:has-text('Done tracing')");
+  for (const part of ["top", "middle", "bottom"]) {
+    await page.waitForSelector("text=The " + part + " part is hidden");
+    await drawPull(page, "r301");
+    await page.click("button:has-text('Check this part')");
+    await page.waitForSelector(".verdictbar.got");
+    if (part === "middle") await page.screenshot({ path: (process.env.SHOT || ROOT) + "/recoil-part.png", fullPage: true }).catch(() => {});
+    await page.click(part === "bottom" ? "button:has-text('Now the whole thing')" : "button:has-text('Next part')");
+  }
+  await page.waitForSelector("text=Draw how you pull");
+  await drawPull(page, "r301");
+  await page.click("button:has-text('Check my drawing')");
+  await page.waitForSelector("text=Learned. You'll draw it from memory tomorrow.");
+  await page.click("button:has-text('Done')");
   await page.waitForSelector("text=Next draw");
   await page.evaluate((y) => { const r = JSON.parse(localStorage.getItem("apex_recoil_v1")); r.reviews.r301.due = y; localStorage.setItem("apex_recoil_v1", JSON.stringify(r)); }, yesterday);
   await page.reload();
@@ -153,16 +167,39 @@ const seed = {
   await page.screenshot({ path: (process.env.SHOT || ROOT) + "/recoil-draw.png", fullPage: true }).catch(() => {});
   await page.click("button:has-text('Spray game')");
   await page.waitForSelector("text=Hold anywhere on the box to fire");
+  assert.ok(await page.locator(".rcsteps li").count() >= 2, "stick recipe shown with the guide on");
   const gb = await page.locator("canvas.rcgame").boundingBox();
   await page.mouse.move(gb.x + gb.width / 2, gb.y + gb.height / 2); await page.mouse.down();
   await page.waitForTimeout(400);
   await page.mouse.move(gb.x + gb.width / 2 - 5, gb.y + gb.height / 2 + 40, { steps: 8 });
   await page.waitForTimeout(2600); await page.mouse.up();
   await page.waitForSelector("text=on target");
+  await page.waitForSelector("text=Most misses: shots");
   await page.screenshot({ path: (process.env.SHOT || ROOT) + "/recoil-spray.png", fullPage: true }).catch(() => {});
   const rlog = await page.evaluate(() => JSON.parse(localStorage.getItem("apex_recoil_v1")).log.map((x) => x.kind));
-  assert.deepStrictEqual(rlog, ["trace", "draw", "game"], "recoil practice is logged");
+  assert.deepStrictEqual(rlog, ["trace", "learn", "draw", "game"], "recoil practice is logged");
   await page.click("text=← Recoil");
+  await page.waitForSelector(".rcrow:has-text('R-301')");
+  // a miss, then Try again: the worst part with the rest showing, then the whole thing again
+  await page.click(".rcrow button:has-text('Draw')");
+  const pad = await page.locator("canvas.rcpad").boundingBox();
+  await page.mouse.move(pad.x + pad.width / 2, pad.y + 40); await page.mouse.down();
+  await page.mouse.move(pad.x + pad.width / 2, pad.y + pad.height - 60, { steps: 20 }); await page.mouse.up();
+  await page.click("button:has-text('Check my drawing')");
+  await page.waitForSelector(".verdictbar.miss, .verdictbar.shaky");
+  await page.screenshot({ path: (process.env.SHOT || ROOT) + "/recoil-miss.png", fullPage: true }).catch(() => {});
+  await page.click("button:has-text('Try again')");
+  await page.waitForSelector("text=part is hidden");
+  await drawPull(page, "r301");
+  await page.click("button:has-text('Check this part')");
+  await page.waitForSelector(".verdictbar.got");
+  await page.click("button:has-text('Now the whole thing')");
+  await drawPull(page, "r301");
+  await page.click("button:has-text('Check my drawing')");
+  await page.waitForSelector(".verdictbar.got");
+  const kinds = await page.evaluate(() => JSON.parse(localStorage.getItem("apex_recoil_v1")).log.slice(-2).map((x) => x.kind + ":" + !!x.sched));
+  assert.deepStrictEqual(kinds, ["draw:false", "retry:false"], "a retry is logged as practice and doesn't touch the schedule");
+  await page.click("button:has-text('Done')");
   await page.waitForSelector(".rcrow:has-text('R-301')");
   await page.screenshot({ path: (process.env.SHOT || ROOT) + "/recoil-home.png", fullPage: true }).catch(() => {});
 
