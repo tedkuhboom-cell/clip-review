@@ -153,12 +153,14 @@ const seed = {
   await page.screenshot({ path: (process.env.SHOT || ROOT) + "/recoil-draw.png", fullPage: true }).catch(() => {});
   await page.click("button:has-text('Spray game')");
   await page.waitForSelector("text=Hold anywhere on the box to fire");
+  assert.ok(await page.locator(".rcsteps li").count() >= 2, "stick recipe shown with the guide on");
   const gb = await page.locator("canvas.rcgame").boundingBox();
   await page.mouse.move(gb.x + gb.width / 2, gb.y + gb.height / 2); await page.mouse.down();
   await page.waitForTimeout(400);
   await page.mouse.move(gb.x + gb.width / 2 - 5, gb.y + gb.height / 2 + 40, { steps: 8 });
   await page.waitForTimeout(2600); await page.mouse.up();
   await page.waitForSelector("text=on target");
+  await page.waitForSelector("text=Most misses: shots");
   await page.screenshot({ path: (process.env.SHOT || ROOT) + "/recoil-spray.png", fullPage: true }).catch(() => {});
   const rlog = await page.evaluate(() => JSON.parse(localStorage.getItem("apex_recoil_v1")).log.map((x) => x.kind));
   assert.deepStrictEqual(rlog, ["trace", "draw", "game"], "recoil practice is logged");

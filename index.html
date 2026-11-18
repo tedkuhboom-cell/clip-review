@@ -176,6 +176,11 @@ details.more p{font-size:14px;margin:6px 0}
 .rckey{display:flex;gap:14px;font-size:12.5px;color:var(--muted);margin:0 0 8px}
 .rckey i{display:inline-block;width:14px;height:4px;border-radius:2px;margin-right:6px;vertical-align:middle}
 .rchead{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.rcsteps{list-style:none;margin:10px 0 0;padding:0}
+.rcsteps li{display:flex;gap:10px;align-items:baseline;padding:7px 10px;border-radius:8px;font-size:14.5px;border:1px solid transparent}
+.rcsteps li span{flex:none;width:92px;color:var(--muted);font-size:12.5px}
+.rcsteps li.now{border-color:var(--amber);background:var(--panel-2)}
+.rcsteps li.worst b{color:var(--red)}
 .kplist .mk{flex:none;width:22px;height:22px;border-radius:6px;display:grid;place-items:center;font-weight:700;font-size:13px}
 .kplist .hit .mk{background:var(--teal);color:var(--amber-ink)}
 .kplist .no .mk{background:var(--red-bg);color:var(--red-ink);border:1px solid var(--red)}
@@ -1250,6 +1255,41 @@ function rcHint(res){
   for(var i=0;i<3;i++) if(r[i]!==u[i]) return part[i]+": the gun needs you to pull "+nm(r[i])+". You pulled "+nm(u[i])+".";
   return res.score>=0.6 ? "That's the shape." : "Right directions. How far you pull to the side is off: compare the two lines.";
 }
+// Stick recipe. On a stick you don't draw the shape: you hold a direction, and how far you push sets how fast
+// your aim moves. So what matters is the speed and direction of the pull between shots, and when it changes.
+// Returns steps like {from:1, to:8, h:-1, v:1, text:"down, a little left"} covering every shot.
+// h: -2 left, -1 a little left, 0 none, 1 a little right, 2 right. v: 1 pull down, 0 ease off the down.
+function rcStepText(h, v){
+  var side = h===0 ? "" : (Math.abs(h)===1 ? "a little " : "") + (h<0 ? "left" : "right");
+  if(v) return h===0 ? "straight down" : Math.abs(h)===2 ? "down and "+side : "down, "+side;
+  return h===0 ? "ease off, barely pull" : side+", ease off the down";
+}
+function rcPlan(g){
+  var p=rcSmooth(rcSmooth(g.pull)), n=p.length, vel=[], i;
+  for(i=1;i<n;i++){ var dt=rcInterval(g,i)/1000; vel.push([(p[i][0]-p[i-1][0])/dt, (p[i][1]-p[i-1][1])/dt]); }
+  vel=rcSmooth(vel);
+  var downs=vel.map(function(q){ return Math.max(0,q[1]); }).sort(function(x,y){ return x-y; }), ref=downs[Math.floor(downs.length*0.6)]||1;
+  // a step is a run of shots; its direction comes from the average pull speed across the whole run
+  function mk(from,to){ var sx=0, sy=0; for(var k=from;k<=to;k++){ sx+=vel[k][0]; sy+=vel[k][1]; } var m=to-from+1, hx=sx/m/ref, vy=sy/m/ref, ax=Math.abs(hx);
+    return {from:from, to:to, hx:hx, vy:vy, h:ax<0.3?0:(ax<0.8?1:2)*(hx<0?-1:1), v:vy>=0.45?1:0}; }
+  function same(x,y){ return x.h===y.h && x.v===y.v; }
+  function gap(x,y){ return Math.abs(x.hx-y.hx)+0.5*Math.abs(x.vy-y.vy); }
+  var st=vel.map(function(_,k){ return mk(k,k); }), minLen=Math.max(3,Math.round(n/8));
+  function join(k){ st.splice(k,2,mk(st[k].from,st[k+1].to)); }
+  for(var guard=0; guard<400 && st.length>1; guard++){
+    var k=-1, best=Infinity;
+    for(i=0;i<st.length-1;i++) if(same(st[i],st[i+1])){ k=i; break; }                       // same direction: one step
+    if(k<0){ var short=-1; for(i=0;i<st.length;i++) if(st[i].to-st[i].from+1<minLen && (short<0 || st[i].to-st[i].from<st[short].to-st[short].from)) short=i;
+      if(short>=0) k = short===0 ? 0 : short===st.length-1 ? short-1 : (gap(st[short-1],st[short])<=gap(st[short],st[short+1]) ? short-1 : short); }   // too short to remember: join the closer neighbour
+    if(k<0 && st.length>5){ for(i=0;i<st.length-1;i++){ var d=gap(st[i],st[i+1]); if(d<best){ best=d; k=i; } } }   // too many steps: join the two most alike
+    if(k<0) break;
+    join(k);
+  }
+  // velocity k is the movement after shot k+1, so run [from..to] covers shots from+1 .. to+1; the last step runs to the final shot
+  return st.map(function(x,k){ return {from:x.from+1, to:k===st.length-1?n:x.to+1, h:x.h, v:x.v, text:rcStepText(x.h,x.v)}; });
+}
+function rcStepOf(plan, shot){ for(var i=0;i<plan.length;i++) if(shot<=plan[i].to) return i; return plan.length-1; }
+function rcStepLabel(x){ return "Shots "+x.from+"\u2013"+x.to; }
 // Milliseconds before shot i (i >= 1): fire rate, bursts, and the Devotion's wind-up.
 function rcInterval(g, i){
   var rps=g.rps; if(g.spin) rps=g.spin[0]+(g.rps-g.spin[0])*Math.min(1,i/g.spin[1]);
@@ -1314,9 +1354,13 @@ function renderRecoil(v){
   v.appendChild(pick);
   v.appendChild(h("details",{class:"panel more"}, h("summary",{text:"How this works"}),
     h("p",null,h("b",{text:"Draw from memory."})," Pull the shape with one finger, starting at the dot. The app scores your drawing against the real pull (size doesn't matter, the shape does) and brings each gun back on the same spaced schedule as your cards."),
-    h("p",null,h("b",{text:"Spray game."})," Hold to fire, drag to fight the kick. With the guide on you see the pull to follow; turn it off to test yourself. Dragging on glass isn't a thumbstick, so this teaches the shape and timing, not the feel."),
+    h("p",null,h("b",{text:"Spray game."})," Hold to fire, drag to fight the kick. With the guide on you see the pull to follow and the stick recipe, with the current step lit up as the gun fires; turn it off to test yourself. Dragging on glass isn't a thumbstick, so this teaches the shape and the timing, not the feel."),
+    h("p",null,h("b",{text:"Stick recipe."})," Each gun's pull is turned into a few steps, like \u201cShots 1\u20138: down, a little left.\u201d On a stick you hold a direction and lean, so the recipe is worked out from how fast and which way the pull moves between shots. Memorize when it changes."),
     h("p",null,h("b",{text:"Firing Range."})," Two mags per gun at a wall, pulling the shape you drew. That's where it becomes muscle memory. With aim assist on controller, the big moves matter more than every wiggle."),
     h("p",{class:"faint",text:P.recoilNote||""})));
+}
+function rcRecipe(plan, worst, els){
+  return h("ul",{class:"rcsteps"}, plan.map(function(x,i){ var li=h("li",{class:worst===i?"worst":null}, h("span",{text:rcStepLabel(x)}), h("b",{text:x.text})); if(els) els.push(li); return li; }));
 }
 function rcThumbIf(g, r){ return r ? rcThumb(g) : h("div",{class:"rcthumb rcnew",text:"?"}); }
 
@@ -1362,6 +1406,7 @@ function renderRcDraw(v){
     panel.appendChild(h("div",{class:"rckey"}, h("span",null,h("i",{style:"background:var(--teal)"}),"The gun's pull"), h("span",null,h("i",{style:"background:var(--amber)"}),"Yours")));
   }
   panel.appendChild(c);
+  if(done){ panel.appendChild(h("div",{class:"kphead",style:"margin-top:12px",text:"On the stick"})); panel.appendChild(rcRecipe(rcPlan(g))); }
   if(!done){
     panel.appendChild(h("div",{class:"nav2",style:"margin-top:12px"}, h("button",{type:"button",class:"ghost",onclick:function(){ q.stroke=null; checkBtn.disabled=true; paint(); }},"Clear"), checkBtn));
   } else {
@@ -1383,22 +1428,28 @@ function renderRcGame(v){
   var H0=0; g.pull.forEach(function(p){ H0=Math.max(H0,p[1]-g.pull[0][1]); });
   var k=H*0.45/(H0||1), kick=g.pull.map(function(p){ return [-(p[0]-g.pull[0][0])*k, -(p[1]-g.pull[0][1])*k]; });
   var st={aim:[tx,ty], shots:[], i:0, firing:false, over:false, last:null, timer:null};
+  var plan=rcPlan(g), stepEls=[];
+  function markStep(){ var cur=st.firing ? rcStepOf(plan, Math.max(1,st.i)) : -1; stepEls.forEach(function(el,i){ el.classList.toggle("now", i===cur); }); }
   function onBody(x,y){ return Math.abs(x-tx)<=body.w/2 && Math.abs(y-(ty+body.h*0.1))<=body.h/2; }
   function cross(){ var kk=kick[Math.max(0,st.i-1)]||[0,0]; return [st.aim[0]+kk[0], st.aim[1]+kk[1]]; }
   function fire(){
     if(!st.firing || st.i>=kick.length) return finish();
-    var kk=kick[st.i], x=st.aim[0]+kk[0], y=st.aim[1]+kk[1]; st.shots.push([x,y,onBody(x,y)]); st.i++;
+    var kk=kick[st.i], x=st.aim[0]+kk[0], y=st.aim[1]+kk[1]; st.shots.push([x,y,onBody(x,y)]); st.i++; markStep();
     if(st.i>=kick.length) return finish();
     st.timer=setTimeout(fire, rcInterval(g, st.i));
   }
   function finish(){
-    if(st.over) return; st.over=true; st.firing=false; clearTimeout(st.timer);
+    if(st.over) return; st.over=true; st.firing=false; clearTimeout(st.timer); markStep();
     if(!st.shots.length){ st.over=false; return; }
+    // which part of the recipe the misses were in (only among the shots actually fired)
+    var miss=plan.map(function(){ return 0; }), fired=plan.map(function(){ return 0; }), worst=-1;
+    st.shots.forEach(function(sh,j){ var k=rcStepOf(plan,j+1); fired[k]++; if(!sh[2]) miss[k]++; });
+    miss.forEach(function(m,k){ if(m>0 && (worst<0 || m/fired[k]>miss[worst]/fired[worst])) worst=k; });
     var hit=st.shots.filter(function(s){ return s[2]; }).length, n=kick.length, pct=Math.round(100*hit/n), tday=today();
     S.recoil.log.push({ts:Date.now(), d:tday, id:id, kind:"game", hit:hit, n:n, guide:q.guide, range:q.range}); if(S.recoil.log.length>3000) S.recoil.log=S.recoil.log.slice(-3000);
     var isBest=!q.guide && q.range==="close" ? (S.recoil.best[id]==null || pct>S.recoil.best[id]) : false;
     if(isBest) S.recoil.best[id]=pct;
-    saveRecoil(); q.last={hit:hit, n:n, pct:pct, best:isBest, shots:st.shots.slice()}; q.reps=(q.reps||0)+1; safeRender();
+    saveRecoil(); q.last={hit:hit, n:n, pct:pct, best:isBest, shots:st.shots.slice(), worst:worst, wm:worst>=0?miss[worst]:0, wf:worst>=0?fired[worst]:0, stopped:st.shots.length<n}; q.reps=(q.reps||0)+1; safeRender();
   }
   function paint(){
     if(!document.body.contains(c)) return;
@@ -1409,6 +1460,8 @@ function renderRcGame(v){
     if(q.guide) rcPath(ctx, kick.map(function(p){ return [tx-p[0], ty-p[1]]; }), rcCss("--teal"), 3, [4,6]);
     var shots=st.shots.length?st.shots:(q.last&&!st.firing?q.last.shots:[]);
     shots.forEach(function(s){ rcDot(ctx, s[0], s[1], 3.2, s[2]?rcCss("--teal"):rcCss("--red")); });
+    if(st.firing && q.guide){ var cs=plan[rcStepOf(plan, Math.max(1,st.i))]; ctx.save(); ctx.textAlign="center"; ctx.fillStyle=rcCss("--amber"); ctx.font="600 17px system-ui, sans-serif"; ctx.fillText(cs.text, W/2, 26);
+      ctx.fillStyle=rcCss("--muted"); ctx.font="12px system-ui, sans-serif"; ctx.fillText("shot "+Math.max(1,st.i)+" of "+kick.length, W/2, 44); ctx.restore(); }
     if(st.firing){ var p=cross(); ctx.save(); ctx.strokeStyle=rcCss("--amber"); ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(p[0]-10,p[1]); ctx.lineTo(p[0]-4,p[1]); ctx.moveTo(p[0]+4,p[1]); ctx.lineTo(p[0]+10,p[1]); ctx.moveTo(p[0],p[1]-10); ctx.lineTo(p[0],p[1]-4); ctx.moveTo(p[0],p[1]+4); ctx.lineTo(p[0],p[1]+10); ctx.stroke(); ctx.restore(); }
     else rcDot(ctx, tx, ty, 4, rcCss("--amber"));
     if(st.firing) requestAnimationFrame(paint);
@@ -1426,12 +1479,18 @@ function renderRcGame(v){
   var panel=h("section",{class:"panel"},
     h("div",{class:"rchead"}, h("button",{type:"button",class:"linkbtn",onclick:rcClose},"← Recoil"), h("span",{class:"faint",text:best!=null?"Best "+best+"% (close, guide off)":""})),
     h("h2",{class:"cardtitle",text:g.name+" · spray"}),
-    h("p",{class:"faint",style:"margin:0 0 10px",text:"Hold anywhere on the box to fire. Drag to fight the kick and keep the shots on the body. Lift to stop."}),
+    h("p",{class:"faint",style:"margin:0 0 10px",text:"Hold anywhere on the box to fire. Drag to fight the kick and keep the shots on the body. Lift to stop. Watch when the pull changes: that timing is what you take to the stick."}),
     h("div",{class:"row",style:"gap:8px;margin-bottom:10px"}, guideG, rangeG));
   if(q.last){ var L=q.last;
     panel.appendChild(h("div",{class:"verdictbar "+(L.pct>=70?"got":L.pct>=40?"shaky":"miss")}, h("b",{text:L.pct+"%"}), h("span",{class:"faint",text:L.hit+" of "+L.n+" on target"+(L.best?" · new best":"")+(q.reps>1?" · "+q.reps+" sprays":"")}))); }
+  if(q.last && q.last.worst>=0){ var wl=plan[q.last.worst];
+    panel.appendChild(h("p",{class:"hint",style:"margin:0 0 8px",text:"Most misses: "+rcStepLabel(wl).toLowerCase()+" ("+q.last.wm+" of "+q.last.wf+"). The stick there: "+wl.text+"."+(q.last.stopped?" You let go before the mag was empty.":"")})); }
   panel.appendChild(c);
-  panel.appendChild(h("p",{class:"hint",style:"margin:10px 0 0",text: q.guide ? "The dashed line is the pull: move your finger along it as the gun fires. Turn the guide off once you can." : "Guide off counts toward your best. Close range only."}));
+  if(q.guide){
+    panel.appendChild(h("div",{class:"kphead",style:"margin-top:12px",text:"On the stick"}));
+    panel.appendChild(rcRecipe(plan, q.last?q.last.worst:-1, stepEls));
+    panel.appendChild(h("p",{class:"hint",style:"margin:8px 0 0",text:"On a controller you hold down and lean, you don't draw the shape. The step lights up as the gun fires; say it to yourself as it changes. Turn the guide off to test whether you know when."}));
+  } else panel.appendChild(h("p",{class:"hint",style:"margin:10px 0 0",text:"Guide off: no line and no recipe. This is the test, and it counts toward your best (close range only)."}));
   v.appendChild(panel);
   paint();
 }
