@@ -116,6 +116,56 @@ const seed = {
   assert.strictEqual(r2.recall, 2, "restored phone has the answers");
   assert.strictEqual(r2.install, code.split(".")[0], "restored phone keeps backing up to the same code");
 
+  // --- Recoil: pick a gun, trace it, draw it from memory the next day, spray it ---
+  async function drawPull(p, id) {
+    const box = await p.locator("canvas.rcpad").boundingBox();
+    const pts = await p.evaluate((id) => {
+      const g = window.PACK.recoilGuns.find((x) => x.id === id), W = 320, H = 380, s = g.pull[0];
+      let mx = 0, hh = 0; g.pull.forEach((q) => { mx = Math.max(mx, Math.abs(q[0] - s[0])); hh = Math.max(hh, q[1] - s[1]); });
+      const k = Math.min(H * 0.76 / hh, W * 0.44 / mx);
+      return g.pull.map((q) => [W / 2 + (q[0] - s[0]) * k, H * 0.1 + (q[1] - s[1]) * k]);
+    }, id);
+    const f = box.width / 320;
+    await p.mouse.move(box.x + pts[0][0] * f, box.y + pts[0][1] * f); await p.mouse.down();
+    for (const q of pts) await p.mouse.move(box.x + q[0] * f, box.y + q[1] * f, { steps: 3 });
+    await p.mouse.up();
+  }
+  await page.click("button:has-text('← Back')");
+  await page.click("[data-tab=manual]");
+  await page.click("[role=tab]:has-text('Recoil')");
+  await page.waitForSelector("text=Pick the guns you actually use");
+  await page.click(".seg button[data-k=r301]");
+  await page.click(".rcrow button:has-text('Trace')");
+  await page.waitForSelector("text=Trace the grey line");
+  await drawPull(page, "r301");
+  await page.click("button:has-text('Done tracing')");
+  await page.waitForSelector("text=Next draw");
+  await page.evaluate((y) => { const r = JSON.parse(localStorage.getItem("apex_recoil_v1")); r.reviews.r301.due = y; localStorage.setItem("apex_recoil_v1", JSON.stringify(r)); }, yesterday);
+  await page.reload();
+  await page.click("button:has-text('Draw from memory')");
+  await page.waitForSelector("text=Draw how you pull");
+  await drawPull(page, "r301");
+  await page.click("button:has-text('Check my drawing')");
+  await page.waitForSelector(".verdictbar.got");
+  await page.waitForSelector("text=That's the shape.");
+  await page.waitForSelector("text=Draw from memory");
+  assert.strictEqual(await page.locator("text=Practice draw").count(), 0, "a scheduled draw is not labelled practice");
+  await page.screenshot({ path: (process.env.SHOT || ROOT) + "/recoil-draw.png", fullPage: true }).catch(() => {});
+  await page.click("button:has-text('Spray game')");
+  await page.waitForSelector("text=Hold anywhere on the box to fire");
+  const gb = await page.locator("canvas.rcgame").boundingBox();
+  await page.mouse.move(gb.x + gb.width / 2, gb.y + gb.height / 2); await page.mouse.down();
+  await page.waitForTimeout(400);
+  await page.mouse.move(gb.x + gb.width / 2 - 5, gb.y + gb.height / 2 + 40, { steps: 8 });
+  await page.waitForTimeout(2600); await page.mouse.up();
+  await page.waitForSelector("text=on target");
+  await page.screenshot({ path: (process.env.SHOT || ROOT) + "/recoil-spray.png", fullPage: true }).catch(() => {});
+  const rlog = await page.evaluate(() => JSON.parse(localStorage.getItem("apex_recoil_v1")).log.map((x) => x.kind));
+  assert.deepStrictEqual(rlog, ["trace", "draw", "game"], "recoil practice is logged");
+  await page.click("text=← Recoil");
+  await page.waitForSelector(".rcrow:has-text('R-301')");
+  await page.screenshot({ path: (process.env.SHOT || ROOT) + "/recoil-home.png", fullPage: true }).catch(() => {});
+
   assert.deepStrictEqual(errors, [], "no page errors");
   await browser.close(); server.close();
   console.log("browser smoke test passed");
