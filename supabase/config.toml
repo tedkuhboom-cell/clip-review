@@ -424,3 +424,11 @@ enabled = true
 # formatted with uppercase keywords, indent 2, max width 180, trailing commas,
 # and column/key alignment. Set to "null" to emit raw, unformatted SQL.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":180,\"commaStyle\":\"trailing\"}"
+
+# The app has no accounts and calls these with the publishable key, which is not a JWT.
+# Each function checks its own input and limits instead.
+[functions.grade]
+verify_jwt = false
+
+[functions.backup]
+verify_jwt = false

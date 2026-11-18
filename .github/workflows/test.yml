@@ -1,0 +1,27 @@
+name: Tests
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Grader, scheduler and content pack tests
+        run: node --test "tests/*.test.js"
+      - name: App files changed, so sw.js VERSION must be bumped
+        if: github.event_name == 'pull_request'
+        run: |
+          base="origin/${{ github.base_ref }}"
+          if git diff --name-only "$base"...HEAD | grep -qE '^(index\.html|pack-apex\.js|manifest\.webmanifest)$'; then
+            if ! git diff "$base"...HEAD -- sw.js | grep -q '^+const VERSION'; then
+              echo "index.html or pack-apex.js changed but VERSION in sw.js was not bumped. Phones would keep the old app."
+              exit 1
+            fi
+          fi

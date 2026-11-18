@@ -155,6 +155,15 @@ details.more p{font-size:14px;margin:6px 0}
 .kplist{list-style:none;margin:0 0 14px;padding:0}
 .kplist li{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--line);font-size:14.5px;opacity:0;animation:kpin .35s ease forwards}
 .kplist li:last-child{border-bottom:0}
+.kplist li.part .mk{color:var(--amber-ink2)}
+.ainote{display:block;color:var(--muted);font-size:12.5px;line-height:1.35;margin-top:3px}
+.gradedby{font-size:12px;color:var(--muted);margin:-6px 0 10px}
+.weekhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:14.5px}
+.weekdots{display:flex;gap:6px;margin-top:10px}
+.weekdots span{flex:1;text-align:center;padding:6px 0;border-radius:8px;border:1px solid var(--line);font-size:12px;color:var(--muted)}
+.weekdots span.on{background:var(--teal-bg);border-color:var(--teal);color:var(--teal-ink)}
+.weekdots span.today{outline:2px solid var(--amber);outline-offset:1px}
+.weekdots span.future{opacity:.55}
 .kplist .mk{flex:none;width:22px;height:22px;border-radius:6px;display:grid;place-items:center;font-weight:700;font-size:13px}
 .kplist .hit .mk{background:var(--teal);color:var(--amber-ink)}
 .kplist .no .mk{background:var(--red-bg);color:var(--red-ink);border:1px solid var(--red)}
@@ -426,7 +435,7 @@ document.title = "Clip Review";
 // ===================== storage =====================
 var PFX = P.storagePrefix;
 var K = { profile:PFX+"_profile_v1", manual:PFX+"_manual_v1", debrief:PFX+"_debrief_v1", clips:PFX+"_clip_review_v1", draft:PFX+"_clip_draft",
-          clipTimer:PFX+"_clip_session", backup:PFX+"_last_backup", ui:PFX+"_ui_v1", install:PFX+"_install_id", outbox:PFX+"_outbox" };
+          clipTimer:PFX+"_clip_session", backup:PFX+"_last_backup", ui:PFX+"_ui_v1", install:PFX+"_install_id", outbox:PFX+"_outbox", cloud:PFX+"_cloud" };
 function lget(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
 var saveWarned=false;
 function lset(k,v){ try{ if(v==null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); return true; }catch(e){ if(!saveWarned){ saveWarned=true; showSaveFail(e); } return false; } }
@@ -497,6 +506,57 @@ function queueSend(table,row){ var b=lget(K.outbox)||[]; b.push({t:table,row:row
 function appealRow(a){ return {install_id:installId(), app_version:APP_VERSION, pack:P.id, card_id:String(a.id).slice(0,20), from_grade:a.from, to_grade:a.to,
   points:(a.points||[]).slice(0,20), answer:String(a.answer||"").slice(0,4000), note:String(a.note||"").slice(0,2000), full_answer:!!a.full, client_ts:new Date(a.ts).toISOString()}; }
 function shareAppeal(a){ queueSend("appeals", appealRow(a)); a.sent=true; }
+
+// Edge Functions (supabase/functions): "grade" asks Claude to grade a typed answer on its meaning,
+// "backup" keeps an online copy of the backup file. Both are opt-in (Settings) and the app works without them.
+var FUNC_URL="https://fzfsqzuselkuynhuiplc.supabase.co/functions/v1/";
+function funcPost(name, body, ms){
+  var ctl=window.AbortController?new AbortController():null, timer=ctl?setTimeout(function(){ ctl.abort(); },ms||15000):null;
+  return fetch(FUNC_URL+name,{method:"POST",headers:{apikey:SUPA_KEY,"Content-Type":"application/json"},body:JSON.stringify(body),signal:ctl?ctl.signal:undefined}).then(function(res){
+    if(timer) clearTimeout(timer);
+    return res.json().catch(function(){ return {}; }).then(function(j){ if(!res.ok){ var e=new Error((j&&j.error)||("http_"+res.status)); e.status=res.status; throw e; } return j; });
+  }, function(e){ if(timer) clearTimeout(timer); throw e; });
+}
+// Claude's per-point result -> the same shape the keyword grader returns, plus the notes to show.
+function claudeResult(res, c){
+  if(!res || !Array.isArray(res.kp) || res.kp.length!==c.kp.length) throw new Error("shape");
+  var hits=res.kp.map(function(p){ return !!(p&&p.hit); }), n=hits.filter(Boolean).length, total=c.kp.length;
+  var gotAt=Math.max(total-1, Math.ceil(total*0.75)), shakyAt=Math.ceil(total/2), grade=n>=gotAt?"got":n>=shakyAt?"shaky":"miss";
+  if(grade==="got" && res.kp.some(function(p){ return p&&p.status==="contradicted"; })) grade="shaky";   // saying the opposite of a must-have is never a clean pass
+  var dp=(c.dp||[]).map(function(_,i){ return (res.dp&&res.dp[i])||{status:"missing",hit:false,note:""}; }), dh=dp.map(function(p){ return !!p.hit; });
+  return {hits:hits, n:n, total:total, grade:grade, dhits:dh, dn:dh.filter(Boolean).length, dt:dh.length, full:n===total && dh.every(Boolean) && total>0, by:"claude", ai:{kp:res.kp, dp:dp}};
+}
+// Online backup. The restore code is "<install id>.<key>"; the key never leaves this phone except inside that code.
+function cloudState(){ return lget(K.cloud)||{}; }
+function cloudSet(o){ var c=cloudState(); for(var k in o) c[k]=o[k]; lset(K.cloud,c); return c; }
+function cloudKey(){ var c=cloudState(); if(!/^[0-9a-f]{32}$/.test(c.key||"")){ var b=new Uint8Array(16); crypto.getRandomValues(b); c=cloudSet({key:Array.prototype.map.call(b,function(v){ return (v+256).toString(16).slice(1); }).join("")}); } return c.key; }
+function restoreCode(){ return installId()+"."+cloudKey(); }
+var cloudBusy=false, cloudTimer=null;
+function cloudSave(force){
+  if(S.profile.cloudBackup!==true || cloudBusy || navigator.onLine===false) return;
+  var c=cloudState(); if(!force && (!c.dirty || (c.last && Date.now()-c.last<10*60*1000))) return;
+  cloudBusy=true;
+  funcPost("backup",{action:"save", install_id:installId(), key:cloudKey(), data:exportData()}, 30000).then(function(){
+    cloudBusy=false; cloudSet({last:Date.now(), dirty:false, err:null}); if(force){ toast("Backed up online."); if(S.settings) safeRender(); }
+  }, function(e){
+    cloudBusy=false; var soon=e&&e.message==="too_soon"; if(!soon) cloudSet({err:"the backup service couldn't be reached. It will try again."});
+    if(force){ toast(soon?"Backed up a moment ago. Try again in a minute.":"Online backup failed. It will try again later."); if(S.settings) safeRender(); }
+  });
+}
+function cloudTouch(){ if(!S || S.profile.cloudBackup!==true) return; if(!cloudState().dirty) cloudSet({dirty:true}); clearTimeout(cloudTimer); cloudTimer=setTimeout(function(){ cloudSave(false); },8000); }
+function cloudRestore(code){
+  var m=String(code||"").trim().toLowerCase().match(/^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.([0-9a-f]{32})$/);
+  if(!m){ toast("That doesn't look like a restore code."); return; }
+  toast("Looking for your backup\u2026");
+  funcPost("backup",{action:"restore", install_id:m[1], key:m[2]}, 30000).then(function(res){
+    if(!restoreObject(res.data)) return;
+    lset(K.install,m[1]); cloudSet({key:m[2], last:Date.parse(res.saved)||Date.now(), dirty:false, err:null}); S.profile.cloudBackup=true; saveProfile(); safeRender();
+  }, function(e){ toast(e&&e.status===404?"No backup found for that code.":"Couldn't reach the backup service. Check your connection and try again."); });
+}
+function copyText(t, done){
+  function fb(){ var ta=h("textarea",{style:"position:fixed;left:-9999px"}); ta.value=t; document.body.appendChild(ta); ta.select(); try{ document.execCommand("copy"); toast(done); }catch(e){ toast("Couldn't copy. Select the text and copy it by hand."); } ta.remove(); }
+  try{ navigator.clipboard.writeText(t).then(function(){ toast(done); }, fb); }catch(e){ fb(); }
+}
 var errSent={}, errCount=0;
 function reportError(msg, stack){
   try{
@@ -603,17 +663,29 @@ var STEPS = ["Clip","Gut pass","Rewind","Before the fight","Comms","The fight","
 
 // ===================== key-point grader =====================
 // Each card lists key points; each point has accepted phrasings. A phrasing hits when every word stem in it
-// appears in the answer (prefix match, with a one-letter typo allowed on longer stems).
+// appears in the answer, close together (within NEAR words), so "back ... off" far apart doesn't count as "back off".
+// A stem matches a word by prefix; stems of 5+ letters also match inside a word; stems of 6+ letters allow a
+// one-letter typo after the first two letters (so "fight" is not read as "sight", or "flight" as "fight").
 function gnorm(s){ return String(s||"").toLowerCase().replace(/[’'`]/g,"").replace(/-/g,"").replace(/[^a-z0-9]+/g," ").trim(); }
 function lev1(a,b){ if(a===b) return true; var la=a.length, lb=b.length; if(Math.abs(la-lb)>1) return false;
   var i=0,j=0,ed=0; while(i<la&&j<lb){ if(a[i]===b[j]){i++;j++;continue;} if(++ed>1) return false; if(la>lb) i++; else if(lb>la) j++; else {i++;j++;} }
   return ed+(la-i)+(lb-j)<=1; }
-function stemHit(stem, toks){ for(var i=0;i<toks.length;i++){ var t=toks[i];
-    if(t.indexOf(stem)===0) return true;
-    if(stem.length>=5 && t.indexOf(stem)>=0) return true;
-    if(stem.length>=5 && t.length>=stem.length-1 && lev1(t.slice(0,stem.length),stem)) return true;
-    if(stem.length>=5 && lev1(t,stem)) return true; } return false; }
-function altHit(alt, toks){ var st=gnorm(alt).split(" ").filter(Boolean); return st.length>0 && st.every(function(x){ return stemHit(x,toks); }); }
+var NEAR=10;
+function tokHit(stem, t){
+  if(t.indexOf(stem)===0) return true;
+  if(stem.length>=5 && t.indexOf(stem)>=0) return true;
+  if(stem.length>=6 && t.slice(0,2)===stem.slice(0,2) && ((t.length>=stem.length-1 && lev1(t.slice(0,stem.length),stem)) || lev1(t,stem))) return true;
+  return false; }
+function stemPos(stem, toks){ var out=[]; for(var i=0;i<toks.length;i++) if(tokHit(stem,toks[i])) out.push(i); return out; }
+function stemHit(stem, toks){ return stemPos(stem,toks).length>0; }
+function altHit(alt, toks){
+  var st=gnorm(alt).split(" ").filter(Boolean); if(!st.length) return false;
+  var pos=st.map(function(x){ return stemPos(x,toks); });
+  if(pos.some(function(p){ return !p.length; })) return false;
+  if(st.length===1) return true;
+  return pos[0].some(function(a){   // every other stem has a match within NEAR words of this one
+    return pos.every(function(p){ return p.some(function(b){ return Math.abs(a-b)<=NEAR; }); }); });
+}
 function gradeAnswer(answer, kps){
   var toks=gnorm(answer).split(" ").filter(Boolean), total=kps.length;
   if(toks.length<2) return {hits:kps.map(function(){ return false; }), n:0, total:total, grade:"miss"};
@@ -644,9 +716,9 @@ var S = {
 };
 if(typeof S.draft._step==="number" && S.draft._step>=0) S.step=Math.min(S.draft._step,LAST);
 function saveProfile(){ lset(K.profile,S.profile); }
-function saveManual(){ lset(K.manual,{reviews:S.reviews, recall:S.recall, snap:S.snap, appeals:S.appeals, bestStreak:S.bestStreak}); }
-function saveDebrief(){ lset(K.debrief,{sessions:S.sessions}); }
-function saveClips(){ lset(K.clips,{clips:S.clips}); }
+function saveManual(){ lset(K.manual,{reviews:S.reviews, recall:S.recall, snap:S.snap, appeals:S.appeals, bestStreak:S.bestStreak}); cloudTouch(); }
+function saveDebrief(){ lset(K.debrief,{sessions:S.sessions}); cloudTouch(); }
+function saveClips(){ lset(K.clips,{clips:S.clips}); cloudTouch(); }
 function saveDraft(){ S.draft._step=S.step; S.draft._updated=Date.now(); lset(K.draft,S.draft); }
 function saveUI(){ lset(K.ui,S.ui); }
 function saveLive(){ lset(PFX+"_live_v1",S.live); }
@@ -696,7 +768,10 @@ function renderSetup(v){
     h("div",{class:"field"}, h("div",{class:"q"},"New cards per day",h("span",{class:"note",text:"3 is plenty. Fewer if you only have a few minutes."})), npdG),
     go,
     h("p",{class:"faint",style:"margin:14px 0 0",text:"Moving from another phone, or have a backup file?"}),
-    h("button",{type:"button",class:"ghost",style:"width:100%",onclick:pickRestore},"Restore from a backup file")));
+    h("button",{type:"button",class:"ghost",style:"width:100%",onclick:pickRestore},"Restore from a backup file"),
+    (function(){ var inp=h("input",{class:"inp",type:"text",id:"setup-code",placeholder:"Paste a restore code","aria-label":"Restore code",autocomplete:"off",autocapitalize:"off",spellcheck:"false"});
+      return h("details",{class:"more",style:"margin-top:10px"}, h("summary",{text:"Or restore an online backup with a code"}), inp,
+        h("button",{type:"button",class:"ghost",style:"width:100%;margin-top:8px",onclick:function(){ cloudRestore(inp.value); }},"Restore from code")); })()));
 }
 
 // ===================== MANUAL =====================
@@ -813,6 +888,36 @@ function themePanel(where){
   return sec;
 }
 
+// Weekly goal: practice days per week (Monday to Sunday). It counts effort, never grades.
+// A day counts when you answer a card, log a ranked session or review a clip.
+function practiceDays(){
+  var d={}; S.recall.forEach(function(r){ if(r.d) d[r.d]=1; });
+  S.sessions.forEach(function(x){ if(x.date) d[sessDay(x)]=1; });
+  S.clips.forEach(function(c){ if(c.created) d[ymd(new Date(c.created))]=1; });
+  if(S.live && S.live.games && S.live.games.length) d[today()]=1;
+  return d;
+}
+function weekGoal(){ return S.profile.weekGoal||4; }
+function weekStatus(){
+  var d=practiceDays(), t=today(), q=t.split("-"), dow=(new Date(+q[0],+q[1]-1,+q[2]).getDay()+6)%7, ws=addDays(t,-dow), days=[], n=0, open=0, goal=weekGoal();
+  for(var i=0;i<7;i++){ var day=addDays(ws,i), on=!!d[day]; days.push({on:on, today:day===t, future:day>t}); if(on) n++; else if(day>=t) open++; }
+  var streak=0, w=addDays(ws,-7);
+  for(var k=0;k<104;k++){ var c=0; for(var j=0;j<7;j++) if(d[addDays(w,j)]) c++; if(c<goal) break; streak++; w=addDays(w,-7); }
+  if(n>=goal) streak++;
+  return {days:days, n:n, goal:goal, open:open, streak:streak, missedYesterday:!d[t] && !d[addDays(t,-1)] && !!d[addDays(t,-2)]};
+}
+function weekPanel(){
+  var w=weekStatus(), names=["M","T","W","T","F","S","S"], need=w.goal-w.n;
+  var msg = need<=0 ? "Weekly goal hit"+(w.streak>1?", "+w.streak+" weeks in a row":"")+". Anything more this week is a bonus."
+    : w.missedYesterday ? "You missed yesterday. Never miss twice: a few cards today counts."
+    : need>w.open ? "This week's goal is out of reach now. Get today in anyway and start fresh on Monday."
+    : need+" more day"+(need===1?"":"s")+" this week to hit your goal.";
+  return h("section",{class:"panel"},
+    h("div",{class:"weekhead"}, h("b",{text:"This week \u00b7 "+w.n+" of "+w.goal+" days"}), need>0 && w.streak>0 ? h("span",{class:"faint",text:w.streak+" week"+(w.streak===1?"":"s")+" in a row so far"}) : null),
+    h("div",{class:"weekdots",role:"img","aria-label":w.n+" of "+w.goal+" practice days this week"}, w.days.map(function(x,i){ return h("span",{class:(x.on?"on":"")+(x.today?" today":"")+(x.future?" future":""),text:names[i]}); })),
+    h("p",{class:"hint",style:"margin:8px 0 0",text:msg}));
+}
+
 function renderManual(v){
   var t=today(), due=dueList(t).length;
   v.appendChild(subTabs([["today","Today",due||null],["library","Library"]], S.ui.manualSub, function(k){ S.ui.manualSub=k; saveUI(); S.mSession=null; safeRender(); window.scrollTo(0,0); }));
@@ -838,6 +943,7 @@ function renderManual(v){
     h("p",{class:"hint",text: total ? "About "+mins+" min. New cards are read first and tested at the end. Answers are graded on the key points." : (nd? "Next review "+pretty(nd)+". Go play your focus." : "Go play your focus.")}),
     pl.rest ? h("p",{class:"hint",style:"color:var(--amber-ink2)",text:pl.rest+" more card"+(pl.rest===1?" is":"s are")+" due. They'll wait for your next session; you're still on track. New cards pause until you catch up."}) : null,
     nq.length ? h("p",{class:"hint"},"Next new card: ",h("b",{text:nq[0].id+" "+nq[0].title}),inTheme(S.profile.theme&&S.profile.theme.id,nq[0].id)?" (your theme).":".") : h("p",{class:"hint",text:"Every card is started."})));
+  v.appendChild(weekPanel());
   if(S.profile.drill) v.appendChild(drillPanel());
   var bt=bedtimePanel(); if(bt) v.appendChild(bt);
   var tp=themePanel("manual"); if(tp){ tp.appendChild(h("button",{type:"button",class:"linkbtn",onclick:function(){ goTab("debrief"); }},"Play it in a ranked session")); v.appendChild(tp); }
@@ -846,6 +952,8 @@ function renderManual(v){
     h("p",null,h("b",{text:"New cards: read now, test later."})," You read new cards first, do your reviews, then get tested on the new ones at the end. Testing right after reading only checks short-term memory; the gap makes it real recall."),
     h("p",null,h("b",{text:"A daily cap."})," Sessions stop at your session size (Settings), most overdue cards first. Anything left waits for the next session, and new cards pause until you catch up, so missing a few days never buries you."),
     h("p",null,h("b",{text:"Today's drill."})," At the end of a session, pick one drill to try in your next ranked games. A card isn't really yours until you've used it in a match."),
+    h("p",null,h("b",{text:"Graded on meaning."})," With Claude grading on (Settings), your answer is judged on what you meant, not the exact words, and each missed point comes with a line on what was missing. Offline, the app grades by keywords on your phone instead."),
+    h("p",null,h("b",{text:"Weekly goal."})," A day counts when you answer a card, log a ranked session or review a clip. Aim for your number of days each week, and never miss twice in a row."),
     h("p",null,h("b",{text:"Full answers."})," Each card also has \u201cgo deeper\u201d points. They don't change your grade, but hitting all of them earns a ★ Full answer, which counts on your Proof screen."),
     h("p",null,h("b",{text:"Graded on key points."})," Hit them all (or all but one on big cards) for Got it, half for Shaky, less for Missed. Wording doesn't matter."),
     h("p",null,h("b",{text:"Adaptive schedule."})," Each card comes back right before you\u2019d forget it, at your target (90% by default, in Settings). Cards you know well spread out to weeks and months; hard ones come back sooner. Missed brings a card back tomorrow, and a \u2605 Full answer spaces it out further than a plain Got it."),
@@ -898,20 +1006,31 @@ function renderMSession(v){
     ta.value=s.answer||""; ta.addEventListener("input",function(){ s.answer=ta.value; });
     ta.addEventListener("paste",function(e){ e.preventDefault(); toast("Type it from memory. Pasting is off here."); });
     ta.addEventListener("drop",function(e){ e.preventDefault(); toast("Type it from memory. Pasting is off here."); });
+    function keywordResult(dontKnow){
+      var r=dontKnow?{hits:c.kp.map(function(){ return false; }),n:0,total:c.kp.length,grade:"miss"}:gradeAnswer(s.answer,c.kp);
+      var dh=dontKnow?(c.dp||[]).map(function(){ return false; }):depthHits(s.answer,c.dp); r.dhits=dh; r.dn=dh.filter(Boolean).length; r.dt=dh.length;
+      r.full = r.n===r.total && r.dn===r.dt && r.total>0; r.by="kw"; return r;
+    }
     function check(dontKnow){
+      if(s.grading) return;
       s.answer=dontKnow?"":ta.value.trim(); s.appealed=false; s.appealUp=false; s.dclaimed=[];
-      if(c.selfGrade){ s.result=null; } else { s.result=dontKnow?{hits:c.kp.map(function(){ return false; }),n:0,total:c.kp.length,grade:"miss"}:gradeAnswer(s.answer,c.kp);
-        var dh=dontKnow?(c.dp||[]).map(function(){ return false; }):depthHits(s.answer,c.dp); s.result.dhits=dh; s.result.dn=dh.filter(Boolean).length; s.result.dt=dh.length;
-        s.result.full = s.result.n===s.result.total && s.result.dn===s.result.dt && s.result.total>0; }
-      go("result");
+      if(c.selfGrade){ s.result=null; return go("result"); }
+      var kw=keywordResult(dontKnow), wantAI=S.profile.aiGrade===true && !dontKnow && s.answer.split(/\s+/).filter(Boolean).length>=2;
+      if(!wantAI || navigator.onLine===false){ if(wantAI) kw.fell="offline"; s.result=kw; return go("result"); }
+      // Ask Claude. The keyword result is ready as the fallback if the call fails or takes too long.
+      var at=s.i; s.grading=true; ta.disabled=true; idkBtn.disabled=true; checkBtn.disabled=true; checkBtn.textContent="Grading\u2026";
+      function done(r){ if(S.mSession!==s || s.i!==at || !s.grading) return; s.grading=false; s.result=r; go("result"); }
+      funcPost("grade",{install_id:installId(), card_id:c.id, answer:s.answer.slice(0,1500)}, 15000).then(function(res){
+        var r; try{ r=claudeResult(res,c); }catch(e){ kw.fell="error"; r=kw; } done(r);
+      }, function(e){ kw.fell = e&&e.message==="daily_limit" ? "limit" : "error"; done(kw); });
     }
     panel.appendChild(h("p",{class:"cardq",text:c.recall}));
     panel.appendChild(h("label",{class:"sr",for:"recall-input",style:"position:absolute;left:-9999px",text:"Your answer"}));
     panel.appendChild(ta);
     panel.appendChild(h("p",{class:"recallhint",text:c.selfGrade?"Type your honest answer, then reveal and grade yourself.":"Hit the key points in your own words. Your keyboard's mic button works too."}));
-    panel.appendChild(h("div",{class:"nav2"},
-      h("button",{type:"button",class:"ghost",onclick:function(){ check(true); }},"I don't know"),
-      h("button",{type:"button",class:"primary",onclick:function(){ check(false); }}, c.selfGrade?"Reveal":"Check my answer")));
+    var idkBtn=h("button",{type:"button",class:"ghost",onclick:function(){ check(true); }},"I don't know");
+    var checkBtn=h("button",{type:"button",class:"primary",onclick:function(){ check(false); }}, c.selfGrade?"Reveal":"Check my answer");
+    panel.appendChild(h("div",{class:"nav2"}, idkBtn, checkBtn));
   } else {
     var r=s.result;
     if(r){
@@ -919,11 +1038,15 @@ function renderMSession(v){
       var runNow=r.full?(s.streak||0)+1:0;
       panel.appendChild(h("div",{class:"verdictbar "+shown}, h("b",null,GRADE_NAME[shown], r.full?h("span",{class:"fullstar",text:"★ Full answer"}):null, runNow>=2?h("span",{class:"streak bump",style:"margin-left:8px;vertical-align:middle",text:runNow+" in a row"}):null), h("span",{class:"faint",text:r.n+" of "+r.total+" key point"+(r.total===1?"":"s")+(s.appealUp?" · upgraded":"")})));
       if(s.answer) panel.appendChild(h("p",{class:"youranswer",text:s.answer}));
+      if(r.by==="claude") panel.appendChild(h("p",{class:"gradedby",text:"Graded on meaning by Claude."}));
+      else if(r.fell) panel.appendChild(h("p",{class:"gradedby",text: r.fell==="offline" ? "You're offline, so this was graded by keywords on your phone." : r.fell==="limit" ? "Today's Claude grading limit is used up, so this was graded by keywords." : "Claude couldn't be reached, so this was graded by keywords on your phone."}));
+      var ai=r.ai||null;
+      function aiNote(p,hit){ return (!hit && p && p.note) ? h("small",{class:"ainote",text:(p.status==="contradicted"?"Opposite. ":p.status==="partial"?"Partly there. ":"")+p.note}) : null; }
       panel.appendChild(h("div",{class:"kphead",text:"Must-have"}));
-      panel.appendChild(h("ul",{class:"kplist"}, c.kp.map(function(kp,i){ return h("li",{class:r.hits[i]?"hit":"no",style:"animation-delay:"+(i*180)+"ms"}, h("span",{class:"mk",text:r.hits[i]?"✓":"✕"}), h("span",{text:kp[0]})); })));
+      panel.appendChild(h("ul",{class:"kplist"}, c.kp.map(function(kp,i){ var p=ai&&ai.kp[i], part=!r.hits[i]&&p&&p.status==="partial"; return h("li",{class:(r.hits[i]?"hit":"no")+(part?" part":""),style:"animation-delay:"+(i*180)+"ms"}, h("span",{class:"mk",text:r.hits[i]?"✓":part?"~":"✕"}), h("span",null,kp[0],aiNote(p,r.hits[i]))); })));
       if(c.dp && c.dp.length){
         panel.appendChild(h("div",{class:"kphead",text:"Go deeper · not needed for the grade, needed for a full answer"}));
-        panel.appendChild(h("ul",{class:"kplist"}, c.dp.map(function(kp,i){ var cl=(s.dclaimed||[]).indexOf(i)>=0, hit=(r.dhits&&r.dhits[i])||cl; return h("li",{class:"deep"+(hit?" hit":""),title:cl?"Claimed by you":null,style:"animation-delay:"+((c.kp.length+i)*180)+"ms"}, h("span",{class:"mk",text:hit?"✓":""}), h("span",{text:kp[0]})); })));
+        panel.appendChild(h("ul",{class:"kplist"}, c.dp.map(function(kp,i){ var cl=(s.dclaimed||[]).indexOf(i)>=0, hit=(r.dhits&&r.dhits[i])||cl; return h("li",{class:"deep"+(hit?" hit":""),title:cl?"Claimed by you":null,style:"animation-delay:"+((c.kp.length+i)*180)+"ms"}, h("span",{class:"mk",text:hit?"✓":""}), h("span",null,kp[0],aiNote(ai&&ai.dp[i],hit))); })));
       }
     } else if(s.answer) panel.appendChild(h("p",{class:"youranswer",text:s.answer}));
     panel.appendChild(h("div",null,cardBody()));
@@ -966,7 +1089,7 @@ function renderMSession(v){
           var allMust=r.hits.every(function(hh,i){ return hh || kC.indexOf(i)>=0; }), allDeep=(r.dhits||[]).every(function(hh,i){ return hh || dC.indexOf(i)>=0; });
           if(!r.full && allMust && allDeep && r.total>0){ r.full=true; r.fullAppealed=true; }
           var pts=kC.map(function(i){ return c.kp[i][0]; }).concat(dC.map(function(i){ return "Go deeper: "+c.dp[i][0]; }));
-          var rec={ts:Date.now(), d:today(), id:c.id, points:pts, note:note.value.trim(), answer:s.answer, from:r.grade, to:s.appealUp?bump(r.grade):r.grade, full:!!r.fullAppealed};
+          var rec={ts:Date.now(), d:today(), id:c.id, points:pts, note:note.value.trim(), answer:s.answer, from:r.grade, to:s.appealUp?bump(r.grade):r.grade, full:!!r.fullAppealed, by:r.by||"kw"};
           S.appeals.push(rec);
           if(S.appeals.length>500) S.appeals=S.appeals.slice(-500);
           if(S.profile.shareAppeals===true) shareAppeal(rec); else if(S.profile.shareAppeals==null) s.askShare=rec;
@@ -991,7 +1114,7 @@ function bump(g){ return g==="miss"?"shaky":g==="shaky"?"got":g; }
 function finishCard(c,g,r){
   var s=S.mSession, it=s.items[s.i];
   S.reviews[c.id]=schedule(S.reviews[c.id], g, today(), !!(r && r.full));
-  if(r) S.recall.push({ts:Date.now(), d:today(), id:c.id, n:r.n, t:r.total, g:r.grade, ap:!!s.appealed, k:it.kind, dn:r.dn||0, dt:r.dt||0, f:!!r.full});
+  if(r) S.recall.push({ts:Date.now(), d:today(), id:c.id, n:r.n, t:r.total, g:r.grade, ap:!!s.appealed, k:it.kind, dn:r.dn||0, dt:r.dt||0, f:!!r.full, by:r.by==="claude"?"c":"k", a:(s.answer||"").slice(0,600)});
   if(r) s.full=(s.full||0)+(r.full?1:0);
   if(r){ s.streak = r.full ? (s.streak||0)+1 : 0; if(s.streak>(s.bestRun||0)) s.bestRun=s.streak; if(s.streak>(S.bestStreak||0)){ S.bestStreak=s.streak; saveManual(); } }
   s.appealOpen=false; s.claim=[]; s.appealNote="";
@@ -1037,7 +1160,8 @@ function renderLibrary(v){
     chips.appendChild(h("button",{type:"button","aria-pressed":String(S.ui.libMod===p[0]),onclick:function(){ S.ui.libMod=p[0]; saveUI(); safeRender(); }},p[1]));
   });
   v.appendChild(chips);
-  var panel=h("section",{class:"panel"});
+  var panel=h("section",{class:"panel"}), lastAns={};
+  S.recall.forEach(function(x){ if(x.a) lastAns[x.id]=x; });
   (S.ui.libMod==="all"?Object.keys(MODS):[S.ui.libMod]).forEach(function(m){
     var cs=CARDS.filter(function(c){ return String(c.mod)===String(m); }); if(!cs.length) return;
     panel.appendChild(h("div",{class:"modhead",text:"Module "+m+" · "+MODS[m]}));
@@ -1050,6 +1174,7 @@ function renderLibrary(v){
         h("p",{text:c.concept}),
         h("div",{class:"kv"},h("b",{text:"Recall: "}),c.recall),
         testedBox(c),
+        lastAns[c.id] ? h("div",{class:"kv"},h("b",{text:"Your last answer ("+fmtDate(lastAns[c.id].d)+", "+GRADE_NAME[lastAns[c.id].g]+"): "}),lastAns[c.id].a) : null,
         h("div",{class:"kv"},h("b",{text:"Drill: "}),c.drill),
         c.roles && c.roles[0]!=="All" ? h("div",{class:"kv",text:"Best on: "+c.roles.join(", ")}) : null,
         c.src ? h("div",{class:"src",text:"Source: "+c.src+(c.soon?". Announced, subject to change.":"")}) : null));
@@ -1995,11 +2120,9 @@ var restoreInput=h("input",{type:"file",accept:".json,application/json,text/plai
 document.body.appendChild(restoreInput);
 restoreInput.addEventListener("change",function(){ var f=restoreInput.files&&restoreInput.files[0]; if(f) restoreFrom(f); restoreInput.value=""; });
 function pickRestore(){ restoreInput.click(); }
-function restoreFrom(file){
-  var r=new FileReader();
-  r.onload=function(){
+function restoreObject(o){
     try{
-      var o=JSON.parse(r.result); if(!o || (o.pack && o.pack!==P.id)) throw new Error("pack");
+      if(!o || typeof o!=="object") throw new Error("not"); if(o.pack && o.pack!==P.id) throw new Error("pack");
       var added={clips:0,sessions:0,cards:0,reasons:0}, gotDraft=false;
       (o.clips||[]).forEach(function(c){ if(c&&c.id&&!S.clips.some(function(x){ return x.id===c.id; })){ S.clips.push(c); added.clips++; } });
       (o.sessions||[]).forEach(function(s){ if(s&&s.id&&!S.sessions.some(function(x){ return x.id===s.id; })){ S.sessions.push(s); added.sessions++; } });
@@ -2022,13 +2145,17 @@ function restoreFrom(file){
         var wk={}; (S.profile.writeIns||[]).forEach(function(w){ wk[w.ts+"|"+w.t]=1; });
         (op.writeIns||[]).forEach(function(w){ if(w&&w.t&&!wk[w.ts+"|"+w.t]){ (S.profile.writeIns=S.profile.writeIns||[]).push(w); wk[w.ts+"|"+w.t]=1; } });
         Object.keys(op.divSize||{}).forEach(function(r){ S.profile.divSize=S.profile.divSize||{}; if(S.profile.divSize[r]==null) S.profile.divSize[r]=op.divSize[r]; });
-        ["retention","sessionCap","bedClip","rankSystem","goalRank","banBackups","rotate","sessMode","drill"].forEach(function(k){ if(S.profile[k]==null && op[k]!=null) S.profile[k]=op[k]; });
+        ["retention","sessionCap","bedClip","rankSystem","goalRank","banBackups","rotate","sessMode","drill","weekGoal","aiGrade"].forEach(function(k){ if(S.profile[k]==null && op[k]!=null) S.profile[k]=op[k]; });
       }
       saveClips(); saveDebrief(); saveManual(); saveProfile(); S.settings=false; safeRender(); window.scrollTo(0,0);
       var parts=[]; if(added.cards) parts.push(added.cards+" card"+(added.cards===1?"":"s")); if(added.sessions) parts.push(added.sessions+" session"+(added.sessions===1?"":"s")); if(added.clips) parts.push(added.clips+" clip review"+(added.clips===1?"":"s")); if(added.reasons) parts.push(added.reasons+" custom reason"+(added.reasons===1?"":"s")); if(gotDraft) parts.push("your unfinished review");
-      toast(parts.length?"Restored "+parts.join(", ")+".":"Nothing new in that file.");
-    }catch(e){ toast(e&&e.message==="pack"?"That backup is for a different game.":"That file isn't a Clip Review backup."); }
-  };
+      toast(parts.length?"Restored "+parts.join(", ")+".":"Nothing new in that backup.");
+      return true;
+    }catch(e){ toast(e&&e.message==="pack"?"That backup is for a different game.":"That isn't a Clip Review backup."); return false; }
+}
+function restoreFrom(file){
+  var r=new FileReader();
+  r.onload=function(){ var o=null; try{ o=JSON.parse(r.result); }catch(e){} restoreObject(o); };
   r.readAsText(file);
 }
 function renderSettings(v){
@@ -2074,11 +2201,31 @@ function renderSettings(v){
   var shG=h("div",{class:"seg small"}), erG=h("div",{class:"seg small"}), waiting=(lget(K.outbox)||[]).length;
   [["yes","Send them"],["no","Keep on phone"]].forEach(function(o){ shG.appendChild(h("button",{type:"button","data-k":o[0],"aria-pressed":String(p.shareAppeals===(o[0]==="yes")),onclick:function(){ S.profile.shareAppeals=o[0]==="yes"; setPressed(shG,o[0]); saveProfile(); toast(o[0]==="yes"?"Future appeals will be sent.":"Appeals stay on this phone."); }},o[1])); });
   [["on","Send"],["off","Don't send"]].forEach(function(o){ erG.appendChild(h("button",{type:"button","data-k":o[0],"aria-pressed":String((p.sendErrors!==false)===(o[0]==="on")),onclick:function(){ S.profile.sendErrors=o[0]==="on"; setPressed(erG,o[0]); saveProfile(); }},o[1])); });
+  var aiG=h("div",{class:"seg small"});
+  [["on","Claude grades"],["off","Keywords only"]].forEach(function(o){ aiG.appendChild(h("button",{type:"button","data-k":o[0],"aria-pressed":String((p.aiGrade===true)===(o[0]==="on")),onclick:function(){ S.profile.aiGrade=o[0]==="on"; setPressed(aiG,o[0]); saveProfile(); toast(o[0]==="on"?"Claude will grade your answers when you're online.":"Answers are graded on this phone."); }},o[1])); });
   v.appendChild(h("section",{class:"panel"}, h("h2",{text:"Sharing"}),
     h("p",{class:"sub",text:"Nothing that identifies you is ever sent. Each phone gets a random ID so reports from the same phone can be grouped."}),
+    h("div",{class:"field"}, h("div",{class:"q"},"Answer grading",h("span",{class:"note",text:"Claude grades what you meant, not the exact words, and says what was missing. It sends the card number and your typed answer, and keeps them to check the grader. Offline, or on keywords only, grading happens on this phone."})), aiG),
     h("div",{class:"field"}, h("div",{class:"q"},"Grader appeals",h("span",{class:"note",text:(p.shareAppeals==null?"You'll be asked the first time you appeal. ":"")+"Sends the card, your answer and your note, so the grader can be fixed when it misses a correct answer."})), shG),
     h("div",{class:"field"}, h("div",{class:"q"},"Crash reports",h("span",{class:"note",text:"When something breaks, sends the error, which screen you were on and your browser type. Never anything you typed."})), erG),
     waiting ? h("p",{class:"faint",style:"margin:0",text:waiting+" waiting to send. They go out next time you're online."}) : null));
+  // weekly goal
+  var wgG=h("div",{class:"seg"});
+  [3,4,5,6].forEach(function(n){ wgG.appendChild(h("button",{type:"button","data-k":String(n),"aria-pressed":String(weekGoal()===n),onclick:function(){ S.profile.weekGoal=n; setPressed(wgG,String(n)); saveProfile(); }}, String(n))); });
+  v.appendChild(h("section",{class:"panel"}, h("h2",{text:"Weekly goal"}),
+    h("div",{class:"field",style:"margin-bottom:0"}, h("div",{class:"q"},"Practice days per week",h("span",{class:"note",text:"A day counts when you answer a card, log a ranked session or review a clip. It measures showing up, not grades."})), wgG)));
+  // online backup: opt-in copy of the backup file, kept under a restore code
+  var cl=cloudState(), obG=h("div",{class:"seg small"}), codeIn=h("input",{class:"inp",type:"text",id:"restore-code",placeholder:"Paste a restore code",autocomplete:"off",autocapitalize:"off",spellcheck:"false"});
+  [["on","On"],["off","Off"]].forEach(function(o){ obG.appendChild(h("button",{type:"button","data-k":o[0],"aria-pressed":String((p.cloudBackup===true)===(o[0]==="on")),onclick:function(){ S.profile.cloudBackup=o[0]==="on"; saveProfile(); if(S.profile.cloudBackup) cloudSave(true); safeRender(); }},o[1])); });
+  v.appendChild(h("section",{class:"panel"}, h("h2",{text:"Online backup"}),
+    h("p",{class:"sub",text:"Keeps a copy of your backup online and updates it as you use the app, so a wiped browser or a lost phone doesn't cost you your history. There's no account: the copy sits under a restore code that only this phone has."}),
+    h("div",{class:"field"}, h("div",{class:"q"},"Back up online",h("span",{class:"note",text:"Sends everything in your backup file: cards, answers, sessions, clip reviews and settings."})), obG),
+    p.cloudBackup===true ? h("div",{class:"field"}, h("div",{class:"q"},"Your restore code",h("span",{class:"note",text:"Save it somewhere off this phone, for example email it to yourself. Anyone with the code can read this backup."})),
+      h("p",{class:"youranswer",style:"font-family:monospace;font-size:12px",text:restoreCode()}),
+      h("div",{class:"row"}, h("button",{type:"button",class:"ghost",onclick:function(){ copyText(restoreCode(),"Restore code copied."); }},"Copy code"), h("button",{type:"button",class:"ghost",onclick:function(){ cloudSave(true); }},"Back up now")),
+      h("p",{class:"faint",style:"margin:8px 0 0",text: cl.last ? "Last online backup: "+fmtAgo(cl.last)+"." : cl.err ? "Not backed up yet: "+cl.err : "Not backed up yet."})) : null,
+    h("div",{class:"field",style:"margin-bottom:0"}, h("label",{class:"q",for:"restore-code"},"Restore from a code"), codeIn,
+      h("button",{type:"button",class:"ghost",style:"margin-top:8px",onclick:function(){ cloudRestore(codeIn.value); }},"Restore"))));
   // grader appeals: review and send for tuning
   var ap=S.appeals.slice().reverse(), apPanel=h("section",{class:"panel"}, h("h2",{text:"Grader appeals ("+ap.length+")"}),
     h("p",{class:"sub",text:"Every time someone says the grader missed something, the answer and their note land here. Copy them and send them to Claude to tune the key points, or to spot answers that stretch the truth."}));
@@ -2140,6 +2287,7 @@ document.addEventListener("visibilitychange",function(){ if(document.visibilityS
 safeRender();
 flushOutbox(); window.addEventListener("online", flushOutbox);
 try{ if(navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function(){}); }catch(e){}
+setTimeout(function(){ try{ cloudSave(false); }catch(e){} },4000);   // send a backup that was still waiting when the app was last closed
 if("serviceWorker" in navigator){ window.addEventListener("load",function(){ navigator.serviceWorker.register("sw.js").catch(function(){}); }); }
 })();
 </script>

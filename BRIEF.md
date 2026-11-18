@@ -101,11 +101,13 @@ Each card:
 
 Packs also define `modules`, `newOrder` (study order), `debriefCauses`, `clips` (review questions), `ranks`, and so on. A new subject = a new pack file with the same shape.
 
-### The grader (`gradeAnswer`)
+### The graders
 
-Keyword matching, not AI:
+**Claude grader (optional, online).** The `grade` Edge Function sends the card, its key points and the typed answer to Claude and gets back, for each point, covered / partly / missing / opposite, a quote from the answer as evidence, and one line on what was missing. The app turns that into the same Got it / Shaky / Missed thresholds as below. Prompt, schema and checks are in `supabase/functions/grade/core.mjs`; `tests/eval-claude.mjs` compares models on `tests/grader-cases.txt`.
+
+**Keyword grader (`gradeAnswer`, on the phone, always available as the fallback).** Keyword matching, not AI:
 1. Normalize text (lowercase, strip punctuation).
-2. Each key point has alternative phrasings. A phrasing matches if **every word stem in it** appears in the answer (prefix match; for stems of 5+ letters, a substring or one-letter typo also counts).
+2. Each key point has alternative phrasings. A phrasing matches if **every word stem in it** appears in the answer within 10 words of each other (prefix match; stems of 5+ letters also match inside a word; stems of 6+ letters allow a one-letter typo after the first two letters).
 3. **Got it** if hits ≥ max(n−1, ⌈0.75n⌉); **Shaky** if hits ≥ ⌈n/2⌉; otherwise **Missed**.
 4. Measured accuracy: each card's own model answers grade Got it; short answers meant for a different card essentially never pass; whole paragraphs from other cards pass ~2–5% of the time.
 
@@ -129,10 +131,10 @@ Default FSRS-4.5 weights. Missed / Shaky / Got it / ★ Full answer map to grade
 ## 7. Known weak spots (please poke at these)
 
 1. **`index.html` is one ~1,900-line file** with global state and string-built UI. When should it be split, and into what?
-2. **No automated tests in the repo.** Testing so far is ad-hoc Playwright scripts run by the agent (phone emulation plus a real backup file), not committed and not in CI.
-3. **`pack-apex.js` is one giant JSON line,** so GitHub diffs of content changes are unreadable. Content is edited through throwaway Node scripts.
-4. **The grader is lexical.** It can be fooled by keyword-stuffing and can miss correct answers phrased in unexpected ways. Appeals are logged locally but don't reach the developer yet (a Google Form auto-send is planned).
-5. **Data durability.** localStorage can be wiped by the browser; backup is manual. No sync across devices.
+2. **Tests are thin.** `npm test` covers the keyword grader, the scheduler and the content pack, and runs in CI; `npm run smoke` drives the main flows in headless Chrome but is not in CI. Most screens have no test.
+3. **Content is still edited by script.** `pack-apex.js` is now one item per line (readable diffs, `tools/pack-io.js`), but a card is still a long line of JSON and there is no editor.
+4. **The Claude grader is unmeasured on real answers.** It has only been designed against 160 hand-written test answers, and the model (Haiku, Sonnet or Opus) hasn't been chosen with data yet. The keyword fallback is still lexical: on the same test answers it gives Got it to 10 of 77 wrong answers that reuse the card's vocabulary.
+5. **Data durability.** localStorage can be wiped by the browser. Online backup exists but is opt-in and depends on the user keeping a restore code; there are no accounts and no live sync across devices.
 6. **No error reporting or analytics.** If something breaks on a user's phone, we won't know.
 7. **Service-worker versioning is manual** (bump `VERSION` in `sw.js`). Forget it and users can be served a stale app.
 8. **Content provenance.** Cards are paraphrased from official patch notes and creator videos; before going public every card needs to be fully in our own words, with credit.

@@ -1,0 +1,1061 @@
+{
+ "pack": "apex 2026.11i",
+ "cards": [
+  {
+   "id": "0.1",
+   "title": "Tempo is who controls the pace",
+   "recall": "What does having tempo mean, and what's the one question that reads it live?",
+   "concept": "Tempo is who's making the decisions versus who's reacting, and it shifts like tides. Positive tempo: you got a knock, forced a heal, rotated early, so you choose what happens next. Negative tempo: you're cracked, healing, answering their moves. Read it live with one question on repeat: who's deciding right now, me or them? The moment the answer is “them,” make a move that forces them to answer you.",
+   "kp": [
+    "Tempo = who's making the decisions vs. who's reacting",
+    "The live question: who's deciding right now, me or them?"
+   ],
+   "dp": [
+    "When the answer is \"them\", force them to answer you",
+    "It shifts like tides: knocks, heals, early rotations swing it"
+   ]
+  },
+  {
+   "id": "0.1a",
+   "title": "Tempo · taking it in a fight",
+   "recall": "Name the in-fight actions that buy you tempo, and what they all have in common.",
+   "concept": "Inside a fight, tempo is bought with actions that force a reaction: a knock (they're a player down), a crack (they have to back off or heal), a forced heal, or burned utility. Each one puts them on the clock and hands you the initiative. You don't wait for tempo to show up. You take an action that leaves them no choice but to answer, then stack those forced reactions until they're always a step behind.",
+   "kp": [
+    "A knock or a crack",
+    "Forcing a heal or burning their utility",
+    "They all force a reaction and put them on the clock"
+   ],
+   "dp": [
+    "Stack forced reactions until they're always a step behind"
+   ]
+  },
+  {
+   "id": "0.1b",
+   "title": "Tempo · outside fights",
+   "recall": "How do you gain or lose tempo without firing a shot?",
+   "concept": "Most of your tempo is won or lost before a shot. Rotate early and you get to set up, scout, and hold space while the lobby reacts to you. Rotate late and you're behind the clock, forced through the open and into set-up teams. Be the faster team: faster loot, faster rotates, faster decisions. The ring is a tempo engine: it either works for you (you're already where it's pulling) or it forces your hand.",
+   "kp": [
+    "Rotate early (rotate late and you lose it)",
+    "Be the faster team: set up first, loot and decide faster",
+    "Use the ring: it works for you or forces your hand"
+   ],
+   "dp": [
+    "Rotate late and you're forced through the open into set-up teams"
+   ]
+  },
+  {
+   "id": "0.2",
+   "title": "Don't waste won time",
+   "recall": "You've won time: side cleared, waiting on the ring. What do you do with it, and what do you avoid?",
+   "concept": "When you're ahead on time (side cleared, fight won, rotated early), the mistake is wasting it: sitting idle, poking distant teams, or forcing a greedy extra fight. Spend it on getting stronger or getting ahead. Downtime checklist: balance heals across the squad, loot nearby bins and deathboxes for upgrades and ammo, scout nearby spots to track teams, and ping the next rotation. One pro cleared his side with 15 seconds to see the next zone, greedily pushed two teams instead, and nearly threw the game.",
+   "kp": [
+    "Spend it getting stronger or getting ahead (gear or position)",
+    "Avoid idling, pot-shotting far teams, or a greedy extra fight"
+   ],
+   "dp": [
+    "Balance heals across the squad",
+    "Scout nearby and ping the next rotation"
+   ]
+  },
+  {
+   "id": "0.3",
+   "title": "Strong side vs weak side: never take a 50/50",
+   "recall": "Name the three things that decide strong vs weak side, and what you do when none of them favor you.",
+   "concept": "Every fight starts from advantage (strong side) or disadvantage (weak side). Three things decide it: Position (height, cover, angles), Resources (armor, meds, nades, ults), and Control (who's forcing whom). A 50/50 is a fight where none of those favors you: a fair, open 1v1 decided by a coin flip on aim. Refuse it. Stack one advantage first (an angle, height, a health lead, a teammate on a second angle) until the fight isn't fair. If it's a coin flip, you set it up wrong.",
+   "kp": [
+    "Position: height, cover, angles",
+    "Resources: armor, heals, nades, ults",
+    "Control: who's forcing whom",
+    "None favor you: refuse the 50/50 and stack an advantage first"
+   ],
+   "dp": [
+    "A 50/50 is a coin flip on aim; if it's a coin flip you set it up wrong",
+    "Ways to stack one: an angle, height, a health lead, a teammate on a second angle"
+   ]
+  },
+  {
+   "id": "0.4",
+   "title": "Flip weak side — don't brute-force it",
+   "recall": "You're low ground, undergeared, getting pushed. What are your two priorities before anything else?",
+   "concept": "On weak side your job isn't to win the fight, it's to change it. Two priorities: stabilize (control your space, hold their pushes) and patience (wait for their mistake). Reposition, break line of sight, bait cooldowns, use utility to make space until it flips. Moving while weak is just rotating into death.",
+   "kp": [
+    "Stabilize: control your space and hold their pushes",
+    "Patience: wait for their mistake"
+   ],
+   "dp": [
+    "Your job on weak side is to change the fight, not win it",
+    "Tools: reposition, break line of sight, bait cooldowns, use utility"
+   ]
+  },
+  {
+   "id": "1.1",
+   "title": "Rotate with a reason",
+   "recall": "What's the difference between rotating because the ring closed and rotating with a reason?",
+   "concept": "Every rotation needs a purpose — secure space, fight for a position, gather info. Rotating “just because the ring is closing” is the number-one rotation mistake; it forces you through open ground, chokes, and set-up teams. Most fights you lose weren't unwinnable — they were avoidable.",
+   "kp": [
+    "Ring-forced rotations push you through open ground, chokes and set-up teams",
+    "Rotating with a reason has a purpose: space, a position, or info"
+   ],
+   "dp": [
+    "Most lost fights weren't unwinnable, they were avoidable"
+   ]
+  },
+  {
+   "id": "1.2",
+   "title": "Take the path that gives options",
+   "recall": "When choosing a rotation path, what's the one question to ask about it?",
+   "concept": "The best path isn't the fastest — it's the one that keeps your options open. Good paths give cover, side lines and escape routes. Bad paths funnel you through open ground or chokes with no exit. Ask: “if something goes wrong here, can we adjust?”",
+   "kp": [
+    "If something goes wrong here, can we adjust?"
+   ],
+   "dp": [
+    "The best path keeps options open, not the fastest one",
+    "Good paths have cover, side lines and escape routes"
+   ]
+  },
+  {
+   "id": "1.3",
+   "title": "Zone play vs Edge play — and which YOUR legends want",
+   "recall": "Which of your legends want to play zone (hold), and which want to play edge (fight in)?",
+   "concept": "Two styles. Zone: rotate early, take a power position, control space, trade loot/KP for safety. Edge: loot up, get strong, fight your way in — fighting IS the rotation. Neither is wrong; rotating the wrong way for your style gets you killed. For you: Catalyst and Conduit want zone (hold). Maggie and Ash want edge (fight in). Alter and Valk flex and feed the info.",
+   "kp": [
+    "Zone (hold): Catalyst and Conduit",
+    "Edge (fight in): Maggie and Ash",
+    "Alter and Valk flex"
+   ],
+   "dp": [
+    "Zone: rotate early, take a power spot, trade KP for safety",
+    "Edge: loot up and fight your way in; fighting is the rotation"
+   ]
+  },
+  {
+   "id": "1.4",
+   "title": "A power position is one YOUR comp can hold",
+   "recall": "What makes a spot a power position, and why can't every team hold every one?",
+   "concept": "A power position gives you the edge over anyone pushing: height, cover, sightlines, room to reset. But it only counts if your comp can hold it. The same building is a fortress for a Catalyst team and a death trap for a team with no way to lock it. Judge a building before you commit: few entrances (ideally two doorways you can cover), windows that are hard to peek into, real interior cover, and a second exit. Three or more entrances on one floor, an open floor with no cover, or a dead end with no way out are traps.",
+   "kp": [
+    "Gives you the edge: height, cover, sightlines, room to reset",
+    "Your comp has to be able to hold it",
+    "Few entrances and a second exit"
+   ],
+   "dp": [
+    "Traps: 3+ entrances on a floor, open floor with no cover, a dead end"
+   ]
+  },
+  {
+   "id": "1.5",
+   "title": "Avoid the heavy side and the center",
+   "recall": "What's the heavy side, why do you avoid it, and how do you rotate to stay unseen?",
+   "concept": "Every map has a natural flow: teams move along predictable routes set by POIs, terrain, chokes and where the zone pulls. The heavy side is where more teams collide, which means forced fights and third parties. The center POI is the heavy side almost every game: teams arrive from every direction and its chokes are tight, so a slow rotate there gets you held and thirded. Rotate through low ground, buildings and dead space on the quiet side. If teams see you rotate, you're a target, not a threat.",
+   "kp": [
+    "Heavy side: where more teams collide",
+    "You get forced fights and third parties there",
+    "Rotate quiet: low ground, buildings, dead space"
+   ],
+   "dp": [
+    "The center POI is the heavy side almost every game",
+    "If teams see you rotate, you're a target"
+   ]
+  },
+  {
+   "id": "1.6",
+   "title": "Play the phase you're in",
+   "recall": "What's the one job of each phase — early, mid, late?",
+   "concept": "Each game phase has one job, and everything early is setup for what's next. Early: get loot / EVO / attachments however you can (unlooted areas, fair fights, ratting a leaving team, a clean third) so you're equipped for the mid game. Mid: you roughly know where endgame is — only rotate and take fights that move you toward a strong endgame position. Late: hold a spot that's hard to push into but easy to push from, and punish teams caught late in the open.",
+   "kp": [
+    "Early: loot up and get equipped",
+    "Mid: only rotations and fights that lead to a strong endgame spot",
+    "Late: hold a hard-to-push spot and punish teams in the open"
+   ],
+   "dp": [
+    "Late spot: hard to push into but easy to push from"
+   ]
+  },
+  {
+   "id": "1.7",
+   "title": "Zone calling: scan early, think two rings ahead",
+   "recall": "Why scan early, which scan is the biggest info drop, and what's the safe play when you're unsure?",
+   "concept": "Zone calling is predicting where the final rings will pull and rotating off it. Scan the ring as early as you can: ring one tells you almost nothing, and an early scan gets you to the power spot before the lobby. Ring three's scan is the biggest info drop, because it shows whether the zone does a dramatic pullback. Confident off ring two? Commit early and take the spot uncontested. Not sure? Go to the dead center of the current ring so you're fine whichever way it shifts.",
+   "kp": [
+    "Early scans get you to the power spot before the lobby",
+    "Ring three's scan is the biggest info drop",
+    "Unsure? Go to the dead center of the current ring"
+   ],
+   "dp": [
+    "Ring one tells you almost nothing",
+    "Confident off ring two? Commit early and take it uncontested"
+   ]
+  },
+  {
+   "id": "1.8",
+   "title": "How the zone algorithm works",
+   "recall": "Rings touch at a hard edge vs. in playable space — what does each tell you about the next pull?",
+   "concept": "Respawn confirmed it: when the ring shifts it tries to center itself, but it can never end in unplayable space. So read where the current ring and the next ring touch. If they touch at an unplayable edge (water, the map's hard edge), expect the zone to keep pulling INTO that edge — it can't re-center past dead space, so it hugs it. If they touch inside playable area, expect the next ring to re-center inside the current one instead of continuing the pull. The touch-point tells you whether the pull keeps going or resets.",
+   "kp": [
+    "Touching at a hard edge: the pull keeps going into that edge",
+    "Touching in playable space: the next ring re-centers"
+   ],
+   "dp": [
+    "The ring can never end in unplayable space (water, map edge)"
+   ]
+  },
+  {
+   "id": "1.12",
+   "title": "Own the drop",
+   "recall": "What do you do on the drop and in the first 30 seconds on the ground, and when do you split from your jumpmaster?",
+   "concept": "Fights start before you land. On the dropship and for about 30 seconds after you touch down, keep turning your camera to see where other squads land; teams hide their trails, change paths late, or contest you by surprise. If nobody's contesting, split from your jumpmaster just before landing and ping the building you'll loot, so the squad clears more ground instead of fighting each other for the same floor. If it's contested, you know early and can plan the fight or the exit.",
+   "kp": [
+    "Track where other squads land, on the drop and ~30 seconds after",
+    "Uncontested? Split from the jumpmaster and ping your building"
+   ],
+   "dp": [
+    "Teams hide trails or contest late, so keep checking",
+    "Splitting loots more ground than fighting teammates for one floor"
+   ]
+  },
+  {
+   "id": "2.1",
+   "title": "Be the outside team; force teams into each other",
+   "recall": "What's the difference between third-partying a fight and getting sandwiched — and how do you stay on the outside?",
+   "concept": "With good info, force teams to fight each other and play the outside — third-party IN rather than getting sandwiched in the middle. Pressure one team so it pushes into another, then clean up from the edge. That's controlling the game instead of being caught between two fights.",
+   "kp": [
+    "Third-partying hits from outside; sandwiched means caught between two teams",
+    "Stay outside: use info and push teams into each other"
+   ],
+   "dp": [
+    "Pressure one team so it pushes into another, then clean up from the edge"
+   ]
+  },
+  {
+   "id": "2.2",
+   "title": "Anticipate the third before it lands",
+   "recall": "A team knocks one of your squad but doesn't push in. What does that most likely tell you?",
+   "concept": "Read the tells. A team gets an opening knock but doesn't push across? There's probably another team nearby they're wary of. Some POIs are third-party central — expect angles from everywhere there. Don't get surprised; pre-plan your exit before you commit.",
+   "kp": [
+    "There's probably another team nearby they're wary of"
+   ],
+   "dp": [
+    "Plan your exit before you commit",
+    "Some POIs are third-party central; expect angles from everywhere"
+   ]
+  },
+  {
+   "id": "2.3",
+   "title": "Clear your back",
+   "recall": "Give one reason to take a fight even when it isn't for free KP.",
+   "concept": "Wiping a team behind you isn't only KP — it's safety. Clear the squad that could rotate in behind you and you get to play your position without being shot in the back. Sometimes you take a fight purely to clear your back.",
+   "kp": [
+    "To clear your back, so no one can rotate in behind you"
+   ],
+   "dp": [
+    "Sometimes you take a fight purely to clear your back"
+   ]
+  },
+  {
+   "id": "2.4",
+   "title": "Timing beats speed on a third",
+   "recall": "Why is arriving “on time” to a third party better than arriving fast?",
+   "concept": "Show up too early and you get pinched. Too late and you're cleaning scraps — and might die to whoever won. On time, you flow in behind the chaos and take it. Good teams rotate in when the other squads are already committed to each other. And once you third-party, expect a fourth team: other squads heard the same fight, so heal up before you loot.",
+   "kp": [
+    "Too early and you get pinched",
+    "Too late and you get scraps, or die to the winner",
+    "On time, they're committed to each other and you flow in behind"
+   ],
+   "dp": [
+    "Good teams rotate in once the other squads are committed",
+    "After you third-party, expect a fourth team: stay healthy"
+   ]
+  },
+  {
+   "id": "2.5",
+   "title": "Strongholds: heist or third",
+   "recall": "What makes a Stronghold dangerous, and what are your two ways to play one?",
+   "concept": "Strongholds are airdropped loot objectives: crate weapons, gold gear and EVO for the whole squad. Opening one takes time and sets off an alarm that tells every nearby team exactly where you are, though it drops with cover and Hardlight walls to help you hold. That makes it a third-party magnet. Two plays: take the heist only when your side is clear and you can hold the space, or hang back on a strong angle, let another squad ring the dinner bell, then punish whoever opens it.",
+   "kp": [
+    "Opening it is slow and the alarm reveals you",
+    "Play 1: take it when your side is clear and you can hold",
+    "Play 2: let another team open it, then third-party them"
+   ],
+   "dp": [
+    "Loot: crate weapons, gold gear, EVO for the squad",
+    "It drops with cover and Hardlight walls"
+   ]
+  },
+  {
+   "id": "3.1",
+   "title": "The reset: fall back and get info",
+   "recall": "When a push looks hard — open space, strong enemy spot — what's often the better play?",
+   "concept": "A hard push over open space usually isn't worth it. Falling back to reset and grabbing a recon scan is often the stronger play. Information is king — enemy positions, zone, anything makes your next decision sharper. A reset isn't passive; it's setting up a better fight.",
+   "kp": [
+    "Fall back and reset",
+    "Get info (a recon scan)"
+   ],
+   "dp": [
+    "Info is king: it makes your next decision sharper",
+    "A reset isn't passive; it sets up a better fight"
+   ]
+  },
+  {
+   "id": "3.2",
+   "title": "Don't overcommit: cut your losses",
+   "recall": "What's the real cost of overcommitting late, and what do you do when a fight starts slipping?",
+   "concept": "Tunnel-visioning one fight can drop you from 1st to 6th. Heal fully, let teammates capitalize off your damage, and prioritize staying up over one more kill: first place is worth far more RP than a couple of extra elims. Apex is a dance, not a marriage. When a fight starts slipping, drop the ego and make space to survive instead of forcing it to the death. Cutting a loss is a win.",
+   "kp": [
+    "Overcommitting can drop you from 1st to 6th; placement is worth more RP",
+    "When it slips: drop the ego, make space, survive"
+   ],
+   "dp": [
+    "Heal fully and let teammates capitalize on your damage",
+    "Cutting a loss is a win; Apex is a dance, not a marriage"
+   ]
+  },
+  {
+   "id": "3.3",
+   "title": "Play your teammates' pace, and pinch, never stack",
+   "recall": "Teammates are behind: what do you do? And when you fight together, what's the angle rule?",
+   "concept": "As a solo, play your teammates' pace, not your own. If they're behind, don't push in alone: scout, get info, let them catch up, and keep them up first. When you do fight the same team, never run the same angle. Split to a different one and create a pinch. Even if the enemy focuses your teammate, you're dealing free damage from the side, and cover can't protect them from two directions at once.",
+   "kp": [
+    "Teammates behind: don't push alone; scout and let them catch up",
+    "Angle rule: never stack, split to a different angle for a pinch"
+   ],
+   "dp": [
+    "Even if they focus your teammate, you deal free damage from the side",
+    "Keep teammates up first"
+   ]
+  },
+  {
+   "id": "3.4",
+   "title": "Think in chess: use teammate abilities",
+   "recall": "What single question turns autopilot into chess-thinking?",
+   "concept": "Stop running on autopilot. Before and during fights ask: “what abilities do my teammates have, and what spots can we play with them?” Realizing you'll need a specific ult to hold a spot — and planning around it — turns the game into chess: thinking steps ahead with your pieces instead of reacting.",
+   "kp": [
+    "What abilities do my teammates have, and what spots can we play with them?"
+   ],
+   "dp": [
+    "Plan around the ult you'll need to hold a spot; think steps ahead"
+   ]
+  },
+  {
+   "id": "3.5",
+   "title": "One small play, then back up, scaled to the damage",
+   "recall": "Why back up after a small play even when winning, and what tells you to push hard versus reset as a squad?",
+   "concept": "You win fights with a chain of small plays, not one big commitment. Swing in, do one thing (damage or a knock), then back up before you take too much, even if you're winning. Small play, reset, cell, small play again. Let the damage you just did decide how hard you go: crack someone for 150 and you can holster and sprint in; chip them for 20 and pushing gets you reset and knocked. It works squad-wide too: when the health trade tips against your team, all three of you back up and heal together.",
+   "kp": [
+    "Back up so you don't take too much damage, then reset and cell",
+    "The damage decides: big crack, push; small chip, reset",
+    "Squad-wide: when the trade turns, all back up together"
+   ],
+   "dp": [
+    "Even if you're winning, back up before you take too much",
+    "Example: crack for 150, holster and sprint in; chip for 20, reset"
+   ]
+  },
+  {
+   "id": "3.6",
+   "title": "Make the opportunity: force them passive, then close",
+   "recall": "At range you can't reliably get a knock. What's your actual job before you push?",
+   "concept": "Don't wait for a knock; make it happen. At range you can't control knocks (they just duck behind cover), so your job there is to force the enemy passive: nade them off an angle, pre-fire their corner, smoke them, or hold their angle so hard they can't peek. While they can't fight back, they can't stop you walking up, so close the gap and swing, where you can lock them into a fight. Deny their best option, then step up.",
+   "kp": [
+    "Force them passive (nades, pre-fire, smoke, hold their angle)",
+    "Then close the gap and swing"
+   ],
+   "dp": [
+    "At range you can't control knocks; they just duck behind cover",
+    "While they can't fight back, they can't stop you walking up"
+   ]
+  },
+  {
+   "id": "3.7",
+   "title": "Only do what you'll play off of",
+   "recall": "Before you take a shot or a poke, what should you ask yourself?",
+   "concept": "Don't shoot at things you won't push. Poking a far team you won't commit to wastes bullets and heals, tells the whole lobby where you are (inviting thirds), and pulls your attention off teams that can actually hurt you. If you're not going to play off an action, don't take it. Same with abilities — don't poke and eat damage right before the teammate ult push. Execute the plan; don't split your attention.",
+   "kp": [
+    "Am I actually going to play off this?"
+   ],
+   "dp": [
+    "Poking a team you won't push wastes ammo and heals and reveals you",
+    "Don't poke and eat damage right before the teammate ult push"
+   ]
+  },
+  {
+   "id": "3.10",
+   "title": "The reset timer",
+   "recall": "What's the reset timer, and what has to happen before it runs out to keep fighting?",
+   "concept": "Long-range trades feel productive but usually aren't. Start a mental timer the moment a poke fight begins. If 30 seconds to a minute passes without a knock, a crack, or a better position, the fight is going nowhere: disengage and move on. Every extra second burns batteries and ammo and tells every nearby team where you are. The exception is when terrain or the ring forces you to fight through.",
+   "kp": [
+    "30 seconds to 1 minute of poking with no progress means leave",
+    "Progress means a knock, a crack, or a better position",
+    "Then disengage and move on"
+   ],
+   "dp": [
+    "Dragging it out burns heals and ammo and gives away your spot",
+    "Exception: terrain or the ring forces you through"
+   ]
+  },
+  {
+   "id": "3.11",
+   "title": "Turn a 1v3 into three 1v1s",
+   "recall": "You're alone against three. How do you win it, and when do you leave instead?",
+   "concept": "Three full-health players hitting you at once from different angles beats any aim, every time. Every clutch is really a chain of 1v1s. Split them: nade the doorway so two are stuck while you fight the lead player, use walls and doorframes so only one can see you, or put an ability like smoke or gas between them. In high ranks the window may last two or three seconds, so take it the moment it opens. If you can't isolate anyone, don't fight it: disengage, reposition, and make a new barrier.",
+   "kp": [
+    "Break it into separate 1v1s; never fight all three at once",
+    "Isolate with nades, walls and doorframes, or abilities",
+    "Can't isolate? Disengage and reposition"
+   ],
+   "dp": []
+  },
+  {
+   "id": "3.12",
+   "title": "Swap armor, skip the battery",
+   "recall": "You just won a duel, shields cracked, and two more are coming. What's faster than a battery?",
+   "concept": "You win a duel and you're cracked, but the rest of their squad is coming. A battery takes seconds you don't have. If you finished someone and their death box is right there, swap to the fuller shield in it; the swap is instant. Check their armor color before you push, so you know the swap is waiting. Healing in the open while their squad pushes is how a won duel turns into a loss.",
+   "kp": [
+    "Swap to the fuller shield from their death box",
+    "It's instant; a battery takes time you don't have"
+   ],
+   "dp": [
+    "Finish the knock to get the box"
+   ]
+  },
+  {
+   "id": "4.1",
+   "title": "Cover, sightlines, spacing",
+   "recall": "Name the three positioning elements and what each one does for you.",
+   "concept": "Three elements make in-fight positioning work. Cover: not just hiding — controlling how much of you they see while you can still shoot, so you can poke and reposition safely. Sightlines: control what you can see vs what they can, so you react early. Spacing: distance from enemies (dodge nades/flanks), teammates (support), and zone. Together they win the fight before a shot.",
+   "kp": [
+    "Cover: controls how much of you they see",
+    "Sightlines: what you can see vs. what they can",
+    "Spacing: distance from enemies, teammates and zone"
+   ],
+   "dp": [
+    "Cover isn't hiding: you can still shoot while they see little of you",
+    "Together they win the fight before a shot"
+   ]
+  },
+  {
+   "id": "4.2",
+   "title": "Peek small, re-peek from a new angle",
+   "recall": "When is a wide swing correct, and why never peek the same spot twice?",
+   "concept": "Wide-peeking shows your full body. Hug geometry and peek narrow: you see more of them and they hit less of you. Save the wide swing for when you've cracked someone and want to secure the knock. Once you've peeked a spot, they know where you are, so re-peek from a different angle and catch them adjusting. Never fire from the same window twice in a row.",
+   "kp": [
+    "Wide swing only after a crack, to secure the knock",
+    "Peek the same spot twice and they're waiting; re-peek from a new angle"
+   ],
+   "dp": [
+    "Peek narrow, hugging geometry: you see more, they hit less",
+    "Never fire from the same window twice in a row"
+   ]
+  },
+  {
+   "id": "4.4",
+   "title": "Pre-aim where they'll appear; don't flick",
+   "recall": "Instead of racing your aim, what actually wins a peek battle?",
+   "concept": "Players hug geometry, so they peek from a small set of spots: the door, either side of a pillar, the roof, a box edge. Hold your crosshair on the spot you expect and pre-fire. A flick is a correction: it means you guessed wrong and are fixing it under pressure. If your crosshair is already where they appear, you just pull the trigger, and you beat anyone who has to flick to you.",
+   "kp": [
+    "Pre-aim where they'll appear (crosshair already there)"
+   ],
+   "dp": [
+    "Players peek from a few spots: door, pillar sides, roof, box edge",
+    "A flick is a correction: you guessed wrong"
+   ]
+  },
+  {
+   "id": "4.5",
+   "title": "Clearing corners: slice the pie, offset the crosshair",
+   "recall": "Why not glue your crosshair to the corner's edge, and when do you stop slicing slowly?",
+   "concept": "Slice the pie: clear a corner gradually with a small cone of vision and a smooth camera pan so your crosshair stays at head level. Don't glue the crosshair to the wall's edge. That assumes zero reaction time, and a fast swing blows right past it. Set it slightly off the corner in the path they'll walk, leaving a reaction-time buffer, and let them walk into it. But don't over-slice: once you've cracked someone, switch to a fast swing. Apex rewards momentum.",
+   "kp": [
+    "Gluing it assumes zero reaction time; offset it into their path",
+    "Stop slicing once you've cracked someone; swing fast"
+   ],
+   "dp": [
+    "Slice the pie: small cone of vision, smooth pan, head level"
+   ]
+  },
+  {
+   "id": "4.7",
+   "title": "Don't move when you don't need to",
+   "recall": "Name the three — and the only three — reasons to move in a gunfight.",
+   "concept": "If you can see and shoot them from where you are, shoot from there. Moving when you don't need to takes the pressure off them and pulls you out of the gunfight — and if they've been holding you, they hear exactly where you go next. There are only three good reasons to move: (1) you cracked them — push off the health advantage; (2) you took damage — move so they push into nothing; (3) nothing's happening / bad angle — slide sideways for a new angle while keeping your space.",
+   "kp": [
+    "You cracked them: push the advantage",
+    "You took damage: move so they push into nothing",
+    "Nothing's happening or bad angle: get a new angle"
+   ],
+   "dp": [
+    "If you can see and shoot them from where you are, stay and shoot",
+    "Moving takes pressure off them and they hear where you go"
+   ]
+  },
+  {
+   "id": "4.8",
+   "title": "Info peek before you swing",
+   "recall": "Why take a small info peek before committing to a swing?",
+   "concept": "Don't wide-swing blind into someone already holding you — you'll be hunting for them while they beam you. Take a small info peek first (a step or two) to find where they are; now your crosshair is already on them when you commit, so you pre-fire instead of “where is he — oh there” a beat too late. Position to the corner and peek out; don't start your reposition already in the open.",
+   "kp": [
+    "Find where they are first",
+    "So your crosshair is already on them when you commit"
+   ],
+   "dp": [
+    "A blind wide swing means hunting for them while they beam you",
+    "Start the reposition at the corner, not already in the open"
+   ]
+  },
+  {
+   "id": "4.9",
+   "title": "Weapons are tools: set up, then finish",
+   "recall": "Which gun sets up the fight and which finishes it — and why?",
+   "concept": "Your two guns do different jobs. Primary = your setter-upper: better range, bigger mag, more control — you use it to hold the enemy and control what they can and can't do. Secondary = your finisher: better up-close damage, hipfire, mobility — you use it to close and finish. Set up with the primary, follow through with the secondary. Doing it backwards leaves you unable to fight at the exact moment you push.",
+   "kp": [
+    "Primary sets up: range, control, holding them",
+    "Secondary finishes: up-close damage"
+   ],
+   "dp": [
+    "Doing it backwards leaves you unable to fight as you push"
+   ]
+  },
+  {
+   "id": "4.10",
+   "title": "Reload and heal on the move",
+   "recall": "When should you reload and heal — and when definitely not?",
+   "concept": "Don't reload or heal before or during your push — that's when you need to be shooting. Do it while you're already moving: reload and heal off a slide, glide, or wall jump that carries your momentum. That way you're never standing still and unable to fight at the moment you're exposed.",
+   "kp": [
+    "While moving: off a slide, glide or wall jump",
+    "Never before or during a push"
+   ],
+   "dp": [
+    "You're never standing still and unable to fight when exposed"
+   ]
+  },
+  {
+   "id": "4.12",
+   "title": "Crosshair · head level, off the ground",
+   "recall": "Where should your crosshair rest as you move, and why do players get it wrong?",
+   "concept": "Depth on 4.4. Most players drift their crosshair to the floor scanning for loot — and every fight that starts there, they're aiming at dirt while the enemy's already on their chest. Keep your crosshair pinned at head height as you move; trust your legs to carry you, you don't need to watch the ground. On controller especially this is free value — the fight starts with your reticle already where it needs to be.",
+   "kp": [
+    "At head height as you move",
+    "Players drift to the floor looking for loot"
+   ],
+   "dp": [
+    "Trust your legs; you don't need to watch the ground",
+    "On controller it's free value"
+   ]
+  },
+  {
+   "id": "4.14",
+   "title": "Crosshair · the placement paradox",
+   "recall": "Why does your aim get temporarily worse when you fix your placement — and what do you do about it?",
+   "concept": "Depth on 4.4. Heads-up so you don't panic: as your placement improves, your aim will temporarily feel WORSE. Your muscle memory is trained for big sweeping flicks off the floor; once the crosshair sits at head level, corrections shrink to tiny movements and you overshoot with your old force. That's not your aim breaking — it's recalibrating. Push through it, maybe nudge sensitivity down slightly, and it settles into far more consistent aim.",
+   "kp": [
+    "Muscle memory is tuned for big flicks; corrections are tiny now, so you overshoot",
+    "Push through it, maybe lower sensitivity a bit"
+   ],
+   "dp": [
+    "Your aim will feel worse at first; it's recalibrating, not breaking"
+   ]
+  },
+  {
+   "id": "4.16",
+   "title": "Peek-and-hide: control with cover",
+   "recall": "Walk the peek-and-hide loop — and what must come before it for it to work?",
+   "concept": "Peeker's advantage weaponized. Pre-aim, peek and shoot — then the millisecond they shoot back, hide behind cover. They're left shooting nothing; when they stop, you re-peek on YOUR terms and repeat. You set the cadence, they react and guess. It's the single biggest thing that stops you getting one-clipped — but only with awareness first (never blind, no info). If you build a big enough lead, then just take the kill.",
+   "kp": [
+    "Pre-aim, peek and shoot",
+    "Hide the moment they shoot back, then re-peek on your terms",
+    "Needs awareness first, never blind"
+   ],
+   "dp": [
+    "You set the cadence, they react and guess",
+    "Big enough lead? Just take the kill"
+   ]
+  },
+  {
+   "id": "4.17",
+   "title": "Movement in the duel",
+   "recall": "What are the two movement levers that win close duels — and which famous tech isn't available to you on controller?",
+   "concept": "Two consistency levers up close. One: swing clean and fast — strafe straight left/right (diagonal is slow and easy to hit) with your crosshair already placed, so you win the peek. Two: don't strafe predictably — the same tight repeating strafe is easy to track, and on controller a lazy repeating strafe is exactly what good players read. Vary it, use wall jumps and off-angles to break their aim. (Tap-strafing is a mouse-only tech, so on controller lean on clean strafes, wall jumps, and off-angles instead.)",
+   "kp": [
+    "Clean, fast left/right strafes (not diagonal)",
+    "Don't be predictable: vary it, wall jumps, off-angles",
+    "Tap-strafing is mouse-only"
+   ],
+   "dp": [
+    "Diagonal strafes are slow and easy to hit"
+   ]
+  },
+  {
+   "id": "4.18",
+   "title": "Predict the revenge swing",
+   "recall": "You just knocked someone. What happens next, and how do you get ahead of it?",
+   "concept": "The moment you knock someone, their teammates react: one comes to trade you, another goes for the res. You already know where they'll come from: the path to their downed friend. Don't admire the knock. Pre-aim that path and hit the first swinger before they see you. Ask yourself: if I were them, what would I do right now? Then be ready for it. And don't be predictable yourself: if you always do the same thing after getting cracked, good players will punish it.",
+   "kp": [
+    "Their teammates come to trade or res",
+    "Pre-aim the path they'll take"
+   ],
+   "dp": [
+    "Ask: if I were them, what would I do?",
+    "Don't be predictable after you get cracked"
+   ]
+  },
+  {
+   "id": "5.1",
+   "title": "Be the eyes and ears",
+   "recall": "What are you watching and listening for while your team loots or fights?",
+   "concept": "Good calls come from constant information. While teammates loot or fight, keep checking the map: the ring and EVO, the teams around you, your next source of info, a better spot to hold. And listen: footsteps, reloads, abilities and gunfire tell you direction, numbers and distance. A usable tell: if only one enemy is chasing you, the other is probably reviving or healing and can't shoot. Punish that.",
+   "kp": [
+    "Watch the map: ring, teams, info, better spots",
+    "Listen: footsteps, reloads, abilities, gunfire"
+   ],
+   "dp": [
+    "Tell: one chaser means the other is reviving or healing; punish it"
+   ]
+  },
+  {
+   "id": "5.2",
+   "title": "Comms: say your state, suggest, don't command",
+   "recall": "What should you always say out loud, and how do you deliver a call so randoms follow it?",
+   "concept": "Nobody knows what you're thinking, so say it: “I need to heal,” “pushing,” “hold,” “let's leave.” When you make a call, don't command; randoms resist orders. Suggest the play, give the reason, and say why it matters: “I think we take this building. Everyone's rotating to us and it has cover, so we'll be protected when they push.” Same idea, opposite reaction. And mind the timing: don't flood comms mid-fight, and let teammates talk.",
+   "kp": [
+    "Say your state: healing, pushing, holding, leaving",
+    "Suggest with a reason; don't command"
+   ],
+   "dp": [
+    "Randoms resist orders; give the reason and why it matters",
+    "Mind the timing: don't flood comms mid-fight"
+   ]
+  },
+  {
+   "id": "5.4",
+   "title": "Fight in sync: play off your teammates",
+   "recall": "Your teammate gets a knock across the fight: what do you do? And what keeps you in sync?",
+   "concept": "Fights are won by the team that applies pressure together. Treat every teammate's play as your own: if they get a knock or a crack, you got it, so push off it. If they're holding a team, that team can't fight you, so step up. Fighting out of sync turns a 3v3 into a 1v3, so glance at the minimap every few seconds to check your team can actually fight with you, and call the plan before you act (“pushing on your crack, go right”), not as you're already gone.",
+   "kp": [
+    "Push off their knock as if it were yours",
+    "Check the minimap and call the plan before you act"
+   ],
+   "dp": [
+    "If they're holding a team, that team can't fight you, so step up",
+    "Out of sync turns a 3v3 into a 1v3"
+   ]
+  },
+  {
+   "id": "5.7",
+   "title": "Cover the heal",
+   "recall": "You're cracked and need to heal: where do you heal and what do you say? And what do you do when a teammate is the one healing?",
+   "concept": "Cracked players get pushed, and everyone in the lobby knows it. When you're cracked and need to heal, back off into a teammate's line of sight and ask for cover out loud, so a pusher runs into two guns instead of one. When a teammate is healing, flip it: pre-aim the angle a pusher will swing from to punish them. Their weakest moment becomes your easiest knock.",
+   "kp": [
+    "Heal where a teammate can see you",
+    "Ask for cover",
+    "Teammate healing: pre-aim where a pusher will swing"
+   ],
+   "dp": [
+    "Enemies always push a cracked player",
+    "Their weakest moment becomes your easiest knock"
+   ]
+  },
+  {
+   "id": "5.8",
+   "title": "Nothing stays cleared",
+   "recall": "When you're holding a spot, what do you count and ask? And why re-check angles you already cleared?",
+   "concept": "Fights shift fast, so an angle you checked two minutes ago tells you nothing now. Re-check angles and chokes you already cleared. When you hold a spot mid to late game, count every visible team and ask what you don't know: which angles nobody is watching, where a hidden squad could be, and which way you leave if a third party hits your building. On rotations, slide and look around; momentum carries you forward while your camera scans the full 360.",
+   "kp": [
+    "Count every visible team",
+    "Ask what's unknown: unwatched angles, hidden squads, your exit",
+    "Re-check old angles; the fight shifts fast"
+   ],
+   "dp": [
+    "Scan around while sliding; momentum keeps you moving"
+   ]
+  },
+  {
+   "id": "6.4",
+   "title": "Why you choke (name it to tame it)",
+   "recall": "What's actually happening in your body when you choke in a final fight — and why does naming it help?",
+   "concept": "At the last two or three squads, your brain flips into fight-or-flight without asking — heart rate up, breathing shallow, fine motor control (your aim) drops, and your awareness tunnels so you stop seeing flanks and thirds. That's why you miss shots you normally hit and ego-challenge into the open. You're not bad and it's not luck — it's your body panicking at the worst time. Just knowing that's what's happening is the first step to controlling it.",
+   "kp": [
+    "Fight-or-flight: heart rate up, shallow breathing, worse aim, tunnel vision",
+    "Naming it is the first step to controlling it"
+   ],
+   "dp": [
+    "It hits at the last two or three squads",
+    "You stop seeing flanks and thirds and ego-challenge"
+   ]
+  },
+  {
+   "id": "6.5",
+   "title": "The reset breath + next play",
+   "recall": "What two mental tools fight the choke — the one before the fight and the one during it?",
+   "concept": "Two tools against the choke. One: a single steady breath before the last fight resets your aim, nerves, and decisions — sounds dumb, works. Pair it with pre-fight confidence — decide before you drop that you can win end games; your brain plays how it prepares. Two: don't dwell on mistakes mid-fight. Miss a shot or get cracked? Do NOT freeze on it — focus on the next play, not the one you just botched. Dwelling is how one mistake becomes three. Tilt between fights works the same way: reset your head before the next one, because tilt costs more RP than any single death.",
+   "kp": [
+    "Before: one steady breath (plus pre-fight confidence)",
+    "During: don't dwell, focus on the next play"
+   ],
+   "dp": [
+    "Decide before you drop that you can win endgames",
+    "Tilt costs more RP than any single death; reset between fights"
+   ]
+  },
+  {
+   "id": "6.6",
+   "title": "Rehearse the chaos",
+   "recall": "Why do calm players stay calm under pressure — and how do you train it?",
+   "concept": "Players who stay calm in final rings aren't fearless — they've seen chaos so many times it's normal. Train that on purpose: in the range or mixtape, force yourself into uncomfortable spots — 1v2s, low health, limited ammo, bad positions — so pressure stops being a shock. Stress becomes normal once you've practiced it. This is a warmup you DO, not a fact you recall.",
+   "kp": [
+    "They've seen chaos so often it feels normal",
+    "Train it: practice uncomfortable spots (1v2s, low HP, bad positions)"
+   ],
+   "dp": [
+    "Stress becomes normal once you've practiced it"
+   ]
+  },
+  {
+   "id": "6.7",
+   "title": "Think in percentages; judge decisions, not results",
+   "recall": "Why can't you judge your play by whether you won, and what do you judge it by instead?",
+   "concept": "Apex is a percentage game. You're not trying to win every match; you're trying to make the play that works most often, and over 50–100 games good decisions compound. Outcomes lie: you can win a terrible fight and lose a smart one, so judge the decision, not the result. After a fight ask one thing: was that decision reasonable? Yes, keep it. No, fix it. That's also where calm comes from: when you know why you made a call, a loss doesn't tilt you.",
+   "kp": [
+    "Outcomes lie: a bad play can win and a good one can lose",
+    "Judge the decision: was it reasonable?"
+   ],
+   "dp": [
+    "It's a percentage game; good decisions compound over 50–100 games",
+    "Knowing why you made a call keeps a loss from tilting you"
+   ]
+  },
+  {
+   "id": "6.9",
+   "title": "After every death: review the chain",
+   "recall": "Why review the chain instead of the final moment, and what are the four questions?",
+   "concept": "Every death traces to a decision 5–30 seconds earlier, so don't review the moment you got shot; review the chain. Watch your clips like a coach watching someone else's game, ego out. Ask four questions: (1) What was I trying to achieve? (2) When did my options disappear: cover, space, teammates, info, escape? (3) Was this high-percentage, or did it only work because they misplayed? (4) What information did I ignore: audio, kill feed, teammates, zone timing?",
+   "kp": [
+    "The real mistake is a decision 5–30 seconds earlier",
+    "What was I trying to achieve?",
+    "When did my options disappear?",
+    "Was it high-percentage?",
+    "What information did I ignore?"
+   ],
+   "dp": [
+    "Review the chain, not the moment you got shot",
+    "Watch like a coach watching someone else, ego out"
+   ]
+  },
+  {
+   "id": "6.10",
+   "title": "Decide fast, commit fully",
+   "recall": "What kills more players than bad aim in chaotic fights, and what's the fix?",
+   "concept": "In chaotic fights, freezing kills more players than bad aim. Hesitating, second-guessing your movement, or taking too long to pick a target hands the enemy free time. Make a call right away: fight, disengage to reset, or reposition to height. Then do it fully. A wrong decision done with conviction often works better than the right one done halfway. Aim for calculated aggression: respect their aim, but act without fear. Afterward, review the clip to see what you missed.",
+   "kp": [
+    "Hesitation and freezing kill more than bad aim",
+    "Decide fast, then commit fully"
+   ],
+   "dp": [
+    "A wrong call done fully beats the right one done halfway",
+    "Review the clip afterward"
+   ]
+  },
+  {
+   "id": "7.1",
+   "title": "Space is control, and the three ways to lose it",
+   "recall": "What three distances make up spacing, and what are the three ways you lose space?",
+   "concept": "Spacing is how far you are from cover, from your teammates, and from the enemy. The team that holds the most space decides when and how the fight happens. You lose it three ways. Stacking: clumped up, so there are no trade angles, one nade hits everyone, and you block each other's sightlines. Overextending: great ground no one can follow or cover, which is isolation, not space. Giving up space too early: backing off a better position out of panic, handing them control for free.",
+   "kp": [
+    "Distance to cover",
+    "Distance to teammates",
+    "Distance to the enemy",
+    "Lose it by stacking",
+    "Lose it by overextending",
+    "Lose it by giving up space too early"
+   ],
+   "dp": [
+    "The team holding the most space decides the fight",
+    "Stacking: no trade angles, one nade hits everyone"
+   ]
+  },
+  {
+   "id": "7.2",
+   "title": "Keep reset distance and layers",
+   "recall": "What's the test for whether you're far enough from the enemy — and what do “layers” buy you?",
+   "concept": "Good spacing from the enemy means: if I get cracked right now, can I slide back and pop a heal before they punish me? If no, you're too close. Keep enough distance that a crack isn't a death sentence. And keep layers between you and them — terrain, a roof, a climb — so that to reach you they have to commit to an animation or cross open ground, giving you a free punish or time to reset. Distance plus layers lets you take fights at almost no risk.",
+   "kp": [
+    "If I get cracked right now, can I back off and heal before they punish me?",
+    "Layers make them commit to an animation or open ground to reach you"
+   ],
+   "dp": [
+    "Distance plus layers lets you fight at almost no risk"
+   ]
+  },
+  {
+   "id": "7.3",
+   "title": "Read the enemy, then take space",
+   "recall": "What should you read about the enemy before you push — and what does it tell you?",
+   "concept": "Creating space is taking ground with intent — cutting sightlines, using utility, forcing the enemy out of their comfort zone — not just moving forward. Before you push, read how they're playing: aggressive, passive, burning utility? If they're slow and not taking space, send it and seize the power position; if they're aggressive, set up first. Taking even a little ground (a hut, a bridge edge) forces them to react, and when they burn utility to answer, that's pressure and fear — they were strong side, now they feel weak.",
+   "kp": [
+    "Read whether they're aggressive, passive or burning utility",
+    "Passive: take space now. Aggressive: set up first"
+   ],
+   "dp": [
+    "Creating space is taking ground with intent: cut sightlines, use utility",
+    "When they burn utility to answer, they feel weak side"
+   ]
+  },
+  {
+   "id": "8.1",
+   "title": "Squad up",
+   "recall": "Why queue with a premade, and how does the matchmaker build a squad of solo players?",
+   "concept": "Respawn's own data: a premade duo plus a solo fill wins about 19% more often than three solo players, and a full premade trio about 17% more. 85% of Masters squads are premade trios. Coordination is an advantage RP can't see. If you solo queue, know how your squad is built: the matchmaker sorts about 60 players of similar RP into thirds and gives each squad one player from the top, middle and bottom third. Find even one regular duo partner and you start every game ahead.",
+   "kp": [
+    "Premades win noticeably more than all-solo squads",
+    "Solo squads get one player each from the top, middle and bottom third of RP"
+   ],
+   "dp": [
+    "Coordination is an advantage RP doesn't measure",
+    "85% of Masters squads are premade trios"
+   ]
+  },
+  {
+   "id": "8.2",
+   "title": "Ban-proof your legend pool",
+   "recall": "How do Season 31 legend bans work, and how do you prepare for them?",
+   "concept": "From Season 31, Diamond-and-up lobbies (the ones with drop zones) have a ban phase. Every player votes to ban one legend, and each legend's chance of being banned matches its share of the votes. It's a weighted roll, not an automatic ban of the most-voted legend, so a popular pick can survive and a rare one can still go. Banned legends can't be picked by anyone that match. Have a Plan B and a Plan C you've actually practiced, ideally filling the same job (zone, edge or flex), so your squad's plan survives a ban.",
+   "kp": [
+    "Each player votes; ban chance matches the share of votes",
+    "Have a practiced Plan B and Plan C"
+   ],
+   "dp": [
+    "Only Diamond and up (drop-zone lobbies)",
+    "Backups should fill the same job: zone, edge or flex"
+   ]
+  },
+  {
+   "id": "8.3",
+   "title": "Challenger and Goliath lobbies",
+   "recall": "What are Challenger and Goliath matches, and how should each one change how you play?",
+   "concept": "Each ranked lobby shows a Lobby Tier when you load in, roughly the median of all squads. If your squad is 2 or more tiers below it, it's a Challenger match and your RP entry cost is reduced. If you're 2 or more tiers above, it's a Goliath match and your entry cost goes up. Read it at load-in and adjust: as a Challenger, losing costs less, so play for placement and take smart fights without fear; as a Goliath, you need a strong result just to break even, so don't throw early.",
+   "kp": [
+    "Challenger: 2+ tiers below the lobby, cheaper entry",
+    "Goliath: 2+ tiers above the lobby, pricier entry"
+   ],
+   "dp": [
+    "Lobby Tier is roughly the median squad, shown at load-in",
+    "As a Goliath you need a strong result to break even"
+   ]
+  },
+  {
+   "id": "8.4",
+   "title": "Demotion shields",
+   "recall": "How do demotion shields work, and what should you do when one gets used?",
+   "concept": "Demotion Protection turns on when one bad match could drop you a tier, for example a Goliath match with a steep entry cost. You get three Demotion Shields. Each time a match would demote you, a shield is spent instead; you only drop once all three are gone. It ends when you've climbed far enough that one match can't demote you, or when the shields run out. A used shield is a warning, not a disaster: reset your head, tighten up, and play for placement until you're clear.",
+   "kp": [
+    "3 shields when one match could demote you",
+    "Each would-be demotion spends one; you drop only when all are gone"
+   ],
+   "dp": [
+    "Ends once one match can't demote you",
+    "A used shield is a warning: reset and play for placement"
+   ]
+  },
+  {
+   "id": "8.5",
+   "title": "Two leagues, new ranks",
+   "recall": "What are the two Season 32 leagues, which ranks are in each, and which rank is the new gate?",
+   "concept": "Season 32 (early 2027) splits ranked into two leagues. Open League: Iron (replacing Rookie), Bronze, Silver, Gold, Platinum, and a new Emerald rank with 4 divisions, all starting from the dropship. Pro-Am League: Diamond, Masters (now 4 divisions) and the new Grandmaster rank, with Predator going to the top 750 Grandmasters at season end. Pro-Am matches use drop zones and legend bans. Emerald becomes the gate between the leagues and should ease the old Diamond wall. Rank rewards now unlock the moment you promote.",
+   "kp": [
+    "Open League: Iron up to Emerald",
+    "Pro-Am League: Diamond, Masters, Grandmaster",
+    "Emerald, between Plat and Diamond, is the gate"
+   ],
+   "dp": [
+    "Predator = top 750 Grandmasters at season end",
+    "Pro-Am uses drop zones and legend bans"
+   ]
+  },
+  {
+   "id": "8.6",
+   "title": "Flat scoring",
+   "recall": "What does flat scoring change about kills and placement, and why does it make hot dropping less attractive?",
+   "concept": "From Season 32, every kill is worth a set amount of RP and every placement is worth a set amount, with no multiplier between them. Under the old system, kills became worth more the higher you placed, which rewarded hot drops and holding kills to cash them in late. Now a kill is a kill whenever you get it, and placement stands on its own. Plan each game around a steady mix: take the good fights, skip the coin flips, and keep placing. Exact RP values aren't published yet.",
+   "kp": [
+    "Kills and placement are each a fixed amount, with no multiplier",
+    "Kills no longer grow with placement, so hot drops and holding kills pay less"
+   ],
+   "dp": [
+    "Plan a steady mix of good fights and placement"
+   ]
+  },
+  {
+   "id": "8.7",
+   "title": "Every squad kill counts for you",
+   "recall": "How do kills count for RP in Season 32, and what does that mean for support players?",
+   "concept": "Season 32 removes assists and participation. Every player gets full kill RP for every kill their squad gets, whoever landed it. Support play now pays exactly like fragging: keeping your fraggers alive with heals, shields, walls and revives earns the same kill RP as the knock itself. Play your role; don't chase damage to get credit. The squad's kill count is your kill count.",
+   "kp": [
+    "Every squad kill gives every player full kill RP",
+    "Assists and participation are gone",
+    "Support play pays the same: play your role, don't chase credit"
+   ],
+   "dp": [
+    "Support mains (Conduit, Lifeline) benefit most"
+   ]
+  },
+  {
+   "id": "8.8",
+   "title": "Open vs Pro-Am scoring",
+   "recall": "How do Open League and Pro-Am value kills versus placement, and how should your plan change between them?",
+   "concept": "The two leagues value results differently. Open League weights kills slightly higher, but placement is still a very effective way to climb. Pro-Am weights placement higher than kills, closer to pro ALGS scoring, so endgame position and survival become the main engine. A climbing plan: in Open League, sharpen your gunfights and take good fights; once you reach Pro-Am, shift toward endgame positioning, zone calling and patience.",
+   "kp": [
+    "Open League: kills weighted slightly higher",
+    "Pro-Am: placement weighted higher"
+   ],
+   "dp": [
+    "Placement still matters in Open League",
+    "Pro-Am is closer to pro ALGS scoring"
+   ]
+  },
+  {
+   "id": "8.9",
+   "title": "Entry cost by division",
+   "recall": "How do entry costs change in Season 32, and why does it matter for the climb?",
+   "concept": "Today, entry cost jumps when you enter a new tier, which is the wall many players hit at Diamond. In Season 32, entry cost rises a little at every division instead, so climbing gets harder gradually rather than all at once. Expect each division to ask a bit more of every game, and judge your progress by division, not just by tier.",
+   "kp": [
+    "Entry cost rises every division, not just every tier",
+    "No big wall when you enter a tier (like Diamond)"
+   ],
+   "dp": [
+    "Judge progress by division, not only tier"
+   ]
+  },
+  {
+   "id": "9.1",
+   "title": "Strafe with a plan: mirror or counter",
+   "recall": "What are the two strafes, what does each one do, and when do you use each?",
+   "concept": "Random side-to-side strafing makes your own aim worse, because every direction change moves your crosshair too. Pick one of two strafes on purpose. Mirror: move the same way they move. Your crosshair and their body travel together, so tracking is easiest. Use it when you're ahead (more health, or a gun that kills faster). Counter: move the opposite way. You're harder to hit, but they cross your screen about twice as fast, so save it for when you need to survive. Change direction when they change, not at random. Longer, deliberate strafes beat frantic tiny ones; go too fast and you barely move.",
+   "kp": [
+    "Mirror: move the same way they do; easiest tracking",
+    "Counter: move the opposite way; harder to hit, harder to aim",
+    "Mirror when you're ahead, counter when you need to survive"
+   ],
+   "dp": [
+    "Change direction when they do, not at random",
+    "Long strafes beat frantic tiny ones"
+   ]
+  },
+  {
+   "id": "9.2",
+   "title": "Aim for your own movement",
+   "recall": "Why does your aim fall apart when you dodge, and how do you fix it?",
+   "concept": "Your crosshair is attached to your body. Every time you change direction, your aim gets dragged across the target. Most players only correct after the move, which causes jitter and missed bullets. Fix it by correcting in the same instant you change direction: you go left, your aim pulls right to stay on them. This matters most when you're low and dodging, which is exactly when most people's aim falls apart. The fewer pointless direction changes you make, the less you have to correct.",
+   "kp": [
+    "Your own direction changes drag your crosshair off them",
+    "Correct in the same instant you move, not after"
+   ],
+   "dp": [
+    "Move with purpose so there's less to correct"
+   ]
+  },
+  {
+   "id": "9.3",
+   "title": "Eyes on them, not the crosshair",
+   "recall": "Where should your eyes be during a gunfight, and why?",
+   "concept": "Under pressure, players stare at their own reticle and judge every bullet, which turns into jerky over-corrections. Your eyes and hands are built to follow a moving object: look at the enemy's chest and your hands pull the crosshair onto it. Lock your eyes on the target before you even shoot, so raising the gun lands the crosshair where you're already looking.",
+   "kp": [
+    "On the enemy's body, not your crosshair",
+    "Your hands follow your eyes; staring at the reticle causes jerky over-corrections"
+   ],
+   "dp": []
+  },
+  {
+   "id": "9.4",
+   "title": "Hipfire close, quick-aim in between",
+   "recall": "When do you hipfire, when do you aim down sights, and what's the in-between trick?",
+   "concept": "Aiming down sights slows you down and puts every bullet exactly where your crosshair is, so up close, where targets fly across your screen, you miss more. Hipfire keeps your full movement speed, and its spread still lands hits when you're slightly off. Up close, hipfire, especially with SMGs, pistols and shotguns. A bit farther out, mix them: tap aim to tighten the spread while you're on them, release while you re-adjust. Farther still, aim down sights. Rifles and LMGs are worse from the hip, so use them to close the gap and your close-range gun to finish. Creators disagree on the exact distance, so go by feel: if they're crossing your screen fast, hipfire.",
+   "kp": [
+    "Up close: hipfire",
+    "Farther out: aim down sights",
+    "In between: tap aim to tighten the spread, release to adjust"
+   ],
+   "dp": [
+    "SMGs, pistols and shotguns hipfire best; rifles and LMGs close the gap"
+   ]
+  },
+  {
+   "id": "9.5",
+   "title": "Swap before you reload",
+   "recall": "Your mag is running low mid-duel. What two habits save you time?",
+   "concept": "Reloading mid-duel is often what gets you killed. Two habits fix it. One: swap to your other gun before the first one runs dry. Firing a fresh magazine sooner beats squeezing out the last few rounds. Two: when you do reload, leave at least one bullet in the mag. On most guns a reload with a round still in it is faster than reloading empty. Across a game, those saved moments add up to a lot of damage.",
+   "kp": [
+    "Swap to your other gun before the mag runs dry",
+    "Reload with a bullet left; it's faster than reloading empty"
+   ],
+   "dp": []
+  },
+  {
+   "id": "9.6",
+   "title": "Stay grounded in the duel",
+   "recall": "Why is jumping in a duel a mistake, and what do you do instead?",
+   "concept": "Jumping mid-fight feels evasive but does the opposite. Once you're in the air you can't change direction, so your path is locked and easy to track. Staying on the ground keeps every option open: you can switch strafe direction at any moment, and that's what actually makes you hard to read. Save jumps for moving between cover, not for the duel itself.",
+   "kp": [
+    "In the air your path is locked and easy to track",
+    "Stay on the ground so you can change direction anytime"
+   ],
+   "dp": []
+  },
+  {
+   "id": "9.7",
+   "title": "Chest first",
+   "recall": "Where should you aim until your tracking is consistent, and why?",
+   "concept": "Heads are small. If your aim isn't consistent yet, aiming for the head means missing most of your shots for the occasional big hit. Aim center mass, the chest. You land more total damage, and damage wins fights. Headshots come naturally once your tracking is solid, because the chest is close to the head anyway. Pride says go for the head; your damage numbers say chest.",
+   "kp": [
+    "Aim for the chest (center mass)",
+    "More total damage; heads are small and easy to miss"
+   ],
+   "dp": []
+  },
+  {
+   "id": "9.8",
+   "title": "Shoot the one who isn't shooting you",
+   "recall": "Two enemies are in front of you. Which one do you shoot first, and why?",
+   "concept": "A player who's fighting your teammate, chasing someone, or looting isn't dodging you. Their movement is simple and predictable, so you'll land far more of your shots on them than on someone strafing to beat you. Given a choice, shoot the enemy whose attention is elsewhere. It lines up with good positioning too: any angle where their crosshair isn't on you is free damage.",
+   "kp": [
+    "The one who isn't shooting or looking at you",
+    "They aren't dodging you, so they're easier to hit"
+   ],
+   "dp": []
+  },
+  {
+   "id": "9.9",
+   "title": "Loose hands",
+   "recall": "Why does trying harder often make your aim worse, and what do you do instead?",
+   "concept": "When you tell yourself you're locking in, you grip harder, tense up, and think about every input. That tension blocks the automatic aim you've already built. Think of it as performance equals potential minus interference, and tension is interference. Panic does the same: heart rate up, grip tight, fine control gone. Keep a light grip, focus on the player, and let the trained part of your brain aim. Missed bursts happen to everyone; adapt to the next shot instead of squeezing harder.",
+   "kp": [
+    "Gripping harder and tensing up makes aim worse",
+    "Stay relaxed, focus on the player, let trained aim take over"
+   ],
+   "dp": [
+    "Performance = potential minus interference"
+   ]
+  },
+  {
+   "id": "9.10",
+   "title": "Warm up before you queue",
+   "recall": "What's your warm-up before ranked, and what are its steps?",
+   "concept": "Jumping straight into ranked means your first few fights happen with cold hands. Spend 10 to 15 minutes in the Firing Range first. Start with a plain gun, no attachments, close to a dummy. Once that's consistent, step back: distance exaggerates recoil and forces finer control. Then add movement, like strafes, slides and door peeks, while staying on target. Standing still only trains standing still. Keep the routine the same each day so you can feel progress.",
+   "kp": [
+    "10–15 minutes in the range before you queue",
+    "Plain gun, close to a dummy first",
+    "Step back for distance",
+    "Then add movement: strafes, slides, peeks"
+   ],
+   "dp": []
+  },
+  {
+   "id": "9.11",
+   "title": "Leave your settings alone",
+   "recall": "You had a bad night. Should you change your sensitivity, and how long do you give a new setting?",
+   "concept": "Changing sensitivity every time you have a bad night resets your muscle memory before it ever settles. After any change, commit to it for 2 to 3 weeks. Aim adapts through hundreds of reps under real fight stress, and every tweak starts that count over. A bad session usually isn't your settings.",
+   "kp": [
+    "Don't tweak after bad games; it resets your muscle memory",
+    "Commit to a new setting for 2 to 3 weeks"
+   ],
+   "dp": []
+  }
+ ]
+}
