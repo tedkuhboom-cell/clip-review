@@ -5,6 +5,7 @@ A learning loop for competitive games, built on the Learning How to Learn method
 - **Manual**: spaced-repetition cards. Type your answer from memory and the app grades it against each card's key points: by Claude on what you meant (optional, online), or by keywords on the phone.
 - **Debrief**: log each ranked session against your theme. Each game takes three taps (theme yes/no, area, reason), plus optional "what was missing" chips and a star to review it as a clip later.
 - **One theme across every tab**: the app picks your biggest leak (e.g. "Stay connected to your team") from your games, clips and cards, and every tab works on it until it sticks.
+- **Recoil** (in Manual): draw each gun's pull from memory on a spaced schedule, and practice holding it in a spray game. 18 patterns traced from a recoil chart.
 - **Clips**: a 7-step guided review of your own clips.
 - **Maps**: how each map is built, and how to rotate on it.
 

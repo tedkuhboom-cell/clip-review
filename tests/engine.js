@@ -27,3 +27,8 @@ function loadScheduler(retention) {
 }
 
 module.exports = { HTML, section, loadGrader, loadScheduler };
+
+// recoil math: rcScore, rcGrade, rcHint, rcInterval, rcResample
+module.exports.loadRecoil = function () {
+  return new Function(section("recoil math") + "\nreturn {rcScore:rcScore, rcGrade:rcGrade, rcHint:rcHint, rcInterval:rcInterval, rcResample:rcResample};")();
+};

@@ -164,6 +164,18 @@ details.more p{font-size:14px;margin:6px 0}
 .weekdots span.on{background:var(--teal-bg);border-color:var(--teal);color:var(--teal-ink)}
 .weekdots span.today{outline:2px solid var(--amber);outline-offset:1px}
 .weekdots span.future{opacity:.55}
+.rcpad{display:block;width:100%;max-width:380px;margin:0 auto;background:var(--panel-2);border:1px solid var(--line);border-radius:12px;touch-action:none;-webkit-user-select:none;user-select:none}
+.rcrow{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.rcrow:last-child{border-bottom:0}
+.rcthumb{width:44px;height:66px;flex:none;border-radius:8px;background:var(--panel-2);border:1px solid var(--line)}
+.rcnew{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:18px}
+.rcmeta{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;font-size:14.5px}
+.rcmeta .faint{font-size:12.5px}
+.rcbtns{display:flex;gap:6px}
+.rcbtns button{min-height:38px;padding:6px 10px;font-size:13px}
+.rckey{display:flex;gap:14px;font-size:12.5px;color:var(--muted);margin:0 0 8px}
+.rckey i{display:inline-block;width:14px;height:4px;border-radius:2px;margin-right:6px;vertical-align:middle}
+.rchead{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .kplist .mk{flex:none;width:22px;height:22px;border-radius:6px;display:grid;place-items:center;font-weight:700;font-size:13px}
 .kplist .hit .mk{background:var(--teal);color:var(--amber-ink)}
 .kplist .no .mk{background:var(--red-bg);color:var(--red-ink);border:1px solid var(--red)}
@@ -435,7 +447,7 @@ document.title = "Clip Review";
 // ===================== storage =====================
 var PFX = P.storagePrefix;
 var K = { profile:PFX+"_profile_v1", manual:PFX+"_manual_v1", debrief:PFX+"_debrief_v1", clips:PFX+"_clip_review_v1", draft:PFX+"_clip_draft",
-          clipTimer:PFX+"_clip_session", backup:PFX+"_last_backup", ui:PFX+"_ui_v1", install:PFX+"_install_id", outbox:PFX+"_outbox", cloud:PFX+"_cloud" };
+          clipTimer:PFX+"_clip_session", backup:PFX+"_last_backup", ui:PFX+"_ui_v1", install:PFX+"_install_id", outbox:PFX+"_outbox", cloud:PFX+"_cloud", recoil:PFX+"_recoil_v1" };
 function lget(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
 var saveWarned=false;
 function lset(k,v){ try{ if(v==null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); return true; }catch(e){ if(!saveWarned){ saveWarned=true; showSaveFail(e); } return false; } }
@@ -712,6 +724,7 @@ var S = {
   draft: normDraft(lget(K.draft)), step:-1,
   live: lget(PFX+"_live_v1"),
   ui: Object.assign({tab:"manual", manualSub:"today", clipSub:"review", map:0, libMod:"all"}, lget(K.ui)||{}),
+  recoil: Object.assign({guns:[], reviews:{}, log:[], best:{}}, lget(K.recoil)||{}), rc:null,
   settings:false, mSession:null, open:{}, delArm:null, ans:{}, clipTimer:lget(K.clipTimer), dform:{exec:null,causes:[]}
 };
 if(typeof S.draft._step==="number" && S.draft._step>=0) S.step=Math.min(S.draft._step,LAST);
@@ -895,6 +908,7 @@ function practiceDays(){
   S.sessions.forEach(function(x){ if(x.date) d[sessDay(x)]=1; });
   S.clips.forEach(function(c){ if(c.created) d[ymd(new Date(c.created))]=1; });
   if(S.live && S.live.games && S.live.games.length) d[today()]=1;
+  (S.recoil.log||[]).forEach(function(x){ if(x.d) d[x.d]=1; });
   return d;
 }
 function weekGoal(){ return S.profile.weekGoal||4; }
@@ -920,8 +934,9 @@ function weekPanel(){
 
 function renderManual(v){
   var t=today(), due=dueList(t).length;
-  v.appendChild(subTabs([["today","Today",due||null],["library","Library"]], S.ui.manualSub, function(k){ S.ui.manualSub=k; saveUI(); S.mSession=null; safeRender(); window.scrollTo(0,0); }));
+  v.appendChild(subTabs([["today","Today",due||null],["library","Library"],["recoil","Recoil",rcDueCount()||null]], S.ui.manualSub, function(k){ S.ui.manualSub=k; saveUI(); S.mSession=null; S.rc=null; safeRender(); window.scrollTo(0,0); }));
   if(S.ui.manualSub==="library") return renderLibrary(v);
+  if(S.ui.manualSub==="recoil") return renderRecoil(v);
   if(S.mSession) return renderMSession(v);
   var pl=planToday(t), nNew=pl.news.length, counts={new:0,learn:0,solid:0,own:0};
   CARDS.forEach(function(c){ counts[stage(S.reviews[c.id])]++; });
@@ -953,7 +968,7 @@ function renderManual(v){
     h("p",null,h("b",{text:"A daily cap."})," Sessions stop at your session size (Settings), most overdue cards first. Anything left waits for the next session, and new cards pause until you catch up, so missing a few days never buries you."),
     h("p",null,h("b",{text:"Today's drill."})," At the end of a session, pick one drill to try in your next ranked games. A card isn't really yours until you've used it in a match."),
     h("p",null,h("b",{text:"Graded on meaning."})," With Claude grading on (Settings), your answer is judged on what you meant, not the exact words, and each missed point comes with a line on what was missing. Offline, the app grades by keywords on your phone instead."),
-    h("p",null,h("b",{text:"Weekly goal."})," A day counts when you answer a card, log a ranked session or review a clip. Aim for your number of days each week, and never miss twice in a row."),
+    h("p",null,h("b",{text:"Weekly goal."})," A day counts when you answer a card, practice recoil, log a ranked session or review a clip. Aim for your number of days each week, and never miss twice in a row."),
     h("p",null,h("b",{text:"Full answers."})," Each card also has \u201cgo deeper\u201d points. They don't change your grade, but hitting all of them earns a ★ Full answer, which counts on your Proof screen."),
     h("p",null,h("b",{text:"Graded on key points."})," Hit them all (or all but one on big cards) for Got it, half for Shaky, less for Missed. Wording doesn't matter."),
     h("p",null,h("b",{text:"Adaptive schedule."})," Each card comes back right before you\u2019d forget it, at your target (90% by default, in Settings). Cards you know well spread out to weeks and months; hard ones come back sooner. Missed brings a card back tomorrow, and a \u2605 Full answer spaces it out further than a plain Got it."),
@@ -1183,6 +1198,242 @@ function renderLibrary(v){
   v.appendChild(panel);
   var jobs=P.legendJobs||{}, mains=S.profile.mains||[], names=Object.keys(jobs).sort(function(a,b){ return (mains.indexOf(a)<0)-(mains.indexOf(b)<0); });
   if(names.length) v.appendChild(h("details",{class:"panel more"}, h("summary",{text:"Legend jobs"}), names.map(function(n){ return h("div",{class:"rrow"},h("b",{text:n,class:mains.indexOf(n)>=0?"mains-hl":null}),h("span",{text:jobs[n]})); })));
+}
+
+// ===================== recoil math =====================
+// A gun's "pull" (pack recoilGuns[].pull) is the path your aim has to move to keep every bullet on one spot:
+// it starts at the first shot and goes down. Where the bullets go if you don't pull is the same path flipped (the kick).
+function rcResample(pts, n){
+  var d=[0], i; for(i=1;i<pts.length;i++) d.push(d[i-1]+Math.hypot(pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1]));
+  var L=d[d.length-1], out=[], j=0;
+  if(!L) { for(i=0;i<n;i++) out.push([pts[0][0],pts[0][1]]); return out; }
+  for(var k=0;k<n;k++){ var t=L*k/(n-1); while(j<pts.length-2 && d[j+1]<t) j++; var f=(t-d[j])/((d[j+1]-d[j])||1);
+    out.push([pts[j][0]+f*(pts[j+1][0]-pts[j][0]), pts[j][1]+f*(pts[j+1][1]-pts[j][1])]); }
+  return out;
+}
+function rcSmooth(pts){ if(pts.length<3) return pts.slice(); return pts.map(function(p,i){ if(!i || i===pts.length-1) return p; var a=pts[i-1], b=pts[i+1]; return [(a[0]+p[0]+b[0])/3, (a[1]+p[1]+b[1])/3]; }); }
+function rcFrom0(pts){ var s=pts[0]; return pts.map(function(p){ return [p[0]-s[0], p[1]-s[1]]; }); }
+function rcHeight(pts){ var lo=Infinity, hi=-Infinity; pts.forEach(function(p){ if(p[1]<lo) lo=p[1]; if(p[1]>hi) hi=p[1]; }); return hi-lo; }
+// Side-to-side position at N evenly spaced depths down the pull (depth = furthest down so far, so small
+// back-ups don't count). Averaging inside each band smooths the jitter of hand-drawn and traced lines alike.
+function rcProfile(pts, N){
+  var p=rcFrom0(pts), run=0, H=0, sum=[], cnt=[], i;
+  p.forEach(function(q){ if(q[1]>H) H=q[1]; });
+  for(i=0;i<N;i++){ sum.push(0); cnt.push(0); }
+  if(H<=0) return {x:sum, H:0};
+  p.forEach(function(q){ run=Math.max(run,q[1]); var bi=Math.min(N-1, Math.floor(run/H*N)); sum[bi]+=q[0]; cnt[bi]++; });
+  var x=sum.map(function(v,i){ return cnt[i]?v/cnt[i]:null; });
+  for(i=0;i<N;i++) if(x[i]==null){ var l=i-1, r=i+1; while(l>=0 && x[l]==null) l--; while(r<N && x[r]==null) r++;
+    x[i] = l<0 ? (r<N?x[r]:0) : r>=N ? x[l] : x[l]+(x[r]-x[l])*(i-l)/(r-l); }
+  return {x:x, H:H};
+}
+function rcAsPath(x, H){ var N=x.length; return [[0,0]].concat(x.map(function(v,i){ return [v, (i+0.5)/N*H]; })); }
+// Score a drawn pull against the real one, 0..1. Size doesn't matter (your drawing is scaled to the same depth);
+// how far it goes left or right, and at what depth, does. 0 = no better than a straight line down.
+function rcScore(ref, user){
+  var N=24, r=rcProfile(ref,N), rH=r.H||1, out={score:0, ref:rcAsPath(r.x,rH), user:null, rH:rH, rx:r.x, ux:null};
+  if(!user || user.length<5) return out;
+  var u=rcProfile(user,N); if(u.H<=0) return out;
+  var k=rH/u.H, ux=u.x.map(function(v){ return v*k; }), du=0, ds=0;
+  for(var i=0;i<N;i++){ du+=Math.abs(r.x[i]-ux[i]); ds+=Math.abs(r.x[i]); }
+  du/=N*rH; ds/=N*rH;
+  out.score=Math.max(0, Math.min(1, 1-du/Math.max(ds,0.08))); out.user=rcAsPath(ux,rH); out.ux=ux;
+  return out;
+}
+function rcGrade(score){ return score>=0.6?"got" : score>=0.35?"shaky" : "miss"; }
+// Which way the pull goes in each third: -1 left, 0 straight down, 1 right.
+function rcThirds(x, rH){ var n=x.length, out=[]; for(var t=0;t<3;t++){ var a=t?x[Math.round(t*n/3)-1]:0, b=x[Math.round((t+1)*n/3)-1], dx=(b-a)/rH; out.push(Math.abs(dx)<0.07?0:dx<0?-1:1); } return out; }
+function rcHint(res){
+  if(!res.ux) return "Draw one stroke from the dot downwards, the way you'd pull.";
+  var names=["straight down","down and left","down and right"], part=["Start","Middle","End"], r=rcThirds(res.rx,res.rH), u=rcThirds(res.ux,res.rH);
+  var nm=function(d){ return d===0?names[0]:d<0?names[1]:names[2]; };
+  for(var i=0;i<3;i++) if(r[i]!==u[i]) return part[i]+": the gun needs you to pull "+nm(r[i])+". You pulled "+nm(u[i])+".";
+  return res.score>=0.6 ? "That's the shape." : "Right directions. How far you pull to the side is off: compare the two lines.";
+}
+// Milliseconds before shot i (i >= 1): fire rate, bursts, and the Devotion's wind-up.
+function rcInterval(g, i){
+  var rps=g.rps; if(g.spin) rps=g.spin[0]+(g.rps-g.spin[0])*Math.min(1,i/g.spin[1]);
+  var ms=1000/rps; if(g.burst && i%g.burst[0]===0) ms+=g.burst[1]; return ms;
+}
+
+// ===================== RECOIL =====================
+var RGUNS=P.recoilGuns||[], rgById={}; RGUNS.forEach(function(g){ rgById[g.id]=g; });
+function saveRecoil(){ lset(K.recoil,S.recoil); cloudTouch(); }
+function rcMine(){ return (S.recoil.guns||[]).filter(function(id){ return rgById[id]; }); }
+function rcIsDue(id, t){ var r=S.recoil.reviews[id]; return !r || r.due<=t; }
+function rcDueCount(){ var t=today(); return rcMine().filter(function(id){ return rcIsDue(id,t); }).length; }
+function rcOpen(mode, ids){ S.rc={mode:mode, queue:ids, i:0}; safeRender(); window.scrollTo(0,0); }
+function rcClose(){ S.rc=null; safeRender(); window.scrollTo(0,0); }
+function rcCanvas(cls, w, hgt){ var c=h("canvas",{class:cls}), dpr=Math.min(3, window.devicePixelRatio||1); c.width=w*dpr; c.height=hgt*dpr; c.style.aspectRatio=w+" / "+hgt; c._dpr=dpr; c._w=w; c._h=hgt; return c; }
+function rcPos(c, e){ var b=c.getBoundingClientRect(); return [(e.clientX-b.left)*c._w/b.width, (e.clientY-b.top)*c._h/b.height]; }
+function rcPath(ctx, pts, color, width, dash){ if(!pts||pts.length<2) return; ctx.save(); ctx.strokeStyle=color; ctx.lineWidth=width; ctx.lineCap="round"; ctx.lineJoin="round"; if(dash) ctx.setLineDash(dash); ctx.beginPath(); pts.forEach(function(p,i){ if(i) ctx.lineTo(p[0],p[1]); else ctx.moveTo(p[0],p[1]); }); ctx.stroke(); ctx.restore(); }
+function rcDot(ctx, x, y, r, color){ ctx.save(); ctx.fillStyle=color; ctx.beginPath(); ctx.arc(x,y,r,0,7); ctx.fill(); ctx.restore(); }
+function rcCss(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim()||"#888"; }
+// Fit a pull into a w x h box with its first shot at the top centre. Centring on the first shot (not the drawing)
+// means the box position never gives away which way the gun pulls.
+function rcFit(pull, w, hgt){
+  var mx=0, H=0; pull.forEach(function(p){ mx=Math.max(mx,Math.abs(p[0]-pull[0][0])); H=Math.max(H,p[1]-pull[0][1]); });
+  var k=Math.min(hgt*0.76/(H||1), w*0.44/(mx||1)), ox=w/2, oy=hgt*0.1;
+  return {k:k, ox:ox, oy:oy, pts:pull.map(function(p){ return [ox+(p[0]-pull[0][0])*k, oy+(p[1]-pull[0][1])*k]; })};
+}
+function rcThumb(g){ var c=rcCanvas("rcthumb",64,96), ctx=c.getContext("2d"); ctx.scale(c._dpr,c._dpr); var f=rcFit(g.pull,64,96); rcPath(ctx,f.pts,rcCss("--teal"),2); rcDot(ctx,f.ox,f.oy,3,rcCss("--amber")); return c; }
+
+function renderRecoil(v){
+  if(S.rc && S.rc.mode==="draw") return renderRcDraw(v);
+  if(S.rc && S.rc.mode==="game") return renderRcGame(v);
+  var t=today(), mine=rcMine(), due=mine.filter(function(id){ return rcIsDue(id,t); });
+  var intro=h("section",{class:"panel"}, h("h2",{text:"Recoil"}),
+    h("p",{class:"sub",style:"margin:0 0 12px",text:"Learn each gun's pull: draw it from memory, then hold it in the spray game. Your thumb only really learns it in the Firing Range, so take the shape there."}));
+  if(!mine.length) intro.appendChild(h("p",{class:"hint",style:"margin:0",text:"Pick the guns you actually use below. Three or four is plenty."}));
+  else {
+    intro.appendChild(h("button",{type:"button",class:"primary",disabled:!due.length,onclick:function(){ rcOpen("draw",due); }}, due.length?"Draw from memory · "+due.length+" gun"+(due.length>1?"s":""):"All drawn for today"));
+    var next=null; mine.forEach(function(id){ var r=S.recoil.reviews[id]; if(r && r.due>t && (!next||r.due<next)) next=r.due; });
+    intro.appendChild(h("p",{class:"hint",style:"margin:8px 0 0",text: due.length ? "New guns start with a trace over the real pattern; you draw them from memory from the next day." : next ? "Next draw "+pretty(next)+". The spray game is open any time." : ""}));
+  }
+  v.appendChild(intro);
+  if(mine.length){
+    var list=h("section",{class:"panel"}, h("h3",{text:"Your guns"}));
+    mine.forEach(function(id){ var g=rgById[id], r=S.recoil.reviews[id], best=S.recoil.best[id];
+      var st = !r ? "New · trace it first" : r.due<=t ? "Due to draw" : "Next draw "+pretty(r.due);
+      list.appendChild(h("div",{class:"rcrow"}, rcThumbIf(g, r),
+        h("div",{class:"rcmeta"}, h("b",{text:g.name}), h("span",{class:"faint",text:st+(best!=null?" · spray best "+best+"%":"")})),
+        h("div",{class:"rcbtns"}, h("button",{type:"button",class:"ghost",onclick:function(){ rcOpen("draw",[id]); }}, !r?"Trace":"Draw"), h("button",{type:"button",class:"ghost",onclick:function(){ rcOpen("game",[id]); }},"Spray"))));
+    });
+    v.appendChild(list);
+  }
+  // gun picker, grouped like the chart
+  var pick=h("details",{class:"panel more"}); if(!mine.length) pick.open=true;
+  pick.appendChild(h("summary",{text:"Choose your guns ("+mine.length+")"}));
+  Object.keys(P.recoilGroups||{}).forEach(function(grp){
+    var gs=RGUNS.filter(function(g){ return g.group===grp; }); if(!gs.length) return;
+    var seg=h("div",{class:"seg small"});
+    gs.forEach(function(g){ seg.appendChild(h("button",{type:"button","data-k":g.id,"aria-pressed":String(mine.indexOf(g.id)>=0),onclick:function(){
+      var a=rcMine().slice(), i=a.indexOf(g.id); if(i>=0) a.splice(i,1); else a.push(g.id); S.recoil.guns=a; saveRecoil(); safeRender(); }}, g.name)); });
+    pick.appendChild(h("div",{class:"kphead",text:P.recoilGroups[grp]})); pick.appendChild(seg);
+  });
+  v.appendChild(pick);
+  v.appendChild(h("details",{class:"panel more"}, h("summary",{text:"How this works"}),
+    h("p",null,h("b",{text:"Draw from memory."})," Pull the shape with one finger, starting at the dot. The app scores your drawing against the real pull (size doesn't matter, the shape does) and brings each gun back on the same spaced schedule as your cards."),
+    h("p",null,h("b",{text:"Spray game."})," Hold to fire, drag to fight the kick. With the guide on you see the pull to follow; turn it off to test yourself. Dragging on glass isn't a thumbstick, so this teaches the shape and timing, not the feel."),
+    h("p",null,h("b",{text:"Firing Range."})," Two mags per gun at a wall, pulling the shape you drew. That's where it becomes muscle memory. With aim assist on controller, the big moves matter more than every wiggle."),
+    h("p",{class:"faint",text:P.recoilNote||""})));
+}
+function rcThumbIf(g, r){ return r ? rcThumb(g) : h("div",{class:"rcthumb rcnew",text:"?"}); }
+
+function rcNextInQueue(){ var q=S.rc; q.i++; if(q.i>=q.queue.length) rcClose(); else { q.res=null; q.stroke=null; safeRender(); window.scrollTo(0,0); } }
+
+function renderRcDraw(v){
+  var q=S.rc, id=q.queue[q.i], g=rgById[id], rev=S.recoil.reviews[id], t=today(), study=!rev && !q.res, sched=q.res ? q.sched : (study || rcIsDue(id,t));
+  var W=320, H=380, c=rcCanvas("rcpad",W,H), ctx=c.getContext("2d"); ctx.scale(c._dpr,c._dpr);
+  var fit=rcFit(g.pull,W,H), done=!!q.res;
+  function paint(){
+    ctx.clearRect(0,0,W,H);
+    if(study) rcPath(ctx, fit.pts, rcCss("--line"), 10);
+    if(done && q.res.user){ var res=q.res, k=fit.k*rcHeight(rcFrom0(g.pull))/res.rH;
+      rcPath(ctx, res.ref.map(function(p){ return [fit.ox+p[0]*k, fit.oy+p[1]*k]; }), rcCss("--teal"), 4);
+      rcPath(ctx, res.user.map(function(p){ return [fit.ox+p[0]*k, fit.oy+p[1]*k]; }), rcCss("--amber"), 3, [7,5]);
+    } else if(q.stroke) rcPath(ctx, q.stroke, rcCss("--amber"), 4);
+    rcDot(ctx, fit.ox, fit.oy, 7, rcCss("--amber"));
+  }
+  if(!done){
+    var drawing=false;
+    c.addEventListener("pointerdown",function(e){ e.preventDefault(); try{ c.setPointerCapture(e.pointerId); }catch(_){} drawing=true; q.stroke=[rcPos(c,e)]; paint(); });
+    c.addEventListener("pointermove",function(e){ if(!drawing) return; e.preventDefault(); q.stroke.push(rcPos(c,e)); paint(); });
+    function up(){ if(!drawing) return; drawing=false; checkBtn.disabled=!(q.stroke && q.stroke.length>=5 && rcHeight(q.stroke)>=30); }
+    c.addEventListener("pointerup",up); c.addEventListener("pointercancel",up);
+  }
+  var panel=h("section",{class:"panel"},
+    h("div",{class:"prog"}, h("span",{text:(q.i+1)+" of "+q.queue.length}), h("div",{class:"track"},h("span",{style:"width:"+Math.round(q.i/q.queue.length*100)+"%"})),
+      h("button",{type:"button",class:"ghost",style:"min-height:36px;padding:6px 12px;font-size:12.5px",onclick:rcClose},"End")),
+    h("div",{class:"tagrow"}, h("span",{class:"tag "+(study?"new":"due"),text:study?"New gun · trace":sched?"Draw from memory":"Practice draw"})),
+    h("h2",{class:"cardtitle",text:g.name}),
+    h("p",{class:"faint",style:"margin:0 0 10px",text: study ? "Trace the grey line from the dot down, the way you'd pull. You'll draw it from memory from tomorrow." : "Draw how you pull, from the first shot (the dot) to the last. One stroke."}));
+  var checkBtn=h("button",{type:"button",class:"primary",disabled:true,onclick:function(){
+    if(study){ S.recoil.reviews[id]=schedule(null,"shaky",t,false); S.recoil.log.push({ts:Date.now(), d:t, id:id, kind:"trace"}); saveRecoil(); toast("Traced. You'll draw it from memory tomorrow."); return rcNextInQueue(); }
+    var res=rcScore(g.pull, q.stroke); q.res=res; q.sched=sched; var gr=rcGrade(res.score); q.grade=gr;
+    if(sched) S.recoil.reviews[id]=schedule(rev, gr, t, false);
+    S.recoil.log.push({ts:Date.now(), d:t, id:id, kind:"draw", s:Math.round(res.score*100), g:gr, sched:sched}); if(S.recoil.log.length>3000) S.recoil.log=S.recoil.log.slice(-3000);
+    saveRecoil(); safeRender(); window.scrollTo(0,0);
+  }}, study?"Done tracing":"Check my drawing");
+  if(done){
+    var res=q.res, gr=q.grade, nr=S.recoil.reviews[id];
+    panel.appendChild(h("div",{class:"verdictbar "+gr}, h("b",{text:GRADE_NAME[gr]}), h("span",{class:"faint",text:Math.round(res.score*100)+"% match"})));
+    panel.appendChild(h("p",{class:"hint",style:"margin:0 0 8px",text:rcHint(res)}));
+    panel.appendChild(h("div",{class:"rckey"}, h("span",null,h("i",{style:"background:var(--teal)"}),"The gun's pull"), h("span",null,h("i",{style:"background:var(--amber)"}),"Yours")));
+  }
+  panel.appendChild(c);
+  if(!done){
+    panel.appendChild(h("div",{class:"nav2",style:"margin-top:12px"}, h("button",{type:"button",class:"ghost",onclick:function(){ q.stroke=null; checkBtn.disabled=true; paint(); }},"Clear"), checkBtn));
+  } else {
+    panel.appendChild(h("p",{class:"hint",style:"margin:10px 0",text: sched ? (gr==="miss"?"Back tomorrow.":"Back "+fmtGap(daysBetween(t,nr.due))+".") : "Practice draw: your schedule doesn't change."}));
+    panel.appendChild(h("div",{class:"nav2"},
+      h("button",{type:"button",class:"ghost",onclick:function(){ S.rc={mode:"game",queue:[id],i:0}; safeRender(); window.scrollTo(0,0); }},"Spray game"),
+      h("button",{type:"button",class:"primary",onclick:rcNextInQueue}, q.i+1<q.queue.length?"Next gun":"Done")));
+  }
+  v.appendChild(panel);
+  paint();
+}
+
+function renderRcGame(v){
+  var q=S.rc, id=q.queue[0], g=rgById[id], W=340, H=440;
+  q.guide = q.guide==null ? !S.recoil.reviews[id] || (S.recoil.best[id]==null) : q.guide;
+  q.range = q.range||"close";
+  var c=rcCanvas("rcpad rcgame",W,H), ctx=c.getContext("2d"); ctx.scale(c._dpr,c._dpr);
+  var tx=W/2, ty=H*0.4, body = q.range==="far" ? {w:W*0.13,h:H*0.2} : {w:W*0.26,h:H*0.36};
+  var H0=0; g.pull.forEach(function(p){ H0=Math.max(H0,p[1]-g.pull[0][1]); });
+  var k=H*0.45/(H0||1), kick=g.pull.map(function(p){ return [-(p[0]-g.pull[0][0])*k, -(p[1]-g.pull[0][1])*k]; });
+  var st={aim:[tx,ty], shots:[], i:0, firing:false, over:false, last:null, timer:null};
+  function onBody(x,y){ return Math.abs(x-tx)<=body.w/2 && Math.abs(y-(ty+body.h*0.1))<=body.h/2; }
+  function cross(){ var kk=kick[Math.max(0,st.i-1)]||[0,0]; return [st.aim[0]+kk[0], st.aim[1]+kk[1]]; }
+  function fire(){
+    if(!st.firing || st.i>=kick.length) return finish();
+    var kk=kick[st.i], x=st.aim[0]+kk[0], y=st.aim[1]+kk[1]; st.shots.push([x,y,onBody(x,y)]); st.i++;
+    if(st.i>=kick.length) return finish();
+    st.timer=setTimeout(fire, rcInterval(g, st.i));
+  }
+  function finish(){
+    if(st.over) return; st.over=true; st.firing=false; clearTimeout(st.timer);
+    if(!st.shots.length){ st.over=false; return; }
+    var hit=st.shots.filter(function(s){ return s[2]; }).length, n=kick.length, pct=Math.round(100*hit/n), tday=today();
+    S.recoil.log.push({ts:Date.now(), d:tday, id:id, kind:"game", hit:hit, n:n, guide:q.guide, range:q.range}); if(S.recoil.log.length>3000) S.recoil.log=S.recoil.log.slice(-3000);
+    var isBest=!q.guide && q.range==="close" ? (S.recoil.best[id]==null || pct>S.recoil.best[id]) : false;
+    if(isBest) S.recoil.best[id]=pct;
+    saveRecoil(); q.last={hit:hit, n:n, pct:pct, best:isBest, shots:st.shots.slice()}; q.reps=(q.reps||0)+1; safeRender();
+  }
+  function paint(){
+    if(!document.body.contains(c)) return;
+    ctx.clearRect(0,0,W,H);
+    ctx.save(); ctx.fillStyle=rcCss("--panel"); ctx.strokeStyle=rcCss("--line"); ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(tx, ty+body.h*0.1-body.h/2-body.w*0.32, body.w*0.3, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.fillRect(tx-body.w/2, ty+body.h*0.1-body.h/2, body.w, body.h); ctx.strokeRect(tx-body.w/2, ty+body.h*0.1-body.h/2, body.w, body.h); ctx.restore();
+    if(q.guide) rcPath(ctx, kick.map(function(p){ return [tx-p[0], ty-p[1]]; }), rcCss("--teal"), 3, [4,6]);
+    var shots=st.shots.length?st.shots:(q.last&&!st.firing?q.last.shots:[]);
+    shots.forEach(function(s){ rcDot(ctx, s[0], s[1], 3.2, s[2]?rcCss("--teal"):rcCss("--red")); });
+    if(st.firing){ var p=cross(); ctx.save(); ctx.strokeStyle=rcCss("--amber"); ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(p[0]-10,p[1]); ctx.lineTo(p[0]-4,p[1]); ctx.moveTo(p[0]+4,p[1]); ctx.lineTo(p[0]+10,p[1]); ctx.moveTo(p[0],p[1]-10); ctx.lineTo(p[0],p[1]-4); ctx.moveTo(p[0],p[1]+4); ctx.lineTo(p[0],p[1]+10); ctx.stroke(); ctx.restore(); }
+    else rcDot(ctx, tx, ty, 4, rcCss("--amber"));
+    if(st.firing) requestAnimationFrame(paint);
+  }
+  c.addEventListener("pointerdown",function(e){ e.preventDefault(); if(st.firing) return; try{ c.setPointerCapture(e.pointerId); }catch(_){}
+    st={aim:[tx,ty], shots:[], i:0, firing:true, over:false, last:rcPos(c,e), timer:null}; fire(); requestAnimationFrame(paint); });
+  c.addEventListener("pointermove",function(e){ if(!st.firing) return; e.preventDefault(); var p=rcPos(c,e); st.aim[0]+=p[0]-st.last[0]; st.aim[1]+=p[1]-st.last[1]; st.last=p; });
+  c.addEventListener("pointerup",function(){ if(st.firing) finish(); });
+  c.addEventListener("pointercancel",function(){ if(st.firing) finish(); });
+
+  var guideG=h("div",{class:"seg small"}), rangeG=h("div",{class:"seg small"});
+  [["on","Guide on"],["off","Guide off"]].forEach(function(o){ guideG.appendChild(h("button",{type:"button","data-k":o[0],"aria-pressed":String(q.guide===(o[0]==="on")),onclick:function(){ q.guide=o[0]==="on"; q.last=null; safeRender(); }},o[1])); });
+  [["close","Close"],["far","Far"]].forEach(function(o){ rangeG.appendChild(h("button",{type:"button","data-k":o[0],"aria-pressed":String(q.range===o[0]),onclick:function(){ q.range=o[0]; q.last=null; safeRender(); }},o[1])); });
+  var best=S.recoil.best[id];
+  var panel=h("section",{class:"panel"},
+    h("div",{class:"rchead"}, h("button",{type:"button",class:"linkbtn",onclick:rcClose},"← Recoil"), h("span",{class:"faint",text:best!=null?"Best "+best+"% (close, guide off)":""})),
+    h("h2",{class:"cardtitle",text:g.name+" · spray"}),
+    h("p",{class:"faint",style:"margin:0 0 10px",text:"Hold anywhere on the box to fire. Drag to fight the kick and keep the shots on the body. Lift to stop."}),
+    h("div",{class:"row",style:"gap:8px;margin-bottom:10px"}, guideG, rangeG));
+  if(q.last){ var L=q.last;
+    panel.appendChild(h("div",{class:"verdictbar "+(L.pct>=70?"got":L.pct>=40?"shaky":"miss")}, h("b",{text:L.pct+"%"}), h("span",{class:"faint",text:L.hit+" of "+L.n+" on target"+(L.best?" · new best":"")+(q.reps>1?" · "+q.reps+" sprays":"")}))); }
+  panel.appendChild(c);
+  panel.appendChild(h("p",{class:"hint",style:"margin:10px 0 0",text: q.guide ? "The dashed line is the pull: move your finger along it as the gun fires. Turn the guide off once you can." : "Guide off counts toward your best. Close range only."}));
+  v.appendChild(panel);
+  paint();
 }
 
 // ===================== DEBRIEF =====================
@@ -2109,7 +2360,7 @@ function shareProof(B){
 
 // ===================== SETTINGS + BACKUP =====================
 function fmtAgo(ts){ var d=Math.floor((Date.now()-ts)/864e5); return d<=0?"today":d===1?"yesterday":d+" days ago"; }
-function exportData(){ return {app:"clip-review", pack:P.id, version:2, exported:new Date().toISOString(), profile:S.profile, manual:{reviews:S.reviews, recall:S.recall, snap:S.snap, appeals:S.appeals, bestStreak:S.bestStreak}, sessions:S.sessions, live:S.live, clips:S.clips, draft:S.draft}; }
+function exportData(){ return {app:"clip-review", pack:P.id, version:2, exported:new Date().toISOString(), profile:S.profile, manual:{reviews:S.reviews, recall:S.recall, snap:S.snap, appeals:S.appeals, bestStreak:S.bestStreak}, sessions:S.sessions, live:S.live, clips:S.clips, draft:S.draft, recoil:S.recoil}; }
 function saveBackup(){
   var url=URL.createObjectURL(new Blob([JSON.stringify(exportData(),null,1)],{type:"application/json"}));
   var a=h("a",{href:url,download:"clip-review-backup-"+today()+".json"}); document.body.appendChild(a); a.click();
@@ -2136,6 +2387,14 @@ function restoreObject(o){
       var rv=(o.manual&&o.manual.reviews)||{}; Object.keys(rv).forEach(function(id){ var mine=S.reviews[id], theirs=rv[id]; if(theirs && (!mine || (theirs.last||"")>(mine.last||""))){ S.reviews[id]=theirs; added.cards++; } });
       if(o.draft && o.draft.type && !S.draft.type){ S.draft=normDraft(o.draft); S.step=(typeof o.draft._step==="number"&&o.draft._step>=0)?Math.min(o.draft._step,LAST):-1; lset(K.draft,S.draft); gotDraft=true; }
       if(o.live && !S.live){ S.live=o.live; saveLive(); }
+      var orc=o.recoil; if(orc && typeof orc==="object"){
+        (orc.guns||[]).forEach(function(id){ if(S.recoil.guns.indexOf(id)<0) S.recoil.guns.push(id); });
+        Object.keys(orc.reviews||{}).forEach(function(id){ var m=S.recoil.reviews[id], th=orc.reviews[id]; if(th && (!m || (th.last||"")>(m.last||""))) S.recoil.reviews[id]=th; });
+        var rs={}; S.recoil.log.forEach(function(x){ rs[x.ts+"|"+x.id]=1; }); (orc.log||[]).forEach(function(x){ if(x && !rs[x.ts+"|"+x.id]){ S.recoil.log.push(x); rs[x.ts+"|"+x.id]=1; } });
+        S.recoil.log.sort(function(a,b){ return a.ts-b.ts; });
+        Object.keys(orc.best||{}).forEach(function(id){ if(S.recoil.best[id]==null || orc.best[id]>S.recoil.best[id]) S.recoil.best[id]=orc.best[id]; });
+        lset(K.recoil,S.recoil);
+      }
       var op=o.profile;
       if(op && op.setup && !S.profile.setup){ S.profile=Object.assign(S.profile,op); }
       else if(op){
@@ -2213,7 +2472,7 @@ function renderSettings(v){
   var wgG=h("div",{class:"seg"});
   [3,4,5,6].forEach(function(n){ wgG.appendChild(h("button",{type:"button","data-k":String(n),"aria-pressed":String(weekGoal()===n),onclick:function(){ S.profile.weekGoal=n; setPressed(wgG,String(n)); saveProfile(); }}, String(n))); });
   v.appendChild(h("section",{class:"panel"}, h("h2",{text:"Weekly goal"}),
-    h("div",{class:"field",style:"margin-bottom:0"}, h("div",{class:"q"},"Practice days per week",h("span",{class:"note",text:"A day counts when you answer a card, log a ranked session or review a clip. It measures showing up, not grades."})), wgG)));
+    h("div",{class:"field",style:"margin-bottom:0"}, h("div",{class:"q"},"Practice days per week",h("span",{class:"note",text:"A day counts when you answer a card, practice recoil, log a ranked session or review a clip. It measures showing up, not grades."})), wgG)));
   // online backup: opt-in copy of the backup file, kept under a restore code
   var cl=cloudState(), obG=h("div",{class:"seg small"}), codeIn=h("input",{class:"inp",type:"text",id:"restore-code",placeholder:"Paste a restore code",autocomplete:"off",autocapitalize:"off",spellcheck:"false"});
   [["on","On"],["off","Off"]].forEach(function(o){ obG.appendChild(h("button",{type:"button","data-k":o[0],"aria-pressed":String((p.cloudBackup===true)===(o[0]==="on")),onclick:function(){ S.profile.cloudBackup=o[0]==="on"; saveProfile(); if(S.profile.cloudBackup) cloudSave(true); safeRender(); }},o[1])); });
