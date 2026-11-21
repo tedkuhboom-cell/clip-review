@@ -184,6 +184,7 @@ details.more p{font-size:14px;margin:6px 0}
 @media (prefers-reduced-motion:reduce){.kplist li{animation:none;opacity:1}}
 .tested{border:1px solid var(--amber);border-radius:12px;padding:10px 12px;margin:0 0 14px;background:var(--panel-2)}
 .tested .th{font-size:12px;letter-spacing:.6px;text-transform:uppercase;color:var(--amber);font-weight:600}
+.tested .tq{font-weight:600;line-height:1.35;margin:4px 0 12px}
 .tested ul{list-style:none;margin:6px 0 0;padding:0}
 .tested li{display:flex;gap:10px;align-items:flex-start;padding:5px 0;font-size:14.5px}
 .tested .mk{flex:none;width:22px;height:22px;border-radius:6px;display:grid;place-items:center;font-weight:700;font-size:12px;background:var(--amber);color:var(--amber-ink)}
@@ -1005,7 +1006,7 @@ function renderMSession(v){
       h("button",{type:"button",class:"ghost",style:"min-height:36px;padding:6px 12px;font-size:12.5px",onclick:function(){ S.mSession=null; safeRender(); }},"End")),
     h("div",{class:"tagrow"},h("span",{class:"tag "+(it.kind==="due"?"due":"new"),text:it.kind==="read"?"New card · read":it.kind==="new"?"New card · test":it.kind==="break"?"Quick break":"Review"}),h("span",{class:"tag",text:c.id+" · "+MODS[c.mod]}), seasonTag(c)));
   function go(ph){ s.phase=ph; safeRender(); window.scrollTo(0,0); }
-  function cardBody(tb){ return [h("h2",{class:"cardtitle",text:c.title}), h("p",{class:"concept",text:c.concept}), tb?testedBox(c):null, h("p",{class:"drill"},h("b",{text:"Drill · "}),c.drill)]; }
+  function cardBody(tb){ return [h("h2",{class:"cardtitle",text:c.title}), h("p",{class:"concept",text:c.concept}), tb?testedBox(c,true):null, h("p",{class:"drill"},h("b",{text:"Drill · "}),c.drill)]; }
   if(it.kind==="read"){
     panel.appendChild(h("p",{class:"faint",style:"margin:0 0 8px",text:"Read it now. You'll be tested on it at the end of this session, after a gap."}));
     panel.appendChild(h("div",null,cardBody(true)));
@@ -1160,9 +1161,9 @@ function renderMDone(v){
     v.appendChild(h("section",{class:"panel"}, h("h3",{text:"Pick today's drill"}), h("p",{class:"sub",style:"margin:0",text:"One drill from this session to try in your next ranked games. Using it in a match is what turns a card into a skill."}), box));
   }
 }
-function testedBox(c){
+function testedBox(c,withQ){   // withQ: also show the exact question, so the wording at the test is one you have already seen
   if(!c.kp || !c.kp.length) return null;
-  var box=h("div",{class:"tested"}, h("div",{class:"th",text:"You'll be tested on"}),
+  var box=h("div",{class:"tested"}, withQ?h("div",{class:"th",text:"You'll be asked"}):null, withQ?h("p",{class:"tq",text:c.recall}):null, h("div",{class:"th",text:withQ?"Your answer needs":"You'll be tested on"}),
     h("ul",null, c.kp.map(function(kp,i){ return h("li",null, h("span",{class:"mk",text:String(i+1)}), h("span",{text:kp[0]})); })));
   if(c.dp && c.dp.length){ box.appendChild(h("div",{class:"dh",text:"For a ★ Full answer, also:"}));
     box.appendChild(h("ul",null, c.dp.map(function(kp){ return h("li",{class:"deep"}, h("span",{class:"mk",text:"+"}), h("span",{text:kp[0]})); }))); }
