@@ -1,5 +1,5 @@
 {
- "pack": "apex 2026.11j",
+ "pack": "apex 2026.11k",
  "cards": [
   {
    "id": "0.1",
@@ -32,7 +32,7 @@
   {
    "id": "0.1b",
    "title": "Tempo · outside fights",
-   "recall": "How do you gain or lose tempo without firing a shot?",
+   "recall": "What three things win or lose you tempo without firing a shot?",
    "concept": "Most of your tempo is won or lost before a shot. Rotate early and you get to set up, scout, and hold space while the lobby reacts to you. Rotate late and you're behind the clock, forced through the open and into set-up teams. Be the faster team: faster loot, faster rotates, faster decisions. The ring is a tempo engine: it either works for you (you're already where it's pulling) or it forces your hand.",
    "kp": [
     "Rotate early (rotate late and you lose it)",
@@ -131,7 +131,7 @@
   {
    "id": "1.4",
    "title": "A power position is one YOUR comp can hold",
-   "recall": "What makes a spot a power position, and why can't every team hold every one?",
+   "recall": "What makes a spot a power position, why can't every team hold every one, and what do you check about a building's ways in and out?",
    "concept": "A power position gives you the edge over anyone pushing: height, cover, sightlines, room to reset. But it only counts if your comp can hold it. The same building is a fortress for a Catalyst team and a death trap for a team with no way to lock it. Judge a building before you commit: few entrances (ideally two doorways you can cover), windows that are hard to peek into, real interior cover, and a second exit. Three or more entrances on one floor, an open floor with no cover, or a dead end with no way out are traps.",
    "kp": [
     "Gives you the edge: height, cover, sightlines, room to reset",
@@ -242,7 +242,7 @@
   {
    "id": "2.3",
    "title": "Clear your back",
-   "recall": "Give one reason to take a fight even when it isn't for free KP.",
+   "recall": "You're about to set up in a spot and another squad is close by. What's the reason to fight them first, even if you don't need the KP?",
    "concept": "Wiping a team behind you isn't only KP — it's safety. Clear the squad that could rotate in behind you and you get to play your position without being shot in the back. Sometimes you take a fight purely to clear your back.",
    "kp": [
     "To clear your back, so no one can rotate in behind you"
@@ -254,7 +254,7 @@
   {
    "id": "2.4",
    "title": "Timing beats speed on a third",
-   "recall": "Why is arriving “on time” to a third party better than arriving fast?",
+   "recall": "On a third party, what goes wrong if you arrive too early, what goes wrong if you arrive too late, and why does arriving on time work?",
    "concept": "Show up too early and you get pinched. Too late and you're cleaning scraps — and might die to whoever won. On time, you flow in behind the chaos and take it. Good teams rotate in when the other squads are already committed to each other. And once you third-party, expect a fourth team: other squads heard the same fight, so heal up before you loot.",
    "kp": [
     "Too early and you get pinched",
@@ -284,7 +284,7 @@
   {
    "id": "3.1",
    "title": "The reset: fall back and get info",
-   "recall": "When a push looks hard — open space, strong enemy spot — what's often the better play?",
+   "recall": "A push looks hard: open space, strong enemy spot. What two things do you do instead?",
    "concept": "A hard push over open space usually isn't worth it. Falling back to reset and grabbing a recon scan is often the stronger play. Information is king — enemy positions, zone, anything makes your next decision sharper. A reset isn't passive; it's setting up a better fight.",
    "kp": [
     "Fall back and reset",
@@ -338,7 +338,7 @@
   {
    "id": "3.5",
    "title": "One small play, then back up, scaled to the damage",
-   "recall": "Why back up after a small play even when winning, and what tells you to push hard versus reset as a squad?",
+   "recall": "Why back up after a small play even when you're winning? What decides how hard you go next? And what does the squad do when the health trade turns against you?",
    "concept": "You win fights with a chain of small plays, not one big commitment. Swing in, do one thing (damage or a knock), then back up before you take too much, even if you're winning. Small play, reset, cell, small play again. Let the damage you just did decide how hard you go: crack someone for 150 and you can holster and sprint in; chip them for 20 and pushing gets you reset and knocked. It works squad-wide too: when the health trade tips against your team, all three of you back up and heal together.",
    "kp": [
     "Back up so you don't take too much damage, then reset and cell",
@@ -353,7 +353,7 @@
   {
    "id": "3.6",
    "title": "Make the opportunity: force them passive, then close",
-   "recall": "At range you can't reliably get a knock. What's your actual job before you push?",
+   "recall": "At range you can't reliably get a knock. What's your job there, and what do you do once it's working?",
    "concept": "Don't wait for a knock; make it happen. At range you can't control knocks (they just duck behind cover), so your job there is to force the enemy passive: nade them off an angle, pre-fire their corner, smoke them, or hold their angle so hard they can't peek. While they can't fight back, they can't stop you walking up, so close the gap and swing, where you can lock them into a fight. Deny their best option, then step up.",
    "kp": [
     "Force them passive (nades, pre-fire, smoke, hold their angle)",
@@ -407,7 +407,7 @@
   {
    "id": "3.12",
    "title": "Swap armor, skip the battery",
-   "recall": "You just won a duel, shields cracked, and two more are coming. What's faster than a battery?",
+   "recall": "You just won a duel, shields cracked, and two more are coming. What do you do instead of a battery, and why?",
    "concept": "You win a duel and you're cracked, but the rest of their squad is coming. A battery takes seconds you don't have. If you finished someone and their death box is right there, swap to the fuller shield in it; the swap is instant. Check their armor color before you push, so you know the swap is waiting. Healing in the open while their squad pushes is how a won duel turns into a loss.",
    "kp": [
     "Swap to the fuller shield from their death box",
@@ -829,7 +829,7 @@
   {
    "id": "8.3",
    "title": "Challenger and Goliath lobbies",
-   "recall": "What are Challenger and Goliath matches, and how should each one change how you play?",
+   "recall": "What makes a match a Challenger match or a Goliath match, and what happens to your entry cost in each?",
    "concept": "Each ranked lobby shows a Lobby Tier when you load in, roughly the median of all squads. If your squad is 2 or more tiers below it, it's a Challenger match and your RP entry cost is reduced. If you're 2 or more tiers above, it's a Goliath match and your entry cost goes up. Read it at load-in and adjust: as a Challenger, losing costs less, so play for placement and take smart fights without fear; as a Goliath, you need a strong result just to break even, so don't throw early.",
    "kp": [
     "Challenger: 2+ tiers below the lobby, cheaper entry",
@@ -843,7 +843,7 @@
   {
    "id": "8.4",
    "title": "Demotion shields",
-   "recall": "How do demotion shields work, and what should you do when one gets used?",
+   "recall": "When do you get demotion shields, how many, and how do they get used up?",
    "concept": "Demotion Protection turns on when one bad match could drop you a tier, for example a Goliath match with a steep entry cost. You get three Demotion Shields. Each time a match would demote you, a shield is spent instead; you only drop once all three are gone. It ends when you've climbed far enough that one match can't demote you, or when the shields run out. A used shield is a warning, not a disaster: reset your head, tighten up, and play for placement until you're clear.",
    "kp": [
     "3 shields when one match could demote you",
@@ -885,7 +885,7 @@
   {
    "id": "8.7",
    "title": "Every squad kill counts for you",
-   "recall": "How do kills count for RP in Season 32, and what does that mean for support players?",
+   "recall": "How do kills count for RP in Season 32, what was removed, and what does that mean for support players?",
    "concept": "Season 32 removes assists and participation. Every player gets full kill RP for every kill their squad gets, whoever landed it. Support play now pays exactly like fragging: keeping your fraggers alive with heals, shields, walls and revives earns the same kill RP as the knock itself. Play your role; don't chase damage to get credit. The squad's kill count is your kill count.",
    "kp": [
     "Every squad kill gives every player full kill RP",
@@ -899,7 +899,7 @@
   {
    "id": "8.8",
    "title": "Open vs Pro-Am scoring",
-   "recall": "How do Open League and Pro-Am value kills versus placement, and how should your plan change between them?",
+   "recall": "Open League and Pro-Am score results differently. What does each one weight higher?",
    "concept": "The two leagues value results differently. Open League weights kills slightly higher, but placement is still a very effective way to climb. Pro-Am weights placement higher than kills, closer to pro ALGS scoring, so endgame position and survival become the main engine. A climbing plan: in Open League, sharpen your gunfights and take good fights; once you reach Pro-Am, shift toward endgame positioning, zone calling and patience.",
    "kp": [
     "Open League: kills weighted slightly higher",
