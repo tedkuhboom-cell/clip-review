@@ -52,3 +52,48 @@ test("spray timing: bursts pause, the Devotion winds up", () => {
   assert.ok(R.rcInterval(prowler, 5) > R.rcInterval(prowler, 4) + 200, "pause after a 5-round burst");
   assert.ok(R.rcInterval(dev, 1) > R.rcInterval(dev, 12) * 2, "Devotion starts slow and speeds up");
 });
+
+test("stick recipe: a few steps that cover every shot in order, each at least 3 shots", () => {
+  GUNS.forEach((g) => {
+    const plan = R.rcPlan(g);
+    assert.ok(plan.length >= 1 && plan.length <= 5, g.id + " has " + plan.length + " steps");
+    assert.strictEqual(plan[0].from, 1, g.id);
+    assert.strictEqual(plan[plan.length - 1].to, g.pull.length, g.id);
+    plan.forEach((x, i) => {
+      assert.ok(x.text, g.id + " step text");
+      if (i) assert.strictEqual(x.from, plan[i - 1].to + 1, g.id + " steps are contiguous");
+      if (plan.length > 1) assert.ok(x.to - x.from + 1 >= 3, g.id + " step " + (i + 1) + " is too short to remember");
+    });
+    assert.strictEqual(R.rcStepOf(plan, 1), 0);
+    assert.strictEqual(R.rcStepOf(plan, g.pull.length), plan.length - 1);
+  });
+});
+
+test("stick recipe matches the shape: RE-45 leans left throughout, Spitfire swings right, left, right, left", () => {
+  const dirs = (id) => R.rcPlan(GUNS.find((x) => x.id === id)).map((x) => Math.sign(x.h));
+  assert.ok(dirs("re45").every((d) => d === -1));
+  assert.deepStrictEqual(dirs("spitfire"), [1, -1, 1, -1]);
+  assert.deepStrictEqual(dirs("3030"), [0]);
+});
+
+test("drawing one part: the real part scores Got it, a shifted or too-short stroke doesn't, a straight line fails where the pull bends", () => {
+  GUNS.forEach((g) => {
+    const H = R.rcProfile(g.pull, 24).H, dense = R.rcResample(g.pull, 120);
+    for (let p = 0; p < 3; p++) {
+      assert.strictEqual(R.rcGrade(R.rcScorePart(g.pull, dense, p).score), "got", g.id + " part " + p);
+      const shifted = R.rcScorePart(g.pull, dense.map((q) => [q[0] + 0.15 * H, q[1]]), p);
+      assert.notStrictEqual(R.rcGrade(shifted.score), "got", g.id + " part " + p + " shifted sideways");
+      assert.strictEqual(shifted.side, 1, "and it says which side");
+    }
+    assert.ok(R.rcScorePart(g.pull, dense.slice(0, 10), 1).short, g.id + " a stroke that doesn't cover the gap");
+  });
+  const sp = GUNS.find((x) => x.id === "spitfire"), pr = R.rcProfile(sp.pull, 24);
+  const line = Array.from({ length: 30 }, (_, i) => [pr.x[7] + ((pr.x[15] - pr.x[7]) * i) / 29, ((8 + (8 * i) / 29) / 24) * pr.H]);
+  assert.notStrictEqual(R.rcGrade(R.rcScorePart(sp.pull, line, 1).score), "got", "Spitfire's middle is not a straight line");
+});
+
+test("after a missed whole drawing, the retry targets the third that was furthest off", () => {
+  const g = GUNS.find((x) => x.id === "flatline"), H = R.rcProfile(g.pull, 24).H;
+  const bentBottom = R.rcResample(g.pull, 120).map((q) => [q[1] > H * 0.7 ? q[0] + (q[1] - H * 0.7) * 1.5 : q[0], q[1]]);
+  assert.strictEqual(R.rcWorstPart(R.rcScore(g.pull, bentBottom)), 2);
+});

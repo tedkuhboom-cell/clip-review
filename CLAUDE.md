@@ -36,7 +36,7 @@ programmer: explain changes in plain words and say what he'll see on his phone.
    plain sentence saying what is sent.
 9. **Learning design comes first.** Typed recall, no self-grading, spacing, one focus. If a feature makes the app more
    fun but weakens one of those, raise it with Ted before building.
-10. **Other sessions may be working here.** If `../../AGENTS-BOARD.md` exists, read it and claim the repo before editing.
+10. **Other sessions may be working here.** If `AGENTS-BOARD.md` exists in this folder, read it and claim the repo before editing.
 
 ## Local quirks
 
