@@ -286,6 +286,15 @@ details.more p{font-size:14px;margin:6px 0}
 .qs .v{font-weight:600}
 .drillnow.asfocus{border-color:var(--amber);margin-top:10px}
 
+/* which theme would have saved it */
+.themenow{border-left:3px solid var(--amber);padding:6px 10px;margin:4px 0 10px;font-size:14px}
+.themenow b{display:block;font-size:15px}
+.themelist{display:grid;gap:6px;max-height:340px;overflow-y:auto;padding:2px}
+.themelist button{display:block;text-align:left;width:100%;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel-2);color:inherit;font-size:14.5px;min-height:44px}
+.themelist button[aria-pressed="true"]{border-color:var(--amber);box-shadow:inset 0 0 0 1px var(--amber)}
+.themelist .tl{display:block;font-size:12.5px;color:var(--faint);margin-top:2px}
+.themelist .tags{font-size:11.5px;color:var(--amber);margin-left:6px}
+
 /* proof */
 .proofcard{background:linear-gradient(160deg,#1d2530,#141a22);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:12px}
 .proofcard .ph{font-family:var(--display);font-size:13px;letter-spacing:1.5px;color:var(--amber);text-transform:uppercase}
@@ -715,7 +724,7 @@ var GRADE_NAME={got:"Got it",shaky:"Shaky",miss:"Missed"};
 function depthHits(answer, dp){ var toks=gnorm(answer).split(" ").filter(Boolean); return (dp||[]).map(function(kp){ return kp[1].some(function(a){ return altHit(a,toks); }); }); }
 
 // ===================== state =====================
-function blankDraft(){ return {type:null,map:"",legend:"",label:"",situation:[],starter:null,plan:null,gut:"",when:null,lastGood:"",checks:{},cause:null,why:"",kind:null,habit:null,themeHit:null,fix:"",rehearsed:false,question:"",date:null,fromGame:null}; }
+function blankDraft(){ return {type:null,map:"",legend:"",label:"",situation:[],starter:null,plan:null,gut:"",when:null,lastGood:"",checks:{},cause:null,why:"",kind:null,habit:null,themeHit:null,savedBy:null,fix:"",rehearsed:false,question:"",date:null,fromGame:null}; }
 function normDraft(d){ var b=blankDraft(); d=d||{}; for(var k in b) if(d[k]===undefined) d[k]=b[k]; if(!Array.isArray(d.situation)) d.situation=[]; if(!d.checks||typeof d.checks!=="object") d.checks={}; return d; }
 var S = {
   profile: Object.assign({setup:false, rank:"", mains:[], newPerDay:3}, lget(K.profile)||{}),
@@ -812,7 +821,7 @@ function retention(){ return S.profile.retention||0.9; }
 function gradeNum(grade, full){ return grade==="miss"?1 : grade==="shaky"?2 : full?4 : 3; }
 function cardS(rev){ return rev ? (rev.s!=null ? rev.s : (LADDER_S[rev.box]||1)) : 0; }
 function boxFromS(x){ return x<3?1 : x<7?2 : x<14?3 : x<30?4 : 5; }
-function schedule(rev, grade, t, full){
+function schedule(rev, grade, t, full, ret){
   var G=gradeNum(grade, full), S1, D1;
   if(!rev){ S1=FW[G-1]; D1=fD0(G); }
   else {
@@ -821,18 +830,31 @@ function schedule(rev, grade, t, full){
     if(G===2) S1=Math.min(S1,S0);   // Shaky isn't progress: memory strength holds, difficulty still rises
   }
   S1=Math.max(0.1,S1);
-  var ivl = G===1 ? 1 : Math.max(1, Math.min(365, Math.round(fIvl(S1, retention()))));
+  var ivl = G===1 ? 1 : Math.max(1, Math.min(365, Math.round(fIvl(S1, ret||retention()))));
   if(G===2) ivl=Math.min(ivl,3);   // Shaky = missed a must-have: recheck within 3 days, then back on schedule
   return { box:boxFromS(S1), s:Math.round(S1*1000)/1000, d:Math.round(D1*1000)/1000, due:addDays(t,ivl), last:t, learned:(rev&&rev.learned)||t, n:((rev&&rev.n)||0)+1 };
 }
-function previewGap(rev, grade, full){ return daysBetween(today(), schedule(rev, grade, today(), full).due); }
+function previewGap(rev, grade, full, ret){ return daysBetween(today(), schedule(rev, grade, today(), full, ret).due); }
 function fmtGap(n){ return n<=1?"tomorrow" : n<14?"in "+n+" days" : n<60?"in about "+Math.round(n/7)+" weeks" : "in about "+Math.round(n/30)+" months"; }
 function stage(rev){ if(!rev) return "new"; var x=cardS(rev); if(x>=30) return "own"; if(x>=7) return "solid"; return "learn"; }
-function dueList(t){ return CARDS.filter(function(c){ var r=S.reviews[c.id]; return r && r.due<=t; }).sort(function(a,b){ return S.reviews[a.id].due.localeCompare(S.reviews[b.id].due) || a.mod-b.mod; }); }
-function newQueue(){ var seen={}, q=[], t=curTheme(); (t?t.cards:[]).concat(P.newOrder||[]).forEach(function(id){ if(byId[id] && !S.reviews[id] && !seen[id]){ seen[id]=1; q.push(byId[id]); } }); CARDS.forEach(function(c){ if(!S.reviews[c.id] && !seen[c.id]) q.push(c); }); return q; }
+// ----- themes your clip reviews keep naming: their cards come back sooner -----
+// Picking the same theme in 2+ clips this month raises its cards' retention target (90% -> 92%, 4+ picks -> 94%).
+// FSRS then spaces them a little tighter, and cards already waiting are pulled forward to match. Nothing else changes.
+function savedByCounts(){ var n={}, cut=addDays(today(),-30); S.clips.forEach(function(c){ if(c.savedBy && THEMES[c.savedBy] && c.type!=="win" && (c.date||"")>=cut) n[c.savedBy]=(n[c.savedBy]||0)+1; }); return n; }
+function themeBoost(tid, n){ var k=(n||savedByCounts())[tid]||0; return k>=4?0.04 : k>=2?0.02 : 0; }
+function cardRetention(id, n){ n=n||savedByCounts(); var b=0; (THEMES_OF_CARD[id]||[]).forEach(function(t){ b=Math.max(b, themeBoost(t,n)); }); return Math.min(0.97, retention()+b); }
+function cardDue(id, n){ var r=S.reviews[id]; if(!r) return null; var ret=cardRetention(id,n); if(ret<=retention() || !r.last) return r.due;
+  var alt=addDays(r.last, Math.max(1, Math.round(fIvl(cardS(r), ret)))); return alt<r.due?alt:r.due; }
+function boostedThemes(){ var n=savedByCounts(); return Object.keys(n).filter(function(t){ return themeBoost(t,n)>0; }).sort(function(a,b){ return n[b]-n[a]; }).map(function(t){ return {id:t, n:n[t]}; }); }
+function dueList(t){ var n=savedByCounts(), due={}, up={};
+  CARDS.forEach(function(c){ if(S.reviews[c.id]){ due[c.id]=cardDue(c.id,n); up[c.id]=cardRetention(c.id,n)>retention()?1:0; } });
+  return CARDS.filter(function(c){ return due[c.id] && due[c.id]<=t; }).sort(function(a,b){ return (up[b.id]-up[a.id]) || due[a.id].localeCompare(due[b.id]) || a.mod-b.mod; }); }
+function newQueue(){ var seen={}, q=[], t=curTheme(), extra=[]; boostedThemes().forEach(function(b){ extra=extra.concat(THEMES[b.id].cards); }); (t?t.cards:[]).concat(extra).concat(P.newOrder||[]).forEach(function(id){ if(byId[id] && !S.reviews[id] && !seen[id]){ seen[id]=1; q.push(byId[id]); } }); CARDS.forEach(function(c){ if(!S.reviews[c.id] && !seen[c.id]) q.push(c); }); return q; }
 function learnedToday(t){ var n=0; for(var k in S.reviews){ if(S.reviews[k].learned===t && S.reviews[k].n===1) n++; } return n; }
 function newAvailable(t){ return Math.max(0, Math.min((S.profile.newPerDay||3) - learnedToday(t), newQueue().length)); }
-function nextDue(t){ var best=null; for(var k in S.reviews){ var d=S.reviews[k].due; if(d>t && (!best||d<best)) best=d; } return best; }
+function nextDue(t){ var best=null, n=savedByCounts(); for(var k in S.reviews){ var d=byId[k]?cardDue(k,n):S.reviews[k].due; if(d>t && (!best||d<best)) best=d; } return best; }
+function boostPanel(){ var b=boostedThemes(); if(!b.length) return null;
+  return h("p",{class:"hint",style:"margin:0 0 12px",text:"Coming back sooner: "+b.map(function(x){ return "“"+THEMES[x.id].name+"” cards ("+x.n+" clips this month)"; }).join(", ")+". Your clip reviews keep saying this theme would have saved you."}); }
 function interleave(list){ var b={}; list.forEach(function(c){ (b[c.mod]=b[c.mod]||[]).push(c); }); var keys=Object.keys(b), out=[], more=true; while(more){ more=false; keys.forEach(function(k){ if(b[k].length){ out.push(b[k].shift()); more=true; } }); } return out; }
 function inDays(n){ return n===1?"tomorrow":"in "+n+" days"; }
 
@@ -967,6 +989,7 @@ function renderManual(v){
   v.appendChild(weekPanel());
   if(S.profile.drill) v.appendChild(drillPanel());
   var bt=bedtimePanel(); if(bt) v.appendChild(bt);
+  var bp=boostPanel(); if(bp) v.appendChild(bp);
   var tp=themePanel("manual"); if(tp){ tp.appendChild(h("button",{type:"button",class:"linkbtn",onclick:function(){ goTab("debrief"); }},"Play it in a ranked session")); v.appendChild(tp); }
   v.appendChild(h("details",{class:"panel more"}, h("summary",{text:"How this works"}),
     h("p",null,h("b",{text:"Type it, then check."})," Pulling the answer out of memory is what builds it. Rereading only feels like learning."),
@@ -1082,7 +1105,7 @@ function renderMSession(v){
       panel.appendChild(grades);
     } else {
       var fg=s.appealUp?bump(r.grade):r.grade, nb=Math.min((rev?rev.box:0)+1,5);
-      var nxt=schedule(rev, fg, today(), r.full), gap=daysBetween(today(), nxt.due), newlyOwned=stage(nxt)==="own" && stage(rev)!=="own";
+      var nxt=schedule(rev, fg, today(), r.full, cardRetention(c.id)), gap=daysBetween(today(), nxt.due), newlyOwned=stage(nxt)==="own" && stage(rev)!=="own";
       var when = fg==="miss" ? "Back tomorrow." : (newlyOwned?"Owned. ":"")+"Back "+fmtGap(gap)+"."+(r.full&&fg==="got"?" A full answer spaces it out further.":"");
       panel.appendChild(h("p",{class:"hint",style:"margin:0 0 10px",text:when}));
       panel.appendChild(h("button",{type:"button",class:"primary",onclick:function(){ finishCard(c, fg, r); }},"Next card"));
@@ -1134,7 +1157,7 @@ function renderMSession(v){
 function bump(g){ return g==="miss"?"shaky":g==="shaky"?"got":g; }
 function finishCard(c,g,r){
   var s=S.mSession, it=s.items[s.i];
-  S.reviews[c.id]=schedule(S.reviews[c.id], g, today(), !!(r && r.full));
+  S.reviews[c.id]=schedule(S.reviews[c.id], g, today(), !!(r && r.full), cardRetention(c.id));
   if(r) S.recall.push({ts:Date.now(), d:today(), id:c.id, n:r.n, t:r.total, g:r.grade, ap:!!s.appealed, k:it.kind, dn:r.dn||0, dt:r.dt||0, f:!!r.full, by:r.by==="claude"?"c":"k", a:(s.answer||"").slice(0,600)});
   if(r) s.full=(s.full||0)+(r.full?1:0);
   if(r){ s.streak = r.full ? (s.streak||0)+1 : 0; if(s.streak>(s.bestRun||0)) s.bestRun=s.streak; if(s.streak>(S.bestStreak||0)){ S.bestStreak=s.streak; saveManual(); } }
@@ -1156,6 +1179,7 @@ function renderMDone(v){
     h("div",{class:"row"}, h("button",{type:"button",class:"ghost",onclick:function(){ S.mSession=null; safeRender(); }},"Back to today"),
       again? h("button",{type:"button",class:"ghost",onclick:function(){ S.mSession=null; startMSession(); }},"Keep going · "+Math.min(again,sessionCap())+" more") : null)));
   var bt=bedtimePanel(); if(bt) v.appendChild(bt);
+  var bp=boostPanel(); if(bp) v.appendChild(bp);
   // pick today's drill from this session's cards
   var seenIds=[], picks=[]; S.mSession.items.forEach(function(x){ if(x.kind!=="break" && seenIds.indexOf(x.card.id)<0){ seenIds.push(x.card.id); picks.push(x.card); } });
   var tid=S.profile.theme&&S.profile.theme.id; picks=picks.filter(function(c){ return c.drill; }).sort(function(a,b){ return inTheme(tid,b.id)-inTheme(tid,a.id); }).slice(0,6);
@@ -2114,6 +2138,24 @@ function suggestTheme(d){
   var score={}; Object.keys(d.checks||{}).forEach(function(k){ if(d.checks[k]==="n" && THEME_OF_CHECK[k]) score[THEME_OF_CHECK[k]]=(score[THEME_OF_CHECK[k]]||0)+1; });
   var best=null; for(var k in score) if(best==null||score[k]>score[best]) best=k; return best;
 }
+function gameTheme(ref){ if(!ref) return null; var ss=S.sessions.filter(function(x){ return x.id===ref.sid; })[0]; return ss&&ss.theme&&THEMES[ss.theme]?THEMES[ss.theme]:null; }
+function themeSavePicker(d, win){
+  var T=curTheme(), G=gameTheme(d.fromGame), sg=d.cause&&d.cause!=="win"?suggestTheme(d):null, n=savedByCounts(), wrap=h("div",{class:"field"});
+  wrap.appendChild(h("div",{class:"q"}, win?"Which theme did you run here?":"Which theme would have saved this?",
+    h("span",{class:"note",text:win?"Pick the one you were doing right.":"Pick the one that would have changed how this ended. Picking the same theme in 2+ clips a month brings its cards back sooner in the Manual."})));
+  var now=h("div",{class:"themenow"});
+  if(G && (!T || G.id!==T.id)) now.appendChild(h("div",null,h("span",{class:"faint",text:"Your theme that game"}),h("b",{text:G.name})));
+  now.appendChild(h("div",null,h("span",{class:"faint",text:T?"Your theme right now":"No theme picked yet"}), T?h("b",{text:T.name}):null));
+  wrap.appendChild(now);
+  var list=h("div",{class:"themelist",role:"group","aria-label":"Themes"});
+  function pick(id){ S.draft.savedBy=S.draft.savedBy===id?null:id; S.draft.themeHit=S.draft.savedBy==null?null:(T&&S.draft.savedBy===T.id?"y":"n"); saveDraft(); [].forEach.call(list.children,function(b){ b.setAttribute("aria-pressed",String(b.getAttribute("data-k")===S.draft.savedBy)); }); }
+  var order=THEME_ORDER.slice(); [sg, G&&G.id, T&&T.id].forEach(function(id){ if(id && order.indexOf(id)>=0){ order.splice(order.indexOf(id),1); order.unshift(id); } });
+  order.forEach(function(id){ var t=THEMES[id], tags=[]; if(T&&id===T.id) tags.push("your theme"); if(G&&id===G.id&&(!T||id!==T.id)) tags.push("that game's theme"); if(sg===id) tags.push("your answers point here"); if(!win && n[id]) tags.push(n[id]+"× this month");
+    list.appendChild(h("button",{type:"button","data-k":id,"aria-pressed":String(d.savedBy===id),onclick:function(){ pick(id); }}, h("span",{text:t.name}), tags.length?h("span",{class:"tags",text:tags.join(" · ")}):null, t.line?h("span",{class:"tl",text:t.line}):null)); });
+  if(!win) list.appendChild(h("button",{type:"button","data-k":"none","aria-pressed":String(d.savedBy==="none"),onclick:function(){ pick("none"); }}, h("span",{text:"None of these"}), h("span",{class:"tl",text:"Outplayed or unlucky. Nothing on the list would have changed it."})));
+  wrap.appendChild(list);
+  return wrap;
+}
 function clipLegends(){ var m=(S.profile.mains||[]).slice(); if(S.draft.legend && m.indexOf(S.draft.legend)<0 && S.draft.legend!=="Other") m.push(S.draft.legend); return m.concat(["Other"]); }
 function clipStep(n){
   var d=S.draft, win=d.type==="win", box=h("div");
@@ -2160,13 +2202,7 @@ function clipStep(n){
       onOther:function(t){ S.draft.cause="other"; S.draft.why=t; saveDraft(); var y=window.scrollY; safeRender(); window.scrollTo(0,y); }}),
       "Same list as your ranked sessions, so what you find here shapes what you practice there."));
     box.appendChild(cField(win?"What made it work?":"Was it the decision or the execution?", cSeg(CL.kinds,"kind",true), "Decision: wrong fight, timing or spot. Execution: right idea, but the shots, peeks or movement let you down."));
-    var T=curTheme();
-    if(T){
-      var thG=h("div",{class:"seg small"});
-      [["y","Yes"],["n","No"],["?","Not in this clip"]].forEach(function(o){ thG.appendChild(h("button",{type:"button","data-k":o[0],"aria-pressed":String(d.themeHit===o[0]),onclick:function(){ S.draft.themeHit=S.draft.themeHit===o[0]?null:o[0]; setPressed(thG,S.draft.themeHit); saveDraft(); }},o[1])); });
-      var sg=d.cause!=="win"?suggestTheme(d):null;
-      box.appendChild(h("div",{class:"field"}, h("div",{class:"q"}, win?"Did you run your theme here?":"Would your theme have saved this?", h("span",{class:"note",text:T.name+(sg&&sg!==T.id?". This clip's mistake points to "+THEMES[sg].name+"; it counts toward which theme you work on next.":sg===T.id?". This clip's mistake is your theme.":"")})), thG));
-    }
+    box.appendChild(themeSavePicker(d, win));
     box.appendChild(cText(win?"What will you repeat next game?":"What would a top-tier player have done here?","fix", win?"e.g. Wait for the knock call before swinging":"e.g. Utility first, one shot, back up, heal, re-peek from cover"));
     var tg=h("button",{type:"button",class:"toggle","aria-pressed":String(!!d.rehearsed),onclick:function(){ S.draft.rehearsed=!S.draft.rehearsed; tg.setAttribute("aria-pressed",String(S.draft.rehearsed)); tg.firstChild.textContent=S.draft.rehearsed?"✓":""; saveDraft(); }},
       h("span",{class:"box",text:d.rehearsed?"✓":""}), h("span",{text:"I pictured doing the fix once, at normal speed"}));
@@ -2182,7 +2218,7 @@ function saveReview(){
   var d=S.draft, now=Date.now();
   S.clips.push({ id:"c"+now, created:now, date:d.date||today(), type:d.type, map:d.map||"", legend:d.legend||"", label:(d.label||"").trim(), situation:d.situation||[], starter:d.starter||null, plan:d.plan||null,
     gut:(d.gut||"").trim(), when:d.when||null, lastGood:(d.lastGood||"").trim(), checks:d.checks||{}, cause:d.cause, why:d.cause==="other"?(d.why||"").trim():"", kind:d.kind||null,
-    habit:null, theme:d.cause==="win"?null:suggestTheme(d), themeHit:d.themeHit||null, fix:(d.fix||"").trim(), rehearsed:!!d.rehearsed, question:(d.question||"").trim(), answer:"", qDone:false });
+    habit:null, theme:d.cause==="win"?null:(d.savedBy&&THEMES[d.savedBy]?d.savedBy:suggestTheme(d)), savedBy:d.savedBy||null, themeHit:d.themeHit||null, fix:(d.fix||"").trim(), rehearsed:!!d.rehearsed, question:(d.question||"").trim(), answer:"", qDone:false });
   if(d.cause==="other" && d.why) logWriteIn(d.why,"clips");
   if(d.fromGame) setGameFlag(d.fromGame,"clipDone",true);
   saveClips(); S.draft=blankDraft(); S.step=-1; lset(K.draft,null); safeRender(); window.scrollTo(0,0);
@@ -2308,7 +2344,7 @@ function renderClipLog(v){
       var dl=h("dl"); function add(k,val){ if(val){ dl.appendChild(h("dt",{text:k})); dl.appendChild(h("dd",{text:val})); } }
       add("Clip",[c.map,c.legend,c.label].filter(Boolean).join(" · ")); add("Situation",labels(CL.situations,c.situation)); add("Who started",label(CL.starters,c.starter)); add("Plan",label(CL.plans,c.plan));
       add(c.type==="win"?"What went right":"What went wrong",c.gut); add(c.type==="win"?"Took the advantage":"Options gone",label(CL.when,c.when)); add(c.type==="win"?"Setup":"Safe choice",c.lastGood);
-      add("Main cause",ca?ca.label:""); add("Decision or execution",label(CL.kinds,c.kind)); add("Theme",clipLabelTheme(c)); add("Theme part of it",c.themeHit==="y"?"Yes":c.themeHit==="n"?"No":""); add("Fix",c.fix); add("Rehearsed",c.rehearsed?"Yes":"");
+      add("Main cause",ca?ca.label:""); add("Decision or execution",label(CL.kinds,c.kind)); add("Theme",clipLabelTheme(c)); add("Theme part of it",c.themeHit==="y"?"Yes":c.themeHit==="n"?"No":""); add(c.type==="win"?"Theme it ran":"Theme that would have saved it",c.savedBy==="none"?"None":themeName(c.savedBy)); add("Fix",c.fix); add("Rehearsed",c.rehearsed?"Yes":"");
       add("Missed",missedList(c).join("; ")); add("Question",c.question); add("Answer",c.answer);
       var armed=S.delArm===c.id;
       row.appendChild(h("div",{class:"detail"}, dl, h("div",{class:"row",style:"margin-top:12px"}, h("button",{type:"button",class:"ghost"+(armed?" danger":""),onclick:function(){
