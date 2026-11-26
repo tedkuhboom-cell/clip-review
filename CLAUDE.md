@@ -31,6 +31,7 @@ programmer: explain changes in plain words and say what he'll see on his phone.
    (`appeals`, `client_errors`) or only through Edge Functions (`grades`, `grade_usage`, `backups`). Never put a secret key
    in the app. Migrations: `npx supabase db push`. Functions: `npx supabase functions deploy grade backup`.
    Secrets: `ANTHROPIC_API_KEY` (required by `grade`), optional `GRADE_MODEL`, `GRADE_DAILY_PER_INSTALL`, `GRADE_DAILY_TOTAL`.
+   Free projects are paused after a quiet week, so `.github/workflows/keepalive.yml` calls `keepalive_ping()` daily. Keep it.
 8. **Privacy promises in the app are real.** Anything that sends data off the phone is opt-in (appeals, Claude grading,
    online backup) except crash reports (opt-out, never includes typed text). Don't add a new send without a setting and a
    plain sentence saying what is sent.

@@ -1,0 +1,26 @@
+name: Supabase keep-alive
+# Supabase pauses a free project after about a week without database activity.
+# This makes one tiny database write a day so that never happens. It sends no user data.
+# Note: GitHub switches off scheduled jobs after 60 days with no commits to the repo, and emails first.
+# If that happens, press "Enable workflow" on the Actions tab.
+on:
+  schedule:
+    - cron: "23 9 * * *" # every day at 09:23 UTC
+  workflow_dispatch: # also runnable by hand from the Actions tab
+permissions: {}
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping the database
+        env:
+          # The publishable key: the same public one that is in index.html. It is not a secret.
+          SUPA_URL: https://fzfsqzuselkuynhuiplc.supabase.co/rest/v1/rpc/keepalive_ping
+          SUPA_KEY: sb_publishable_ps1UYscNTyBur2JsYq5TFA_IZ0LbSAs
+        run: |
+          out=$(curl --silent --show-error --fail-with-body --retry 3 --retry-all-errors --retry-delay 20 \
+            -X POST "$SUPA_URL" -H "apikey: $SUPA_KEY" -H "Content-Type: application/json" -d '{}')
+          echo "Supabase answered: $out"
+          # A working ping answers with a timestamp such as "2026-11-25T09:23:01.123456+00:00".
+          echo "$out" | grep -qE '^"20[0-9]{2}-[0-9]{2}-[0-9]{2}T' || { echo "Unexpected answer, the ping did not work."; exit 1; }
